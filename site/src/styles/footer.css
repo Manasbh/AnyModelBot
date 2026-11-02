@@ -60,8 +60,8 @@
   .footer__badge[data-kind] { width: auto; }
   .footer__badge[data-kind="text"] a { height: var(--badge-h); padding-inline: 12px; border: 1px solid var(--line); color: var(--text-2); font-size: 11.5px; font-weight: 500; line-height: 1.2; white-space: nowrap; transition: color var(--dur-fast), border-color var(--dur-fast); }
   .footer__badge[data-kind="text"] a:hover { border-color: var(--line-strong); color: var(--text); }
-  /* TopAITools4U 是站方用内联样式画的白底卡片：去掉它自己的底色，边框换成同一圈细边，字色跟主题走，图标和字号缩到放得下 */
-  .footer__badge[data-kind="html"] a { height: var(--badge-h); padding: 0 10px !important; gap: 6px !important; border: 1px solid var(--line) !important; border-radius: 6px !important; background: none !important; color: var(--text) !important; font-family: inherit !important; white-space: nowrap; }
+  /* TopAITools4U 是站方用内联样式画的白底卡片，AgentHunter 是一个 logo 加一行字：去掉自带的底色，边框换成同一圈细边，字色跟主题走，图标和字号缩到放得下 */
+  .footer__badge[data-kind="html"] a { height: var(--badge-h); padding: 0 10px !important; gap: 6px !important; border: 1px solid var(--line) !important; border-radius: 6px !important; background: none !important; color: var(--text) !important; font-family: inherit !important; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
   .footer__badge[data-kind="html"] a img { flex: none; width: 18px !important; height: 18px !important; border-radius: 4px !important; }
   .footer__badge[data-kind="html"] a > span > span:first-child { color: var(--text-2) !important; font-size: 8px !important; }
   .footer__badge[data-kind="html"] a > span > span:last-child { font-size: 11.5px !important; }

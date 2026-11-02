@@ -265,6 +265,14 @@ export const BADGES: Badge[] = [
 </a>`,
   },
   {
+    // 免费收录要求挂徽章，验证时填放徽章的页面（https://anymodel.bot/en/）。
+    // 这段是按站方页面渲染出来的标记整理的，和它一键复制的版本可能略有差别。logo-light 是深色图案配浅底，logo-dark 相反
+    name: "AgentHunter",
+    kind: "html",
+    html: `<a href="https://www.agenthunter.io" target="_blank" rel="noopener noreferrer"><img alt="AgentHunter Badge" width="40" height="40" src="https://www.agenthunter.io/logo-light.svg"> AgentHunter - Featured AI Agent</a>`,
+    dark: `<a href="https://www.agenthunter.io" target="_blank" rel="noopener noreferrer"><img alt="AgentHunter Badge" width="40" height="40" src="https://www.agenthunter.io/logo-dark.svg"> AgentHunter - Featured AI Agent</a>`,
+  },
+  {
     name: "AI Toolz Dir",
     kind: "text",
     html: `<a href="https://www.aitoolzdir.com" target="_blank">AI Toolz Dir</a>`,

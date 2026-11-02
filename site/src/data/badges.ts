@@ -232,6 +232,11 @@ export const BADGES: Badge[] = [
 </a>`,
   },
   {
+    // 站方要求 dofollow、长期保留：链接上不能加 rel="nofollow"，也别删
+    name: "AiHubs",
+    html: `<a href="https://aihubs.ai" target="_blank" title="AiHubs - Discover The Best AI Tools"><img src="https://aihubs.ai/badge/featured-on-aihubs.svg" alt="Featured on AiHubs" width="220" height="56" /></a>`,
+  },
+  {
     name: "AI Toolz Dir",
     kind: "text",
     html: `<a href="https://www.aitoolzdir.com" target="_blank">AI Toolz Dir</a>`,

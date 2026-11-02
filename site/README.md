@@ -227,7 +227,7 @@ docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
 ## 数据从哪来
 
 - **价格**：构建时请求 `https://modelflare.dev/api/pricing`，用 `src/lib/pricing.ts` 算出默认线路价、分档、条件价线路和官方价（规则与 modelflare.dev/pricing 前端一致：有 `official_input_price` 用它，否则用基础价），写入 `src/data/pricing.snapshot.json`。抓取失败或数据异常时沿用快照，页面显示快照日期。
-- **GitHub 星数**：`scripts/fetch-github-stars.ts` 在 `npm run build` 时取，写进 `src/data/github.json`，所以数字最多晚一天（每天 04:00 构建一次，部署时也会构建）；取不到就沿用上一个值，不影响构建。不在浏览器里请求 GitHub：不把访客 IP 发给第三方。
+- **GitHub 星数**：线上的 builder 每 2 分钟向 GitHub 取一次，写到 `/srv/site/live/stars.json`，不用重新构建；页面打开时取站内的 `/stars.json`（`src/scripts/stars.ts`，缓存 1 分钟），所以数字最多晚 3 分钟左右。`scripts/fetch-github-stars.ts` 在 `npm run build` 时另取一次写进 `src/data/github.json`，作为页面的初始值和 `/stars.json` 取不到时的备用值；取不到就沿用上一个值，不影响构建。不在浏览器里请求 GitHub：不把访客 IP 发给第三方。
 - **机器人**：`scripts/sync-from-app.ts` 从 `../ui/design/bots/*.webp` 复制精灵图、从 `../THIRD_PARTY_NOTICES.md` 同步许可（Docker 构建上下文里没有应用目录，用已提交的副本）；几何（`src/lib/bots.ts`）与 `../ui/components/avatar.js` 的 `BOT_CHARS` 不一致时会警告。头像样式 `src/styles/bots.css` 移植自 `../ui/design/components/avatar.css`。
   - 精灵图另有同分辨率的 AVIF 版（`public/bots/*.avif`，约为 WebP 的一半），支持的浏览器经 `image-set()` 优先用它，其他照旧用 WebP。AVIF 必须从原图编码（`npm run bots:avif`：重跑 `../scripts/build-bot-avatars.py --png` 拿无损精灵图，q58 的画质按 PSNR 不低于 WebP q86），不能拿 WebP 再转。生成时把对应 WebP 的哈希记在 `src/data/bots-avif.json`；WebP 更新了而 AVIF 没重做，`check-images` 会失败。
 - **演示**：Hero 的"看演示"和"它能动手"都是动画（`src/components/DemoTour.astro`、`src/scripts/tour.ts`），不依赖视频文件。"看演示"点开就自动轮播、播完从头循环，没有播放 / 暂停 / 翻页按钮，底部进度条可点跳步。

@@ -3,6 +3,7 @@
 import { mountEyes } from "../lib/eyes";
 import { detectPlatform } from "../lib/platform";
 import { initBanner } from "./banner";
+import "./stars";
 import "./sections";
 
 type Data = {

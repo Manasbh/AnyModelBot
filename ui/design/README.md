@@ -19,11 +19,11 @@ ui/design/
     motion.css           关键帧库 + .anim-* 工具类 + 减少动态效果
     typography.css       文字角色 .t-*（在 utilities 层）
     utilities.css        .stack .cluster .grow .truncate .tone-* .sr-only
-  components/            一个组件一个文件：icon glass button field badge list seg switch popover model-family sheet splitter toast notice feedback avatar
+  components/            一个组件一个文件：icon glass button field badge list seg switch stops popover model-family sheet splitter toast notice feedback avatar
   motion.js              ms("--dur-base")、usePresence()、reducedMotion()
   index.html / gallery.* 样例页
 ui/css/                  页面样式（shell / chat / settings / guide），放在 app 层
-ui/components/ui.js      组件的 JS 写法：Icon Button IconButton Notice Skeleton Seg Switch Menu MenuButton Sheet …
+ui/components/ui.js      组件的 JS 写法：Icon Button IconButton Notice Skeleton Seg Switch Stops Menu MenuButton Sheet …
 ```
 
 ## 层叠顺序
@@ -255,6 +255,7 @@ ui/components/ui.js      组件的 JS 写法：Icon Button IconButton Notice Ske
 | 列表行 | `.list > .row [compact] [clickable] [off] [flash]`，`.row-edit`，`.list-head`；`.list` 是一块 `--well`，行间 `--line-2` | `--row-h --row-py --row-pl --row-pr --row-gap` |
 | 分段 | `Seg` 组件（`.seg > .thumb + button`），两个以上的选项 | `--seg-r --seg-pad --seg-thumb --seg-on` |
 | 开关 | `Switch` 组件（`button.switch[role=switch] [sm]`），只有开 / 关 | `--switch-w --switch-h --switch-pad --switch-track --switch-track-hover --switch-dot --switch-stretch` |
+| 档位滑块 | `Stops` 组件（`.stops[role=slider] [custom] > .stops-fill + .stops-dot + .stops-knob`），几档离散的值；`value = -1` 不在任何一档上 | `--stops-h --stops-pad --stops-track --stops-fill-bg --stops-knob-bg --stops-dot-bg --stops-dot-on` |
 | 菜单 | `.pick`，`.pop [up]`，`.palette`，`Menu` / `MenuButton` / `Popover` | `--pop-r --pop-pad` |
 | 对话框 | `Sheet` / `confirmSheet()`（`.scrim > .sheet [wide]`） | `--sheet-w --sheet-r` |
 | 分隔条 | `Splitter`（`.splitter [dragging]`），见下文「分隔条」 | `--split-x --split-hit --split-line-w --split-inset --split-line-on`；悬停色是语义 token `--split-line` |

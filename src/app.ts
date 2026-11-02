@@ -44,6 +44,7 @@ import {
 import { AccountManager } from "./account/manager.js";
 import { AccountVault, type SecretBox } from "./account/vault.js";
 import { loadModelInfo, type ModelInfo, type Rates } from "./account/model-info.js";
+import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
 import { ConnectionService } from "./agent/connections.js";
@@ -566,6 +567,7 @@ export class App {
         apiKey: key,
         headers: this.requestHeaders(),
         pricingUrl: `${modelflareIssuer()}/api/pricing`,
+        quality: loadQualitySnapshot(),
       });
       this.modelInfoCache = { at: Date.now(), data };
       return data;

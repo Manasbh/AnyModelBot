@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, Seg, Switch, Sheet, CopyButton, Skeleton, MenuButton } from "../components/ui.js";
 import { AccountButton } from "./sidebar.js";
-import { PickModel, shortModel } from "../components/model-picker.js";
+import { PickModel, shortModel, showsStrategy, strategyOptions } from "../components/model-picker.js";
 import { KeyForm, lineOptions } from "./onboarding.js";
 import { LoginSheet, NotificationsSheet, UsageSheet } from "./account.js";
 import { api } from "../lib/api.js";
@@ -257,6 +257,17 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
     api("/account/refresh", { method: "POST", body: {} })
       .then(onAccount)
       .catch(failed);
+  // 性价比（Key 的路由策略）：Modelflare 不支持时状态里 supported 变成 false，这一行随之消失
+  const putKeyQuality = (strategy) =>
+    api("/account/key-quality", { method: "PUT", body: { strategy } })
+      .then((r) => {
+        onAccount(r);
+        saved();
+      })
+      .catch((e) => {
+        failed(e);
+        return api("/account").then(onAccount).catch(() => {});
+      });
   const putAlerts = (patch) =>
     api("/account/alerts", { method: "PUT", body: patch })
       .then((r) => {
@@ -374,6 +385,8 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
         ctl: html`<button type="button" class="text" onClick=${() => setSheet("notifications")}>${t("common.view")}</button>` },
       signedIn && invite && { tab: "modelflare", id: "invite", name: t("settings.rows.invite.name"), sub: t("settings.rows.invite.sub"), keys: t("settings.rows.invite.keys"),
         ctl: html`<span class="val">${invite.code}</span><${CopyButton} text=${invite.url} label=${t("settings.rows.invite.copy")} />` },
+      showsStrategy(acct) && { tab: "modelflare", id: "key-quality", name: t("settings.rows.keyQuality.name"), sub: t("settings.rows.keyQuality.sub"), keys: t("settings.rows.keyQuality.keys"),
+        ctl: html`<${Seg} label=${t("settings.rows.keyQuality.name")} value=${acct.keyQuality.strategy} onChange=${putKeyQuality} options=${strategyOptions()} />` },
       managed && { tab: "modelflare", id: "line", name: t("settings.rows.line.name"), sub: t("settings.rows.line.sub"), keys: t("settings.rows.line.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.line.name")} value=${mf.line} onChange=${setLine} options=${lineOptions()} />` },
       { tab: "modelflare", id: "default-model", name: t("settings.rows.defaultModel.name"), sub: t("settings.rows.defaultModel.sub"), keys: t("settings.rows.defaultModel.keys"),

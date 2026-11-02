@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { html, Icon, IconButton, CopyButton, Menu, Popover, Badge, Notice, Skeleton, Spinner, autoGrow } from "../components/ui.js";
 import { BotAvatar } from "../components/avatar.js";
 import { Markdown, Linkified } from "../components/markdown.js";
-import { ModelPicker, shortModel, sameModel } from "../components/model-picker.js";
+import { ModelPicker, prefetchModelInfo, shortModel, sameModel } from "../components/model-picker.js";
 import { PwshHint } from "../components/pwsh-hint.js";
 import { ActivityLine, currentStep, upsertStep } from "../components/activity.js";
 import { TaskChip } from "../components/tasks.js";
@@ -209,7 +209,7 @@ export function ErrorNotice({ text, onRetry, onFixKey }) {
     ${onRetry && html`<button type="button" class="btn" onClick=${onRetry}>${t("common.retry")}</button>`}`}>${auth ? t("chat.error.authInvalid") : text}<//>`;
 }
 
-export function ChatScreen({ bot, models, modelsError, reloadModels, defaultModel, infoOpen, onToggleInfo, onWorking, onOpenSettings, onOpenBotSettings, onBotUpdated, pending = 0, serverBusy = false }) {
+export function ChatScreen({ bot, models, modelsError, reloadModels, defaultModel, infoOpen, onToggleInfo, onWorking, onOpenSettings, onOpenBotSettings, onBotUpdated, pending = 0, serverBusy = false, account, onAccount }) {
   const [items, setItems] = useState(null);
   const [convModel, setConvModel] = useState("");
   const [text, setText] = useState("");
@@ -603,6 +603,10 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
 
   // —— 模型 ——
   const effective = convModel || bot.defaultModel || defaultModel || (models && models[0]) || "";
+  // 模型资料（滑块要用）先取好，打开选择器时不用等
+  useEffect(() => {
+    if (models && models.length) prefetchModelInfo();
+  }, [!!(models && models.length)]);
   const pickModel = async (m) => {
     try {
       await api(`/bots/${encodeURIComponent(bot.id)}/chat/model`, { method: "PUT", body: { model: m } });
@@ -790,7 +794,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
         { label: t("chat.perm.more"), onSelect: () => onOpenBotSettings?.(bot.id, "permission") },
       ]} />`}
     ${menu === "model" && html`<${ModelPicker} anchor=${modelRef.current} prefer="up" align="right" models=${models} error=${modelsError} onRetry=${reloadModels}
-      current=${convModel || bot.defaultModel || defaultModel} onPick=${pickModel} onClose=${() => setMenu(null)}
+      current=${convModel || bot.defaultModel || defaultModel} onPick=${pickModel} onClose=${() => setMenu(null)} account=${account} onAccount=${onAccount || (() => {})}
       reset=${{ label: t("chat.model.followBot"), note: shortModel(bot.defaultModel || defaultModel) || t("common.auto"), onSelect: () => pickModel("") }}
       foot=${{ label: t("chat.model.setDefault"), disabled: !effective || sameModel(effective, bot.defaultModel), onClick: setBotDefault }} />`}
   </section>`;

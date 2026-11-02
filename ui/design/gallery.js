@@ -1,7 +1,7 @@
 // 设计库样例页：token 表直接解析 tokens/*.css（单一来源，不会和代码脱节），组件用真实实现渲染。
 import { render, createContext } from "preact";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
-import { html, Icon, ICONS, Button, IconButton, Seg, Switch, MenuButton, Menu, Badge, Notice, Skeleton, Spinner, CopyButton, Toasts, DialogHost, Splitter } from "../components/ui.js";
+import { html, Icon, ICONS, Button, IconButton, Seg, Switch, Stops, MenuButton, Menu, Badge, Notice, Skeleton, Spinner, CopyButton, Toasts, DialogHost, Splitter } from "../components/ui.js";
 import { BotAvatar, AvatarPicker, AppMark, BOT_CHARS, CHAR_KEYS, MAIN_CHAR } from "../components/avatar.js";
 import { NeedItem, NeedsRow } from "../screens/needs-you.js";
 import { RuleRow, RuleDetail } from "../components/rules.js";
@@ -129,6 +129,15 @@ function SwitchDemo() {
   const [on, setOn] = useState(true);
   return html`<${Switch} label="长期记忆" value=${on} onChange=${setOn} /><${Switch} label="关" value=${false} onChange=${() => {}} />
     <${Switch} label="小号" size="sm" value=${on} onChange=${setOn} /><${Switch} label="禁用" value=${true} disabled onChange=${() => {}} />`;
+}
+function StopsDemo() {
+  const [a, setA] = useState(1);
+  const [b, setB] = useState(3);
+  return html`<div style=${{ display: "grid", gap: "var(--space-3)", width: "260px" }}>
+    <${Stops} label="性价比" count=${3} value=${a} valueText=${["省钱", "均衡", "质量"][a]} onChange=${setA} />
+    <${Stops} label="模型智能" count=${5} value=${b} onChange=${setB} />
+    <${Stops} label="不在档上" count=${5} value=${-1} anchor=${1.5} onChange=${setB} />
+  </div>`;
 }
 function MenuButtonDemo() {
   const [v, setV] = useState("auto");
@@ -606,6 +615,7 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
       <${Section} id="menus" title="菜单与分段">
         <${Demo} title="Seg" note="两个以上的选项；中性 thumb 按值滑动">${() => html`<${SegDemo} />`}<//>
         <${Demo} title="Switch" note="只有开 / 关两态；打开 = 主操作色（浅色墨、深色黄绿）" code=${`<${"${Switch}"} label="长期记忆" value=\${on} onChange=\${setOn} />`}>${() => html`<${SwitchDemo} />`}<//>
+        <${Demo} title="Stops" note="几档离散的值（模型选择器的性价比、模型智能）；← → 一档，Home / End 两头；value = -1 时不在任何一档上" code=${`<${"${Stops}"} label="性价比" count={3} value=\${i} onChange=\${setI} />`}>${() => html`<${StopsDemo} />`}<//>
         <${Demo} title="MenuButton · Menu" note="↑↓ 选择，Enter 执行，Esc 关闭">${() => html`<${MenuButtonDemo} /><${MenuDemo} />`}<//>
       <//>
 

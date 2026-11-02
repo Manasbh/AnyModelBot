@@ -5,7 +5,12 @@
  *   只算按 token 计费和按次计费的模型：价格 = 基础价 × 该模型可用公开分组里最低的分组倍率 ×
  *   模型售价倍率，单位美元 / 百万 tokens（按次为美元 / 次）。这是“起步参考价”，实际以账单为准；
  *   阶梯计费、图片、视频等复杂计费不展示价格。
+ * - 模型智能与每次任务的花费（「模型智能」滑块）：Artificial Analysis 的快照（model-quality.ts），花费再乘上
+ *   这个模型在三种性价比下的分组倍率（factors）。
  */
+import { qualityFor, type QualitySnapshot } from "./model-quality.js";
+import type { RoutingStrategy } from "./client.js";
+
 export interface ModelInfo {
   context?: number;
   vision?: boolean;
@@ -16,6 +21,10 @@ export interface ModelInfo {
   rates?: Rates;
   /** 支持的接口（目录的 supported_endpoint_types：openai、openai-response、openai-response-compact、anthropic、gemini…） */
   endpoints?: string[];
+  /** 三种性价比（Key 的路由策略）下实际付的比例：分组倍率 × 模型售价倍率（strategyFactors） */
+  factors?: Record<RoutingStrategy, number>;
+  /** 应用实际用的那一档的 AA 智能指数与每次任务的花费（官方定价，美元） */
+  quality?: { intelligence: number; costPerTask: number };
 }
 
 interface Profile {
@@ -69,6 +78,23 @@ function factorOf(entry: PricingEntry, catalog: PricingCatalog): number | undefi
   if (!ratios.length) return undefined;
   const sale = Number(entry.sale_price_multiplier) > 0 ? Number(entry.sale_price_multiplier) : 1;
   return Math.min(...ratios) * sale;
+}
+
+/**
+ * 三种性价比下的价格倍率（相对官方定价）：这个模型可用的公开分组的倍率 × 模型售价倍率。
+ * 低价优先取最低的分组，稳定优先取最高的，均衡取居中的那个（偶数个时取居中两个里贵的那个：Modelflare 的均衡
+ * 从价格居中的分组开始，先往贵的试）。企业专用的分组（名字带 enterprise）普通账户用不了，不算。
+ */
+export function strategyFactors(entry: PricingEntry, catalog: PricingCatalog): Record<RoutingStrategy, number> | undefined {
+  const ratios = (entry.enable_groups ?? [])
+    .filter((g) => (!catalog.usable_group || g in catalog.usable_group) && !/enterprise/i.test(g))
+    .map((g) => catalog.group_ratio?.[g])
+    .filter((r): r is number => typeof r === "number" && Number.isFinite(r) && r >= 0)
+    .sort((a, b) => a - b);
+  if (!ratios.length) return undefined;
+  const sale = Number(entry.sale_price_multiplier) > 0 ? Number(entry.sale_price_multiplier) : 1;
+  const f = (r: number) => round(r * sale);
+  return { low_cost: f(ratios[0]), balanced: f(ratios[Math.floor(ratios.length / 2)]), stable: f(ratios[ratios.length - 1]) };
 }
 
 /** 一个模型的起步参考价；算不出来（复杂计费、没有可用分组）时 undefined */
@@ -127,6 +153,8 @@ export async function loadModelInfo(o: {
   apiKey: string;
   headers: Record<string, string>;
   pricingUrl: string;
+  /** Artificial Analysis 快照（assets/model-quality.json） */
+  quality?: QualitySnapshot;
   fetchImpl?: typeof fetch;
 }): Promise<Record<string, ModelInfo>> {
   const f = o.fetchImpl ?? fetch;
@@ -159,6 +187,13 @@ export async function loadModelInfo(o: {
     // 没有 Key（拿不到 model-profiles）时，上下文长度用公开目录里的
     if (Number(entry.context_window) > 0 && !out[entry.model_name]?.context) out[entry.model_name] = { ...out[entry.model_name], context: Number(entry.context_window) };
     if (Array.isArray(entry.supported_endpoint_types)) out[entry.model_name] = { ...out[entry.model_name], endpoints: entry.supported_endpoint_types.map(String) };
+    const factors = strategyFactors(entry, catalog!);
+    if (factors) out[entry.model_name] = { ...out[entry.model_name], factors };
+  }
+  // 智能与花费：要知道走哪个接口、推理不推理（上面的 endpoints、reasoning），才知道取哪一档
+  for (const [id, entry] of Object.entries(o.quality?.models ?? {})) {
+    const q = out[id]?.factors ? qualityFor(entry, out[id]) : undefined;
+    if (q) out[id] = { ...out[id], quality: q };
   }
   return out;
 }

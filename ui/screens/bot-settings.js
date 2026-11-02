@@ -23,14 +23,16 @@ function Row({ id, name, sub, title, children, off }) {
   </div>`;
 }
 
-function ModelButton({ value, models, modelsError, reloadModels, resetLabel, onChange }) {
+/** tiers：{ account, onAccount, effective } 给了就先打开两个滑块（机器人的默认模型）；effective = 跟随全局时实际用的模型 */
+function ModelButton({ value, models, modelsError, reloadModels, resetLabel, onChange, tiers }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   return html`<button type="button" class="pick" ref=${ref} aria-haspopup="listbox" aria-expanded=${open} onClick=${() => setOpen((v) => !v)}>
       <span class="v">${value ? shortModel(value) : resetLabel}</span><${Icon} name="chevDown" />
     </button>
     ${open && html`<${ModelPicker} anchor=${ref.current} align="right" models=${models} error=${modelsError} onRetry=${reloadModels} current=${value}
-      onPick=${onChange} onClose=${() => setOpen(false)} reset=${{ label: resetLabel, onSelect: () => onChange("") }} />`}`;
+      onPick=${onChange} onClose=${() => setOpen(false)} reset=${{ label: resetLabel, onSelect: () => onChange("") }}
+      account=${tiers && tiers.account} onAccount=${tiers && tiers.onAccount} effective=${tiers && tiers.effective} />`}`;
 }
 
 /**
@@ -88,7 +90,7 @@ function BudgetRows({ bot, budget, account, onSaved, onOpenSettings }) {
  * 谁能使用：只有主人和允许名单里的人。主人 = 扫码登录的微信 / 连上之后第一个发消息的人，后者可以更换（下一个发消息的人成为主人）。
  * 允许名单和拒绝过的人可以移除（移除后他再发消息会重新申请）。没有的项不显示。
  */
-export function BotSettingsScreen({ bot, section, models, modelsError, reloadModels, defaultModel, account, onOpenSettings, onBack, onBotUpdated, onDeleted }) {
+export function BotSettingsScreen({ bot, section, models, modelsError, reloadModels, defaultModel, account, onAccount, onOpenSettings, onBack, onBotUpdated, onDeleted }) {
   const [d, setD] = useState(null);
   const [name, setName] = useState(bot.name);
   const [prompt, setPrompt] = useState(bot.systemPrompt || "");
@@ -180,7 +182,8 @@ export function BotSettingsScreen({ bot, section, models, modelsError, reloadMod
       <div class="list">
         <${Row} id="model" name=${t("botSettings.model.default")} sub=${t("botSettings.model.defaultSub")}>
           <${ModelButton} value=${bot.defaultModel} models=${models} modelsError=${modelsError} reloadModels=${reloadModels}
-            resetLabel=${defaultModel ? t("botSettings.model.followGlobalWith", { model: shortModel(defaultModel) }) : t("botSettings.model.followGlobal")} onChange=${(m) => putBot({ defaultModel: m })} />
+            resetLabel=${defaultModel ? t("botSettings.model.followGlobalWith", { model: shortModel(defaultModel) }) : t("botSettings.model.followGlobal")} onChange=${(m) => putBot({ defaultModel: m })}
+            tiers=${{ account, onAccount: onAccount || (() => {}), effective: defaultModel || (models && models[0]) || "" }} />
         <//>
         <${Row} id="utility" name=${t("botSettings.model.utility")} sub=${t("botSettings.model.utilitySub")}>
           ${s && html`<${ModelButton} value=${s.utilityModel} models=${models} modelsError=${modelsError} reloadModels=${reloadModels} resetLabel=${t("botSettings.model.sameAsChat")} onChange=${(m) => put({ utilityModel: m })} />`}

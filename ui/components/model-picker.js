@@ -1,28 +1,34 @@
 // 模型选择器（magpie picker 的样式；数据来自 Modelflare 的 /v1/models）。按模型族分组，组头可以展开收起。
 // 不做厂商图标栏：各厂商 logo 是第三方商标，未取得授权前不用。
+// 对话和机器人设置里打开时先是两个滑块（TierPanel）：性价比（账户级，Key 的路由策略）和模型智能（沿帕累托前沿的几档，
+// lib/frontier.js）；点模型名进完整列表，照样可以手动选。
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { html, Popover, Icon } from "./ui.js";
+import { html, Popover, Icon, Stops } from "./ui.js";
 import { api } from "../lib/api.js";
-import { createStore, useStore } from "../lib/store.js";
+import { createStore, useStore, failed } from "../lib/store.js";
 import { t } from "../lib/i18n.js";
 import { OTHER_FAMILY, groupModels, modelFamily, normModel, sameModel, shortModel } from "../lib/models.js";
+import { DEFAULT_STRATEGY, STRATEGIES, defaultStop, levelOf, tiers } from "../lib/frontier.js";
 
 export { groupModels, normModel, sameModel, shortModel } from "../lib/models.js";
 
 // —— 模型能力与参考价（/models/info，后端缓存一小时；界面第一次打开选择器时取一次）——
 const infoStore = createStore(null);
 let infoLoading = false;
-function useModelInfo() {
+/** 先取一次（对话页挂上时就取，打开选择器时滑块不用等） */
+export function prefetchModelInfo() {
+  if (infoStore.get() || infoLoading) return;
+  infoLoading = true;
+  api("/models/info")
+    .then((d) => infoStore.set(d.models || {}))
+    .catch(() => infoStore.set({}))
+    .finally(() => (infoLoading = false));
+}
+/** 模型资料；还没取到时 null */
+function useModelInfoRaw() {
   const info = useStore(infoStore);
-  useEffect(() => {
-    if (info || infoLoading) return;
-    infoLoading = true;
-    api("/models/info")
-      .then((d) => infoStore.set(d.models || {}))
-      .catch(() => infoStore.set({}))
-      .finally(() => (infoLoading = false));
-  }, []);
-  return info || {};
+  useEffect(prefetchModelInfo, []);
+  return info;
 }
 
 const num = (n) => String(+Number(n).toFixed(n < 1 ? 3 : 2));
@@ -60,16 +66,118 @@ export function FamilyHead({ name, count, current }) {
   return html`<span class="v">${familyName(name)}</span><span class="n">${current || ""}</span><span class="cnt">${count}</span><${Icon} name="chevRight" size="xs" class="chev" />`;
 }
 
+// —— 两个滑块 ——
+const AA_URL = "https://artificialanalysis.ai/";
+/** 档名：levelOf 的 0…4 */
+const LEVELS = ["min", "low", "medium", "high", "max"];
+
+/** 第一个滑块显示不显示：登录了 Modelflare 账户，而且 Modelflare 认这个设置 */
+export const showsStrategy = (account) => !!(account && account.state === "signed_in" && account.keyQuality && account.keyQuality.supported);
+/** 按哪种性价比算花费：显示第一个滑块时用账户的，否则按均衡估 */
+export const strategyOf = (account) => (showsStrategy(account) ? account.keyQuality.strategy : DEFAULT_STRATEGY);
+export const strategyLabel = (s) => t(`models.tiers.strategy.${s}`);
+/** 性价比的三个选项（设置页的分段控件也用） */
+export const strategyOptions = () => STRATEGIES.map((s) => [s, strategyLabel(s)]);
+
+/** 当前模型在第二个滑块上的档名；不在档上时是「自定义」 */
+export const levelLabel = (cur, n) => (cur >= 0 ? t(`models.tiers.level.${LEVELS[levelOf(cur, n)]}`) : t("models.tiers.custom"));
+
+/**
+ * 两个滑块的面板（不带状态）。stops / cur / anchor 来自 frontier.js 的 tiers；model 是当前模型。
+ * 没有第一个滑块时（没登录、Modelflare 不支持）只有模型智能；前沿不到两档时只剩模型名，点它进列表。
+ * 右上角的恢复默认只在不是默认（均衡 + 居中那一档）时出现。
+ */
+export function TierPanel({ strategy, showStrategy, stops, cur, anchor, model, canReset, onStrategy, onStop, onList, onReset }) {
+  const n = stops.length;
+  const si = STRATEGIES.indexOf(strategy);
+  const level = levelLabel(cur, n);
+  return html`<div class="tiers">
+    ${canReset && html`<button type="button" class="icon-btn tiers-reset" title=${t("models.tiers.reset")} aria-label=${t("models.tiers.reset")} onClick=${onReset}><${Icon} name="reset" size="sm" /></button>`}
+    ${showStrategy && html`<section class="tier">
+      <div class="tier-head"><span class="tier-name">${t("models.tiers.value")}</span><span class="tier-val">${strategyLabel(strategy)}</span></div>
+      <${Stops} count=${STRATEGIES.length} value=${si} label=${t("models.tiers.value")} valueText=${strategyLabel(strategy)} onChange=${(i) => onStrategy(STRATEGIES[i])} />
+      <div class="tier-ticks">${STRATEGIES.map((s) => html`<span key=${s} class=${s === strategy ? "on" : ""}>${strategyLabel(s)}</span>`)}</div>
+    </section>`}
+    <section class="tier">
+      <div class="tier-head"><span class="tier-name">${t("models.tiers.intelligence")}</span>${n >= 2 && html`<span class=${`tier-val${cur < 0 ? " custom" : ""}`}>${level}</span>`}</div>
+      <button type="button" class="tier-model" title=${t("models.tiers.allModels")} onClick=${onList}><span class="v">${model ? shortModel(model) : t("common.auto")}</span><${Icon} name="chevRight" size="xs" /></button>
+      ${n >= 2 && html`<${Stops} count=${n} value=${cur} anchor=${anchor} fallback=${defaultStop(n)} autoFocus label=${t("models.tiers.intelligence")}
+          valueText=${cur >= 0 ? t("models.tiers.valueText", { level, model: shortModel(stops[cur].id) }) : level} onChange=${(i) => onStop(stops[i].id)} />
+        <div class="tier-ticks ends"><span>${t("models.tiers.cheaper")}</span><span>${t("models.tiers.smarter")}</span></div>`}
+    </section>
+    <p class="tier-foot">${t("models.tiers.foot", { aa: html`<a href=${AA_URL} target="_blank" rel="noopener noreferrer">Artificial Analysis</a>` })}</p>
+  </div>`;
+}
+
 /**
  * models: string[] | null（加载中）；error: 加载失败时的说明。
  * reset: { label, note, onSelect }  顶部"恢复默认"项；foot: { label, onClick, disabled } 底部操作。
  * 不筛选时按模型族折叠（只有一个族时不出组头）；筛选时全部展开，组名只作标签。
+ * account / onAccount：给了就先打开两个滑块（对话、机器人设置）；前沿不到两档时直接是列表。
+ * effective：current 为空（跟随默认）时实际用的模型，滑块按它定位。
  */
-export function ModelPicker({ anchor, models, error, current, onPick, onClose, reset, foot, onRetry, prefer = "down", align = "left" }) {
+export function ModelPicker({ anchor, models, error, current, onPick, onClose, reset, foot, onRetry, prefer = "down", align = "left", account, onAccount, effective = "" }) {
+  const panelWanted = onAccount !== undefined;
+  const infoRaw = useModelInfoRaw();
+  const info = infoRaw || {};
+  // 滑块拖到的那一档 / 刚选的性价比：保存完成前先这样显示
+  const [picked, setPicked] = useState(null);
+  const [pendingStrategy, setPendingStrategy] = useState(null);
+  const strategy = pendingStrategy ?? strategyOf(account);
+  const shown = picked ?? (current || effective);
+  const tier = useMemo(() => (panelWanted && models && infoRaw ? tiers(models, info, strategy, shown) : null), [panelWanted, models, infoRaw, strategy, shown]);
+  // 打开时定下先看哪一面（数据还没到就等它到了再定），之后不再自己变
+  const decide = () => (!panelWanted ? "list" : tier ? (tier.stops.length >= 2 ? "panel" : "list") : null);
+  const [view, setView] = useState(decide);
+  useEffect(() => {
+    if (view === null && tier) setView(decide());
+  }, [view, tier]);
+  let body;
+  if (view === "panel" && tier) {
+    const pickStop = (m) => {
+      if (sameModel(m, shown)) return;
+      setPicked(m);
+      Promise.resolve(onPick(m)).finally(() => setPicked(null));
+    };
+    const setStrategy = (s) => {
+      if (s === strategy) return;
+      setPendingStrategy(s);
+      api("/account/key-quality", { method: "PUT", body: { strategy: s } })
+        .then((r) => onAccount(r))
+        .catch((e) => {
+          failed(e);
+          // Modelflare 不支持时状态里 supported 变成 false，第一个滑块随之收起
+          return api("/account").then(onAccount).catch(() => {});
+        })
+        .finally(() => setPendingStrategy(null));
+    };
+    const showStrategy = showsStrategy(account);
+    const home = showStrategy && strategy !== DEFAULT_STRATEGY ? tiers(models, info, DEFAULT_STRATEGY, shown) : tier;
+    const homeModel = home.stops.length ? home.stops[defaultStop(home.stops.length)].id : "";
+    const onReset = () => {
+      if (showStrategy && strategy !== DEFAULT_STRATEGY) setStrategy(DEFAULT_STRATEGY);
+      if (homeModel) pickStop(homeModel);
+    };
+    body = html`<${TierPanel} strategy=${strategy} showStrategy=${showStrategy} stops=${tier.stops} cur=${tier.cur} anchor=${tier.anchor} model=${shown}
+      canReset=${(showStrategy && strategy !== DEFAULT_STRATEGY) || (!!homeModel && !sameModel(homeModel, shown))}
+      onStrategy=${setStrategy} onStop=${pickStop} onList=${() => setView("list")} onReset=${onReset} />`;
+  } else {
+    body = html`<${ModelList} models=${models} error=${error} current=${current} onPick=${onPick} onClose=${onClose} reset=${reset} foot=${foot}
+      onRetry=${onRetry} info=${info} onBack=${view === "list" && panelWanted && tier && tier.stops.length >= 2 ? () => setView("panel") : undefined} />`;
+  }
+  return html`<${Popover} anchor=${anchor} onClose=${onClose} class="model-picker" width=${340} maxHeight=${420} prefer=${prefer} align=${align} label=${t("models.choose")}>${body}<//>`;
+}
+
+/** 完整的模型列表（选择器原来的样子）；onBack：从滑块面板进来时，搜索框左边有返回 */
+function ModelList({ models, error, current, onPick, onClose, reset, foot, onRetry, info, onBack }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
   const listRef = useRef(null);
-  const info = useModelInfo();
+  const searchRef = useRef(null);
+  // 从面板切过来时面板上的焦点没了：交给搜索框
+  useEffect(() => {
+    if (onBack) searchRef.current?.focus();
+  }, []);
   const groups = useMemo(() => groupModels(models || [], q), [models, q]);
   const { isOpen, toggle } = useFamilies(groups, current);
   const folding = !q.trim() && groups.length > 1;
@@ -139,9 +247,10 @@ export function ModelPicker({ anchor, models, error, current, onPick, onClose, r
     </li>`;
   };
   const rows = (ms) => ms.map(([m, label]) => item({ m }, label, modelNote(info, m)));
-  return html`<${Popover} anchor=${anchor} onClose=${onClose} class="model-picker" width=${340} maxHeight=${420} prefer=${prefer} align=${align} label=${t("models.choose")}>
-    <div class="search"><${Icon} name="search" size="sm" />
-      <input placeholder=${t("models.filterOrId")} value=${q} onInput=${(e) => { setQ(e.target.value); setSel(0); }} onKeyDown=${onKey} aria-label=${t("models.filter")} />
+  return html`<div class="search">${onBack
+      ? html`<button type="button" class="icon-btn xs search-back" title=${t("models.tiers.back")} aria-label=${t("models.tiers.back")} onClick=${onBack}><${Icon} name="chevLeft" size="sm" /></button>`
+      : html`<${Icon} name="search" size="sm" />`}
+      <input ref=${searchRef} placeholder=${t("models.filterOrId")} value=${q} onInput=${(e) => { setQ(e.target.value); setSel(0); }} onKeyDown=${onKey} aria-label=${t("models.filter")} />
     </div>
     <ul role="listbox" ref=${listRef}>
       ${models === null && !error && [0, 1, 2, 3, 4].map((k) => html`<li key=${k}><span class="skel" style=${{ width: 60 + ((k * 37) % 30) + "%" }}></span></li>`)}
@@ -155,7 +264,7 @@ export function ModelPicker({ anchor, models, error, current, onPick, onClose, r
       ${models && !models.length && !q && html`<li class="explained"><span class="v" style="white-space:normal">${t("models.none")}</span></li>`}
     </ul>
     ${foot && html`<div class="foot"><button type="button" disabled=${foot.disabled} onClick=${() => { onClose(); foot.onClick(); }}>${foot.label}</button></div>`}
-  <//>`;
+  `;
 }
 
 /**

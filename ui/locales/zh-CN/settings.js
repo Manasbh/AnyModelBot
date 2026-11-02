@@ -283,6 +283,11 @@ export default {
       sub: "机器人生成视频时默认选它",
       keys: "视频 生视频 video 模型",
     },
+    keyQuality: {
+      name: "性价比",
+      sub: "应用签发的 Key 先用便宜的还是更稳的渠道",
+      keys: "省钱 均衡 质量 路由 渠道 分组 routing",
+    },
     autoModel: "自动（{model}）",
     models: {
       name: "可用模型",

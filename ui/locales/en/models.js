@@ -15,4 +15,28 @@ export default {
   useCustom: "Use “{id}”",
   customId: "Custom model ID",
   none: "No models available: this key's group doesn't have any models enabled yet",
+  tiers: {
+    value: "Value",
+    strategy: {
+      low_cost: "Cheap",
+      balanced: "Balanced",
+      stable: "Quality",
+    },
+    intelligence: "Intelligence",
+    level: {
+      min: "Lowest",
+      low: "Low",
+      medium: "Medium",
+      high: "High",
+      max: "Highest",
+    },
+    custom: "Custom",
+    valueText: "{level}: {model}",
+    cheaper: "Cheaper",
+    smarter: "Smarter",
+    allModels: "All models",
+    back: "Back",
+    reset: "Reset",
+    foot: "Pareto-optimal models, data from {aa}",
+  },
 };

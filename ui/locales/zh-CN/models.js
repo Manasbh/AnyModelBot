@@ -17,4 +17,31 @@ export default {
   useCustom: "使用「{id}」",
   customId: "自定义模型 ID",
   none: "没有可用模型：这个 Key 所在的分组还没有开放模型",
+  /** 选择器的两个滑块 */
+  tiers: {
+    value: "性价比",
+    strategy: {
+      low_cost: "省钱",
+      balanced: "均衡",
+      stable: "质量",
+    },
+    intelligence: "模型智能",
+    /** 第二个滑块的档名，从省到强 */
+    level: {
+      min: "最低",
+      low: "低",
+      medium: "中",
+      high: "高",
+      max: "最高",
+    },
+    custom: "自定义",
+    valueText: "{level}：{model}",
+    cheaper: "更省",
+    smarter: "更强",
+    allModels: "全部模型",
+    back: "返回",
+    reset: "恢复默认",
+    /** aa 是指向 Artificial Analysis 的链接 */
+    foot: "沿帕累托前沿选择模型，数据来自 {aa}",
+  },
 };

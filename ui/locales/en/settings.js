@@ -283,6 +283,11 @@ export default {
       sub: "Used by default when a bot generates videos",
       keys: "video generate model",
     },
+    keyQuality: {
+      name: "Value",
+      sub: "Whether your app keys try cheaper or steadier routes first",
+      keys: "cheap balanced quality routing route group cost",
+    },
     autoModel: "Auto ({model})",
     models: {
       name: "Available models",

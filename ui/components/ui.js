@@ -33,6 +33,7 @@ const P = {
   file: "M9 1.75H4.25a.75.75 0 0 0-.75.75v11c0 .41.34.75.75.75h7.5c.41 0 .75-.34.75-.75V5.25L9 1.75ZM9 1.75v3.5h3.5M5.75 8.25h4.5M5.75 10.75h4.5",
   folder: "M2.25 4.25c0-.41.34-.75.75-.75h3.1l1.5 1.5H13c.41 0 .75.34.75.75v6.5c0 .41-.34.75-.75.75H3a.75.75 0 0 1-.75-.75v-8Z",
   refresh: "M13.25 8a5.25 5.25 0 1 1-1.54-3.71M13.25 2.75v2.5h-2.5",
+  reset: "M2.75 8a5.25 5.25 0 1 0 1.54-3.71M2.75 2.75v2.5h2.5",
   stop: { f: "M5.75 4h4.5c.97 0 1.75.78 1.75 1.75v4.5c0 .97-.78 1.75-1.75 1.75h-4.5C4.78 12 4 11.22 4 10.25v-4.5C4 4.78 4.78 4 5.75 4Z" },
   more: { f: dot(3.5, 8, 1.25) + dot(8, 8, 1.25) + dot(12.5, 8, 1.25) },
   panel: "M2.75 3.25h10.5c.41 0 .75.34.75.75v8c0 .41-.34.75-.75.75H2.75a.75.75 0 0 1-.75-.75V4c0-.41.34-.75.75-.75ZM10 3.25v9.5",
@@ -163,6 +164,60 @@ export function Seg({ options, value, onChange, disabled, label }) {
     <span class="thumb still" ref=${thumb} aria-hidden="true"></span>
     ${options.map(([v, text, title]) => html`<button type="button" role="radio" aria-checked=${v === value} class=${v === value ? "on" : ""}
       disabled=${disabled} title=${title} onClick=${() => v !== value && onChange(v)}>${text}</button>`)}
+  </div>`;
+}
+
+// —— 档位滑块：几档离散的值（模型选择器里的性价比、模型智能）——
+/**
+ * 方向键怎么走：→ ↑ 往后一档，← ↓ 往前一档，Home / End 两头。value < 0 是"不在任何一档上"：从 anchor（落在哪两档之间的小数位置）
+ * 往上或往下走到最近的一档，没有 anchor 时去 fallback。不是这几个键时 undefined。
+ */
+export function stepKey(key, value, count, anchor, fallback = 0) {
+  const last = count - 1;
+  if (key === "Home") return 0;
+  if (key === "End") return last;
+  const up = key === "ArrowRight" || key === "ArrowUp";
+  const down = key === "ArrowLeft" || key === "ArrowDown";
+  if (!up && !down) return undefined;
+  if (value < 0) return anchor === undefined ? fallback : Math.max(0, Math.min(last, up ? Math.ceil(anchor) : Math.floor(anchor)));
+  return Math.max(0, Math.min(last, value + (up ? 1 : -1)));
+}
+
+/**
+ * count 档的滑块（role=slider）。value = 当前档，-1 = 不在任何一档上（没有圆钮和填充，见 stepKey）。
+ * 拖动时只预览，松手才 onChange；点轨道直接跳到那一档；键盘见 stepKey。valueText 是读屏读的当前值。
+ */
+export function Stops({ count, value, onChange, label, valueText, anchor, fallback = 0, autoFocus, class: cls }) {
+  const ref = useRef(null);
+  const [drag, setDrag] = useState(null);
+  const shown = drag ?? value;
+  const last = Math.max(1, count - 1);
+  /** 指针落在哪一档：圆钮中心离两头各半个轨道高 */
+  const at = (e) => {
+    const r = ref.current.getBoundingClientRect();
+    const x = (e.clientX - r.left - r.height / 2) / Math.max(1, r.width - r.height);
+    return Math.max(0, Math.min(count - 1, Math.round(x * last)));
+  };
+  const end = (e) => {
+    if (drag === null) return;
+    setDrag(null);
+    const v = at(e);
+    if (v !== value) onChange(v);
+  };
+  const onKeyDown = (e) => {
+    const v = stepKey(e.key, value, count, anchor, fallback);
+    if (v === undefined) return;
+    e.preventDefault();
+    if (v !== value) onChange(v);
+  };
+  return html`<div class=${cx("stops", shown < 0 && "custom", drag !== null && "dragging", cls)} ref=${ref} role="slider" tabindex="0" data-autofocus=${autoFocus ? "" : undefined}
+      aria-label=${label} aria-valuemin="0" aria-valuemax=${count - 1} aria-valuenow=${shown >= 0 ? shown : undefined} aria-valuetext=${valueText}
+      style=${{ "--stops-at": String(shown >= 0 ? shown / last : 0) }}
+      onKeyDown=${onKeyDown} onPointerDown=${(e) => { ref.current.setPointerCapture?.(e.pointerId); setDrag(at(e)); }}
+      onPointerMove=${(e) => drag !== null && setDrag(at(e))} onPointerUp=${end} onPointerCancel=${() => setDrag(null)}>
+    <span class="stops-fill"></span>
+    ${Array.from({ length: count }, (_, i) => html`<span key=${i} class=${cx("stops-dot", shown >= 0 && i <= shown && "on")} style=${{ "--stops-i": String(i / last) }}></span>`)}
+    <span class="stops-knob"></span>
   </div>`;
 }
 
@@ -336,7 +391,7 @@ export function Popover({ anchor, onClose, class: cls = "", width = 280, prefer,
     if (keepFocus) return;
     const prev = document.activeElement;
     requestAnimationFrame(() => {
-      const target = ref.current?.querySelector("input, [role=option], [role=menuitem], button");
+      const target = ref.current?.querySelector("[data-autofocus]") || ref.current?.querySelector("input, [role=option], [role=menuitem], button");
       target?.focus?.();
     });
     return () => prev?.focus?.({ preventScroll: true });

@@ -237,6 +237,23 @@ export const BADGES: Badge[] = [
     html: `<a href="https://aihubs.ai" target="_blank" title="AiHubs - Discover The Best AI Tools"><img src="https://aihubs.ai/badge/featured-on-aihubs.svg" alt="Featured on AiHubs" width="220" height="56" /></a>`,
   },
   {
+    // 不挂免费套餐不上线。站方只给了浅色码，深色款是把地址里的 light 换成 dark
+    name: "Webspot",
+    html: `<a href="https://webspot.app" target="_blank" rel="noopener noreferrer"><img src="https://webspot.app/featured-light.svg" alt="Featured on Webspot" style="height: 54px; width: auto;" /></a>`,
+    dark: `<a href="https://webspot.app" target="_blank" rel="noopener noreferrer"><img src="https://webspot.app/featured-dark.svg" alt="Featured on Webspot" style="height: 54px; width: auto;" /></a>`,
+  },
+  {
+    // 不挂免费套餐不上线。站方只给了浅色码，深色款是把地址里的 light 换成 dark
+    name: "Direct2App",
+    html: `<a href="https://www.direct2app.com" target="_blank" rel="noopener"><img src="https://www.direct2app.com/featured-light.svg" alt="Featured On Direct2App" style="height: 54px; width: auto;" /></a>`,
+    dark: `<a href="https://www.direct2app.com" target="_blank" rel="noopener"><img src="https://www.direct2app.com/featured-dark.svg" alt="Featured On Direct2App" style="height: 54px; width: auto;" /></a>`,
+  },
+  {
+    // 不挂免费收录不生效。站方原码写的是 height: 10%，这里改成 54px
+    name: "FindYourAgent",
+    html: `<a href="https://findyouragent.ai" target="_blank" style="text-decoration: none;"><img src="https://findyouragent.ai/embed-badge-gradient.svg" alt="FindYourAgent Logo" style="height: 54px; width: auto;" /></a>`,
+  },
+  {
     name: "AI Toolz Dir",
     kind: "text",
     html: `<a href="https://www.aitoolzdir.com" target="_blank">AI Toolz Dir</a>`,

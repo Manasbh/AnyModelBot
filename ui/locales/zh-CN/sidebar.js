@@ -4,7 +4,10 @@ export default {
   localUser: "本机用户",
   settingsTitle: "设置（⌘,）",
   openSettings: "打开设置",
-  balance: "余额 {amount}",
+  account: "账户",
+  accountDetails: "账户和用量",
+  balance: "余额",
+  topUp: "充值 ↗",
   lowBalance: "余额只剩 {amount}，去充值 ↗",
   renamed: "已重命名",
   delete: {

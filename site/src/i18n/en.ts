@@ -60,7 +60,6 @@ export const en: Dict = {
       digest: "3 decisions · 2 to-dos",
       search: "Search",
       account: "My account",
-      balance: "Balance",
       working: "Working…",
       thinking: "Thinking…",
       took: "Worked for {s}",

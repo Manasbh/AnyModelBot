@@ -1,9 +1,9 @@
 // 侧栏 280（参考 Grok Bot，宽度可以拖右边的分隔条调整）：顶部只有新建按钮，常驻搜索框，
-// 机器人行（头像 + 名称 + 时间 + 一行预览；悬停出现"更多"，和右键是同一份菜单），左下角账户（打开设置）。
+// 机器人行（头像 + 名称 + 时间 + 一行预览；悬停出现"更多"，和右键是同一份菜单），左下角账户（点头像看余额，点齿轮打开设置）。
 // 新建在主区的新建页（screens/new-bot.js）；新建页打开时列表顶部有一行占位的"新机器人"。
 // 有事在等你时，机器人列表上方多一行「需要你 N」（没事时没有这一行）；机器人行的第二行换成最早那件事。
 import { useEffect, useRef, useState } from "preact/hooks";
-import { html, Icon, IconButton, Menu, Skeleton } from "../components/ui.js";
+import { html, Icon, IconButton, Menu, Popover, Skeleton } from "../components/ui.js";
 import { BotAvatar } from "../components/avatar.js";
 import { GuidePill } from "../components/guide.js";
 import { api } from "../lib/api.js";
@@ -13,15 +13,33 @@ import { MF_TOPUP, usd } from "../lib/links.js";
 import { t } from "../lib/i18n.js";
 import { NeedsRow } from "./needs-you.js";
 
-/** 左下角账户：头像字母 + 名称（登录后是 Modelflare 账户名）与余额 + 齿轮，点开设置 */
-export function AccountButton({ username, account, on, onClick }) {
+/**
+ * 左下角账户：头像字母 + 名称（登录后是 Modelflare 账户名），旁边是设置齿轮。
+ * 余额不常驻：用户反馈一直看到它，会觉得一直在花钱。点头像才弹出来；余额低于提醒线时另有 LowBalance 提示。
+ * 没有余额可看时（没登录、不是 Modelflare 托管），点头像和点齿轮一样打开设置。
+ */
+export function AccountButton({ username, account, settingsOn, onSettings, onModelflare }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
   const me = ((account && account.state === "signed_in" && account.name) || username || t("sidebar.localUser")).trim();
   const bal = account && account.balanceUsd !== null && account.balanceUsd !== undefined ? usd(account.balanceUsd) : "";
-  return html`<button type="button" class=${`account${on ? " on" : ""}`} title=${t("sidebar.settingsTitle")} aria-label=${t("sidebar.openSettings")} onClick=${onClick}>
-    <span class="me" aria-hidden="true">${me.slice(0, 1).toUpperCase()}</span>
-    <span class="who">${me}${bal && html`<span class=${`bal num${account.lowBalance ? " low" : ""}`}>${t("sidebar.balance", { amount: bal })}</span>`}</span>
-    <${Icon} name="gear" size="md" />
-  </button>`;
+  return html`<button type="button" class=${`account${open ? " on" : ""}`} ref=${ref}
+      aria-label=${bal ? t("sidebar.account") : t("sidebar.openSettings")} aria-haspopup=${bal ? "dialog" : undefined} aria-expanded=${bal ? open : undefined}
+      onClick=${bal ? () => setOpen((v) => !v) : onSettings}>
+      <span class="me" aria-hidden="true">${me.slice(0, 1).toUpperCase()}</span>
+      <span class="who">${me}</span>
+    </button>
+    <${IconButton} icon="gear" iconSize="md" label=${t("sidebar.settingsTitle")} on=${settingsOn} onClick=${onSettings} />
+    ${open && bal && html`<${Popover} anchor=${ref.current} prefer="up" width=${240} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
+      <div class="account-pop">
+        <div class="account-pop-name">${me}</div>
+        <div class="account-pop-bal">
+          <div><div class="account-pop-label">${t("sidebar.balance")}</div><div class=${`balance${account.lowBalance ? " low" : ""}`}>${bal}</div></div>
+          <a class="btn sm" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("sidebar.topUp")}</a>
+        </div>
+      </div>
+      <div class="foot"><button type="button" onClick=${() => { setOpen(false); onModelflare(); }}>${t("sidebar.accountDetails")}</button></div>
+    <//>`}`;
 }
 
 /** 余额低于提醒线时，侧栏底部常驻一条提示 */
@@ -115,7 +133,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     </nav>
     <${LowBalance} account=${account} />
     ${bots && bots.length > 0 && html`<${GuidePill} onGo=${onGuide} />`}
-    <div class="side-foot"><${AccountButton} username=${username} account=${account} onClick=${onOpenSettings} /></div>
+    <div class="side-foot"><${AccountButton} username=${username} account=${account} onSettings=${() => onOpenSettings()} onModelflare=${() => onOpenSettings("modelflare")} /></div>
     ${ctx && html`<${Menu} anchor=${ctx.el || { left: ctx.x, right: ctx.x, top: ctx.y, bottom: ctx.y, width: 0 }} align=${ctx.el ? "right" : undefined}
       width=${200} label=${t("sidebar.actionsFor", { name: ctx.bot.name })} onClose=${() => setCtx(null)}
       items=${[

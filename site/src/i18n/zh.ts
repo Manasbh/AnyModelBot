@@ -62,7 +62,6 @@ export const zh = {
       digest: "3 个决定 · 2 个待办",
       search: "搜索",
       account: "我的账户",
-      balance: "余额",
       working: "正在工作…",
       thinking: "思考中…",
       took: "用时 {s}",

@@ -319,8 +319,8 @@ const STATE_ROWS = [
     ["默认", () => html`<label class="side-search" style="width: 200px; margin: 0"><${Icon} name="search" size="sm" /><input placeholder="搜索" tabindex="-1" /></label>`],
     ["悬停", () => html`<label class="side-search is-hover" style="width: 200px; margin: 0"><${Icon} name="search" size="sm" /><input placeholder="搜索" tabindex="-1" /></label>`],
     ["聚焦", () => html`<label class="side-search is-focus" style="width: 200px; margin: 0"><${Icon} name="search" size="sm" /><input value="日报" tabindex="-1" /></label>`],
-    ["账户 · 悬停", () => html`<button type="button" class="account is-hover" style="width: 200px"><span class="me">R</span><span class="who">root</span><${Icon} name="gear" /></button>`],
-    ["账户 · 打开", () => html`<button type="button" class="account on" style="width: 200px"><span class="me">R</span><span class="who">root</span><${Icon} name="gear" /></button>`]] },
+    ["账户 · 悬停", () => html`<button type="button" class="account is-hover" style="width: 200px"><span class="me">R</span><span class="who">root</span></button>`],
+    ["账户 · 打开", () => html`<button type="button" class="account on" style="width: 200px"><span class="me">R</span><span class="who">root</span></button>`]] },
   { name: "余额不足提示", note: ".low-balance · 一层淡红 + 红点，字用 --fg；悬停、按下淡红加深", ctx: "side", cells: basic((c) => html`<a class=${`low-balance ${c}`} href="#states" style="width: 220px; margin: 0">余额只剩 $0.42，去充值 ↗</a>`) },
   { name: "选角色", note: ".avatar-opt · 选中比悬停深一级、名字变实，不描边", cells: [
     ...basic((c) => html`<button type="button" class=${`avatar-opt ${c}`}><${BotAvatar} char="green" size=${36} /><span class="avatar-name">${BOT_CHARS.green.name}</span></button>`),

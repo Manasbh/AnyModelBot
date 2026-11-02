@@ -297,7 +297,7 @@ const ic = (d: string, size = 16, cls = "aic") => `<svg class="${cls}" width="${
               </div>
             ))}
           </div>
-          <div class="awin__acct"><span class="awin__me">{s.account.slice(0, 1).toUpperCase()}</span><span class="awin__who">{s.account}<small>{s.balance} $12.40</small></span><Fragment set:html={ic(I.gear)} /></div>
+          <div class="awin__acct"><span class="awin__me">{s.account.slice(0, 1).toUpperCase()}</span><span class="awin__who">{s.account}</span><Fragment set:html={ic(I.gear)} /></div>
         </div>
 
         <div class="awin__main">

@@ -3,7 +3,10 @@ export default {
   localUser: "Local user",
   settingsTitle: "Settings (⌘,)",
   openSettings: "Open Settings",
-  balance: "Balance {amount}",
+  account: "Account",
+  accountDetails: "Account and usage",
+  balance: "Balance",
+  topUp: "Top up ↗",
   lowBalance: "Only {amount} left — top up ↗",
   renamed: "Renamed",
   delete: {

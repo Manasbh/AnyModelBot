@@ -165,7 +165,7 @@ export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, acc
           onClick=${() => { onQuery(""); onTab(id); }}><${Icon} name=${icon} size="md" /><span>${tabLabel(label)}</span></button>`;
       })}
     </nav>
-    <div class="side-foot"><${AccountButton} username=${username} account=${account} on onClick=${() => onTab("general")} /></div>
+    <div class="side-foot"><${AccountButton} username=${username} account=${account} settingsOn onSettings=${() => onTab("general")} onModelflare=${() => { onQuery(""); onTab("modelflare"); }} /></div>
   </aside>`;
 }
 

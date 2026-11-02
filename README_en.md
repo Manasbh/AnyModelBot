@@ -331,6 +331,11 @@ Directions we are exploring. They are not promises, and the order is not a sched
 - [ ] **Group chats**: chat channels handle one-to-one chats today.
 - [x] **English interface**: the app runs in English and Simplified Chinese; switch in Settings.
 - [ ] **macOS computer use**: verify direct mode on more real machines and move it out of Beta.
+- [ ] **Email, calendar and event triggers**: connect email and calendar accounts, and let rules run the moment something happens (a message from a certain person, a meeting about to start), not only on a timer. Runs triggered by outside content get lower permissions, so text written by someone else can't give your bot orders.
+- [ ] **Always-on hosting, backup and migration**: rules don't run while your computer is off. Make it possible for anyone to deploy to their own server in one click, move their chats, memory and accounts over, and back up and restore.
+- [ ] **Add your own MCP servers**: today you can only use the built-in tools and accounts. Opening this up lets you connect services like GitHub and Linear yourself.
+- [ ] **Bots working together**: let one bot hand work to another, for example drafting and reviewing with different models, with costs tracked separately.
+- [ ] **Voice message transcription**: bots can't hear Telegram voice messages today, and WeChat relies on the platform's own transcript.
 - [ ] **A standalone mobile app**: today you reach your bots from WeChat, Feishu, Telegram, Slack or Discord.
 
 Have a different idea? Open an [issue](https://github.com/modelflare-ai/AnyModelBot/issues) or start a [discussion](https://github.com/modelflare-ai/AnyModelBot/discussions). Items we pick up are tracked with the [`roadmap`](https://github.com/modelflare-ai/AnyModelBot/labels/roadmap) label.

@@ -254,6 +254,17 @@ export const BADGES: Badge[] = [
     html: `<a href="https://findyouragent.ai" target="_blank" style="text-decoration: none;"><img src="https://findyouragent.ai/embed-badge-gradient.svg" alt="FindYourAgent Logo" style="height: 54px; width: auto;" /></a>`,
   },
   {
+    // 验证通过才排免费发布。图片名 launch-valut 是站方自己拼错的，拼对的地址反而 404，别改；没有官方深色款
+    name: "Launch Vault",
+    html: `<a href="https://www.launchvault.dev" target="_blank" title="Feature On Launch Vault">
+  <img
+    src="https://www.launchvault.dev/images/badges/launch-valut-badge.svg"
+    alt="Feature On Launch Vault"
+    style="width: 195px; height: auto;"
+  />
+</a>`,
+  },
+  {
     name: "AI Toolz Dir",
     kind: "text",
     html: `<a href="https://www.aitoolzdir.com" target="_blank">AI Toolz Dir</a>`,

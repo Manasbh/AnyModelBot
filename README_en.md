@@ -190,6 +190,7 @@ A bot is more than a chat window: it has a persona, a default model, its own wor
 - **Three permission presets per bot.** *Read-only*, *Workspace* (the default: write inside the bot's own folder, ask before anything outside) and *Full access* (no sandbox; recursive deletes still ask first).
 - **Approval cards, not surprises.** Out-of-bounds actions stop and wait for your answer.
 - **Told after a restart.** A message still in progress when the app quit or crashed is flagged in its conversation at the next start, so you can send it again; nothing is redone on its own.
+- **Group chats.** Create a group and add a few bots. Whoever you @ answers; with no @, the bot that answered last carries on. Bots can also @ another member to hand off. Each bot keeps its own model, workspace and memory, and costs are tracked per bot.
 - **Slash commands** such as `/model` and `/reset` work in the app and in every chat channel. In a chat channel, `/bot` switches to another bot.
 
 <p align="center">
@@ -328,7 +329,8 @@ Modelflare keeps request logs; its [Trust Center](https://modelflare.dev/trust?u
 Directions we are exploring. They are not promises, and the order is not a schedule. For what changed in each version, see the [changelog](./CHANGELOG_en.md).
 
 - [x] **Scheduled tasks**: let a bot run work on a timer (shipped as rules, above).
-- [ ] **Group chats**: chat channels handle one-to-one chats today.
+- [x] **In-app group chats**: create a group in the app and chat with several bots at once.
+- [ ] **Group chats on chat channels**: chat channels handle one-to-one chats today.
 - [x] **English interface**: the app runs in English and Simplified Chinese; switch in Settings.
 - [ ] **macOS computer use**: verify direct mode on more real machines and move it out of Beta.
 - [ ] **Email, calendar and event triggers**: connect email and calendar accounts, and let rules run the moment something happens (a message from a certain person, a meeting about to start), not only on a timer. Runs triggered by outside content get lower permissions, so text written by someone else can't give your bot orders.

@@ -121,6 +121,7 @@ Inside the container the console listens on 0.0.0.0, so token access is enforced
 
 ## Interface
 
+- Group chats (`src/core/groups.ts`, `ui/screens/group.js`): with two or more bots, the ＋ menu can create a group. Each member has its own conversation in the group, `<bot>:web:group:<group>`, so model, permissions, memory, approvals and costs follow the same path as one-on-one chats. What the user says is stored in the conversation `group:<group>`, and the timeline merges these messages by id. Whoever is @-mentioned answers (`@everyone` means all members); with no @, the bot that answered last carries on. A bot that @-mentions another member in its reply hands off, up to 6 times per user message. Only one bot answers at a time in a group.
 - Sidebar: bot list (avatar + name + latest message), ＋ New, right-click to rename / delete; at the bottom-left, the avatar shows your balance and the gear opens Settings (`⌘/Ctrl+,`).
 - Chat screen: the floating bot-name pill at the top opens the info panel (`⌘/Ctrl+⇧+I`: channel accounts this bot answers by default, pending approvals, tasks and rules, memory, recent sessions; ⚙ opens bot settings). Replies stream in (Markdown, one-click copy for code blocks) and can be stopped at any time (`Esc`). Approvals and questions appear as cards in the chat. Scrolling up is never yanked back to the bottom.
 - Command palette `⌘/Ctrl+K`; appearance (system / light / dark) is in Settings → General.

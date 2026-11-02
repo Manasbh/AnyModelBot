@@ -401,3 +401,24 @@ button.task-origin:hover { color: var(--fg); }
 .task-detail .work-line { border-bottom: 0; padding-bottom: 0; }
 .task-actions { display: flex; justify-content: flex-start; gap: var(--space-1); }
 }
+
+/* —— 群聊（screens/group.js）：回复上面一行头像和名字；几个头像叠在一起；系统提示；建群时选成员 —— */
+.msg-author { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1-5); font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--fg-2); }
+.group-note { margin-top: var(--space-4); text-align: center; font-size: var(--fs-xs); color: var(--muted); }
+.group-avatars { display: inline-flex; align-items: center; flex: none; }
+.group-avatars .ga { display: inline-flex; }
+.group-avatars .ga + .ga { margin-left: calc(var(--ga-size) * -.3); }
+/* 侧栏行：两个头像错开放进一个头像的位置 */
+.group-avatars.pile { position: relative; width: var(--ga-size); height: var(--ga-size); }
+.group-avatars.pile .ga { position: absolute; left: 0; top: 0; }
+.group-avatars.pile .ga + .ga { margin-left: 0; left: auto; top: auto; right: 0; bottom: 0; }
+.group-picks { display: grid; gap: var(--space-1); max-height: 280px; overflow-y: auto; }
+.group-pick {
+  display: flex; align-items: center; gap: var(--space-2-5); min-height: var(--ctl-xl); padding: var(--space-1) var(--space-2-5);
+  border-radius: var(--r-lg); font-size: var(--fs-md); color: var(--fg); text-align: left; transition: background var(--t-fast);
+}
+.group-pick:hover { background: var(--pill); }
+.group-pick:active { background: var(--pill-press); }
+.group-pick.on { background: var(--pill-hover); }
+.group-pick .v { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-pick .ic { color: var(--accent); }

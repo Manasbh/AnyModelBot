@@ -17,6 +17,11 @@ export default {
   },
   bots: "机器人",
   newShortcut: "新建机器人（⌘N）",
+  newMenu: "新建",
+  newBotItem: "新建机器人",
+  newGroupItem: "新建群聊",
+  groupActionsFor: "「{name}」的操作",
+  groupEdit: "名称和成员",
   search: "搜索机器人",
   list: "机器人列表",
   /** 新建页打开时列表顶部的占位行 */

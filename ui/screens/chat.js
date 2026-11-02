@@ -37,8 +37,8 @@ const MOD_ENTER = isMac ? "⌘Enter" : "Ctrl+Enter";
 let seq = 0;
 const uid = () => `l${++seq}`;
 
-const isError = (s) => typeof s === "string" && s.startsWith("⚠️");
-const errText = (s) => s.replace(/^⚠️\s*/, "");
+export const isError = (s) => typeof s === "string" && s.startsWith("⚠️");
+export const errText = (s) => s.replace(/^⚠️\s*/, "");
 // 服务端报错的文字（两种语言都认）
 const isAuthError = (s) => /HTTP 401\b|\b401\b.*(key|密钥|unauthor)/i.test(s); // i18n-ignore
 
@@ -52,14 +52,14 @@ function toItems(messages) {
 }
 
 /** 回复显示的全文：模型在回合中间说的话在前，按说的顺序，最后的回复接着（最后没再说话时回复就是中间说的最后一句，不重复） */
-function shownText(it) {
+export function shownText(it) {
   const before = it.interim || [];
   const rest = before.length && before.at(-1) === it.text ? before.slice(0, -1) : before;
   return [...rest, it.text].filter(Boolean).join("\n\n");
 }
 
 /** 按路径加一个交付的文件（回合中 present 时来一次，结束时可能再来一次） */
-const addFile = (files, f) => ((files || []).some((x) => x.path === f.path) ? files : [...(files || []), f]);
+export const addFile = (files, f) => ((files || []).some((x) => x.path === f.path) ? files : [...(files || []), f]);
 
 // 进行中的一条消息（服务端的 live 快照）：用户消息 + 到目前为止的回复；turn 标记这些项属于哪条进行中的消息。
 // 代理自己醒来的一轮（后台命令结束）没有用户消息；并进前一条处理的消息没有自己的回复
@@ -173,7 +173,7 @@ export function PromptCard({ requestId, fallback }) {
  * 结束后"用时 N 秒"（短于 3 秒且没有步骤时不显示）。
  * 代理回合有步骤时这一行可以展开成处理过程（默认折叠）；历史消息只知道步数，展开时用 load 取。
  */
-function WorkLine({ live, stopping, text, startedAt, workedMs, steps, count, load }) {
+export function WorkLine({ live, stopping, text, startedAt, workedMs, steps, count, load }) {
   const [, tick] = useState(0);
   useEffect(() => {
     if (!live) return;
@@ -199,11 +199,11 @@ function WorkLine({ live, stopping, text, startedAt, workedMs, steps, count, loa
 }
 
 /** 消息下方的操作：复制 + 时刻（悬停时出现，最后一条回复常显） */
-function MsgActions({ text, at }) {
+export function MsgActions({ text, at }) {
   return html`<div class="msg-actions"><${CopyButton} text=${text} label=${t("chat.copyMessage")} />${at && html`<span class="when num">${fmtClock(at)}</span>`}</div>`;
 }
 
-function ErrorNotice({ text, onRetry, onFixKey }) {
+export function ErrorNotice({ text, onRetry, onFixKey }) {
   const auth = isAuthError(text);
   return html`<${Notice} tone="red" action=${html`${auth && onFixKey && html`<button type="button" class="btn" onClick=${onFixKey}>${t("chat.error.fixKey")}</button>`}
     ${onRetry && html`<button type="button" class="btn" onClick=${onRetry}>${t("common.retry")}</button>`}`}>${auth ? t("chat.error.authInvalid") : text}<//>`;

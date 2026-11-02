@@ -14,7 +14,7 @@ export function placeLine(p: ChatPlace): string {
   const chat = p.kind === "group" ? "群聊" : "私聊";
   if (p.channel === "weixin") return `微信${chat}（手机上看，只显示纯文本）`;
   if (p.channel === "feishu") return `飞书${chat}（支持 Markdown）`;
-  if (p.channel === "web") return "本机网页对话（支持 Markdown）";
+  if (p.channel === "web") return p.kind === "group" ? "应用里的群聊，有多个机器人一起聊（支持 Markdown）" : "本机网页对话（支持 Markdown）";
   return `${p.channel}${chat}`;
 }
 

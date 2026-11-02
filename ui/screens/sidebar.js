@@ -1,6 +1,7 @@
 // 侧栏 280（参考 Grok Bot，宽度可以拖右边的分隔条调整）：顶部只有新建按钮，常驻搜索框，
 // 机器人行（头像 + 名称 + 时间 + 一行预览；悬停出现"更多"，和右键是同一份菜单），左下角账户（点头像看余额，点齿轮打开设置）。
 // 新建在主区的新建页（screens/new-bot.js）；新建页打开时列表顶部有一行占位的"新机器人"。
+// 群聊排在机器人后面（screens/group.js）；有两个以上机器人时，新建按钮是一个菜单（机器人 / 群聊）。
 // 有事在等你时，机器人列表上方多一行「需要你 N」（没事时没有这一行）；机器人行的第二行换成最早那件事。
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, Icon, IconButton, Menu, Popover, Skeleton } from "../components/ui.js";
@@ -12,6 +13,7 @@ import { fmtAgo } from "../lib/format.js";
 import { MF_TOPUP, usd } from "../lib/links.js";
 import { t } from "../lib/i18n.js";
 import { NeedsRow } from "./needs-you.js";
+import { GroupAvatars } from "./group.js";
 
 /**
  * 左下角账户：头像字母 + 名称（登录后是 Modelflare 账户名），旁边是设置齿轮。
@@ -50,9 +52,11 @@ function LowBalance({ account }) {
   </a>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide }) {
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup }) {
   const [q, setQ] = useState("");
   const [ctx, setCtx] = useState(null); // 行的操作菜单：右键 { bot, x, y }，或者"更多"按钮 { bot, el }
+  const [groupCtx, setGroupCtx] = useState(null); // 群聊行的操作菜单：{ group, x, y } 或 { group, el }
+  const [newMenu, setNewMenu] = useState(null); // 新建菜单的锚点
   const [renaming, setRenaming] = useState("");
   const [renameText, setRenameText] = useState("");
   const root = useRef(null);
@@ -84,13 +88,27 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     }
   };
 
+  const delGroup = async (g) => {
+    if (!(await confirmSheet({ title: t("group.delete.title", { name: g.name }), body: t("group.delete.body"), confirmLabel: t("group.delete.confirm"), danger: true }))) return;
+    try {
+      await api(`/groups/${encodeURIComponent(g.id)}`, { method: "DELETE" });
+      onDeletedGroup?.(g.id);
+    } catch (e) {
+      failed(e);
+    }
+  };
+  const groupBots = (g) => g.members.map((id) => (bots || []).find((b) => b.id === id)).filter(Boolean);
+
   const needle = q.trim().toLowerCase();
   const list = (bots || []).filter((b) => !needle || b.name.toLowerCase().includes(needle) || (previews[b.id]?.text || "").toLowerCase().includes(needle));
+  const shownGroups = groups.filter((g) => !needle || g.name.toLowerCase().includes(needle));
+  const canGroup = !!bots && bots.length >= 2;
 
   return html`<aside class="side" ref=${root} aria-label=${t("sidebar.bots")}>
     <div class="side-top">
       <span class="side-brand"><img src="/amb/static/assets/favicon-64.png" alt="" /><span>AnyModelBot</span></span>
-      <${IconButton} icon="plus" iconSize="md" label=${t("sidebar.newShortcut")} on=${view === "new"} onClick=${onNew} />
+      <${IconButton} icon="plus" iconSize="md" label=${canGroup ? t("sidebar.newMenu") : t("sidebar.newShortcut")} on=${view === "new"} aria-haspopup=${canGroup ? "menu" : undefined} aria-expanded=${canGroup ? !!newMenu : undefined}
+        onClick=${(e) => { if (!canGroup) return onNew(); const el = e.currentTarget; setNewMenu((m) => (m ? null : el)); }} />
     </div>
     <label class="side-search">
       <${Icon} name="search" size="sm" />
@@ -104,7 +122,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       ${botsError && html`<div class="side-empty"><span>${t("sidebar.loadFailed")}</span><button type="button" class="btn" onClick=${reloadBots}>${t("common.retry")}</button></div>`}
       ${!bots && !botsError && [0, 1, 2].map((k) => html`<div class="thread" key=${k}><${Skeleton} w="38px" circle /><span class="thread-skel"><${Skeleton} w="50%" /><${Skeleton} w="75%" /></span></div>`)}
       ${bots && !bots.length && view !== "new" && html`<div class="side-empty"><span>${t("sidebar.empty")}</span><button type="button" class="btn primary" onClick=${onNew}>${t("sidebar.create")}</button></div>`}
-      ${bots && needle && !list.length && html`<p class="hint">${t("sidebar.noMatch")}</p>`}
+      ${bots && needle && !list.length && !shownGroups.length && html`<p class="hint">${t("sidebar.noMatch")}</p>`}
       ${list.map((b) => {
         const sel = (view === "chat" || view === "bot-settings") && b.id === selectedId;
         // 等你的：「需要你」里这个机器人的件数和最早那件（没有时退回待审批数）
@@ -130,6 +148,24 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
             onClick=${(e) => { const el = e.currentTarget; setCtx((c) => (c && c.el && c.bot.id === b.id ? null : { bot: b, el })); }} />
         </div>`;
       })}
+      ${bots && shownGroups.map((g) => {
+        const sel = view === "group" && g.id === groupId;
+        const who = g.last?.botId ? (bots.find((b) => b.id === g.last.botId)?.name ?? "") : "";
+        const line = g.running && g.current ? t("group.working", { name: bots.find((b) => b.id === g.current)?.name ?? "" }) : g.last ? `${who ? `${who}: ` : ""}${g.last.text.replace(/^⚠️\s*/, "").replace(/\s+/g, " ")}` : t("group.noMessages");
+        const menuOpen = !!(groupCtx && groupCtx.el && groupCtx.group.id === g.id);
+        return html`<div class="thread-item" key=${"g" + g.id}>
+          <button type="button" class=${`thread${sel ? " sel" : ""}`} aria-current=${sel ? "page" : undefined}
+            onClick=${() => onSelectGroup(g.id)} onContextMenu=${(e) => { e.preventDefault(); setGroupCtx({ group: g, x: e.clientX, y: e.clientY }); }}>
+            <span class="avatar-wrap"><${GroupAvatars} bots=${groupBots(g)} size=${38} pile />${g.running && html`<span class="working-dot" title=${t("sidebar.working")}></span>`}</span>
+            <span class="body">
+              <span class="line"><span class="title">${g.name}</span>${g.last?.at && html`<span class="when num">${fmtAgo(g.last.at)}</span>`}</span>
+              <span class="line"><span class="snip">${line}</span></span>
+            </span>
+          </button>
+          <${IconButton} icon="more" class="thread-more" label=${t("sidebar.moreFor", { name: g.name })} aria-haspopup="menu" aria-expanded=${menuOpen}
+            onClick=${(e) => { const el = e.currentTarget; setGroupCtx((c) => (c && c.el && c.group.id === g.id ? null : { group: g, el })); }} />
+        </div>`;
+      })}
     </nav>
     <${LowBalance} account=${account} />
     ${bots && bots.length > 0 && html`<${GuidePill} onGo=${onGuide} />`}
@@ -142,6 +178,18 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
         { label: t("sidebar.menu.copyId"), onSelect: () => navigator.clipboard?.writeText(ctx.bot.id).then(() => toast(t("common.copied"))).catch(failed) },
         { sep: true },
         { label: t("sidebar.menu.delete"), danger: true, onSelect: () => del(ctx.bot) },
+      ]} />`}
+    ${groupCtx && html`<${Menu} anchor=${groupCtx.el || { left: groupCtx.x, right: groupCtx.x, top: groupCtx.y, bottom: groupCtx.y, width: 0 }} align=${groupCtx.el ? "right" : undefined}
+      width=${200} label=${t("sidebar.groupActionsFor", { name: groupCtx.group.name })} onClose=${() => setGroupCtx(null)}
+      items=${[
+        { label: t("sidebar.groupEdit"), onSelect: () => onEditGroup(groupCtx.group) },
+        { sep: true },
+        { label: t("sidebar.menu.delete"), danger: true, onSelect: () => delGroup(groupCtx.group) },
+      ]} />`}
+    ${newMenu && html`<${Menu} anchor=${newMenu} align="right" width=${180} label=${t("sidebar.newMenu")} onClose=${() => setNewMenu(null)}
+      items=${[
+        { label: t("sidebar.newBotItem"), onSelect: onNew },
+        { label: t("sidebar.newGroupItem"), onSelect: onNewGroup },
       ]} />`}
   </aside>`;
 }

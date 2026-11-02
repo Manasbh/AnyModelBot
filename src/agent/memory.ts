@@ -247,6 +247,11 @@ export class MemoryStore {
     return out;
   }
 
+  /** 删除一个群的记忆（群聊被删除时，成员在这个群的记忆跟着删） */
+  dropGroup(groupKey: string): void {
+    fs.rmSync(this.dir({ kind: "group", id: groupKey }), { recursive: true, force: true });
+  }
+
   /** 冻结快照：会话（段）开始时注入一次，之后整段不变以复用提示缓存。团队 → 机器人 → 群（群放最后）。 */
   snapshot(scopes: Scope[]): string {
     const parts: string[] = [];

@@ -38,6 +38,20 @@ export interface Conversation {
   updatedAt: number;
 }
 
+/** 应用内群聊（core/groups.ts）。members：机器人 id，按加入的顺序 */
+export interface BotGroup {
+  id: string;
+  name: string;
+  members: string[];
+  /** 上一个回答的机器人：没 @ 时由它接着答 */
+  lastBot: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** 群在消息表里的位置：用户的话存在会话 group:<群>，各成员的会话是 <机器人>:web:group:<群> */
+export const groupPeer = (groupId: string) => `group:${groupId}`;
+
 /** 全局渠道账号（设置 › 连接），所有机器人共用；见 core/routes.ts */
 export interface ChannelAccount {
   key: string;
@@ -555,6 +569,9 @@ CREATE TABLE IF NOT EXISTS rules (
 CREATE INDEX IF NOT EXISTS rules_due ON rules(mode, next_run_at);
 CREATE INDEX IF NOT EXISTS runs_rule ON runs(rule_id, queued_at);
 CREATE INDEX IF NOT EXISTS run_inputs_run ON run_inputs(run_id, taken_at);
+CREATE TABLE IF NOT EXISTS bot_groups (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL, members TEXT NOT NULL DEFAULT '[]', last_bot TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
 `;
 
 /** 旧库补列（CREATE TABLE IF NOT EXISTS 不会改已有表）。 */
@@ -728,6 +745,7 @@ export class Store {
     for (const c of convs) this.db.prepare("DELETE FROM messages WHERE conversation_id = ?").run(String(c.id));
     this.db.prepare("DELETE FROM agent_segments WHERE conversation_id IN (SELECT id FROM conversations WHERE bot_id = ?)").run(id);
     this.db.prepare("DELETE FROM conversations WHERE bot_id = ?").run(id);
+    for (const g of this.listGroups()) if (g.members.includes(id)) this.updateGroup(g.id, { members: g.members.filter((m) => m !== id) });
     // 渠道账号（登录态、名单）是全局的，不跟着机器人删；这个机器人原来的账号改由别的机器人回复（core/routes.ts）
     this.db.prepare("DELETE FROM agent_sessions WHERE bot_id = ?").run(id);
     this.db.prepare("DELETE FROM outbox WHERE bot_id = ?").run(id);
@@ -828,6 +846,66 @@ export class Store {
     this.db.prepare("UPDATE conversations SET model = ?, updated_at = ? WHERE id = ?").run(model, Date.now(), id);
   }
 
+  // ---------- 应用内群聊（core/groups.ts） ----------
+  private toGroup(r: Row): BotGroup {
+    return { id: String(r.id), name: String(r.name), members: strings(r.members), lastBot: String(r.last_bot), createdAt: Number(r.created_at), updatedAt: Number(r.updated_at) };
+  }
+  createGroup(name: string, members: string[]): BotGroup {
+    const id = randomUUID();
+    const now = Date.now();
+    this.db.prepare("INSERT INTO bot_groups(id, name, members, created_at, updated_at) VALUES(?, ?, ?, ?, ?)").run(id, name, JSON.stringify(members), now, now);
+    return this.getGroup(id)!;
+  }
+  getGroup(id: string): BotGroup | undefined {
+    const r = this.db.prepare("SELECT * FROM bot_groups WHERE id = ?").get(id) as Row | undefined;
+    return r ? this.toGroup(r) : undefined;
+  }
+  listGroups(): BotGroup[] {
+    return (this.db.prepare("SELECT * FROM bot_groups ORDER BY created_at, rowid").all() as Row[]).map((r) => this.toGroup(r));
+  }
+  updateGroup(id: string, patch: { name?: string; members?: string[] }): void {
+    const g = this.getGroup(id);
+    if (!g) return;
+    const members = patch.members ?? g.members;
+    const lastBot = members.includes(g.lastBot) ? g.lastBot : "";
+    this.db.prepare("UPDATE bot_groups SET name = ?, members = ?, last_bot = ?, updated_at = ? WHERE id = ?").run(patch.name ?? g.name, JSON.stringify(members), lastBot, Date.now(), id);
+  }
+  setGroupLastBot(id: string, botId: string): void {
+    this.db.prepare("UPDATE bot_groups SET last_bot = ? WHERE id = ?").run(botId, id);
+  }
+  /** 这个群里所有成员（包括退群的）的会话 id */
+  groupConversations(id: string): Array<{ id: string; botId: string }> {
+    const rows = this.db.prepare("SELECT id, bot_id FROM conversations WHERE channel = 'web' AND peer_id = ?").all(groupPeer(id)) as Row[];
+    return rows.map((r) => ({ id: String(r.id), botId: String(r.bot_id) }));
+  }
+  /** 删除群、用户在群里说的话，以及各成员在这个群的会话（代理会话由调用方先清掉） */
+  deleteGroup(id: string): void {
+    for (const c of this.groupConversations(id)) {
+      this.db.prepare("DELETE FROM messages WHERE conversation_id = ?").run(c.id);
+      this.db.prepare("DELETE FROM agent_segments WHERE conversation_id = ?").run(c.id);
+      this.db.prepare("DELETE FROM agent_sessions WHERE conversation_id = ?").run(c.id);
+      this.db.prepare("DELETE FROM conversations WHERE id = ?").run(c.id);
+      this.db.prepare("DELETE FROM kv WHERE key = ?").run(`group-seen:${id}:${c.botId}`);
+    }
+    this.db.prepare("DELETE FROM messages WHERE conversation_id = ?").run(groupPeer(id));
+    this.db.prepare("DELETE FROM bot_groups WHERE id = ?").run(id);
+  }
+  /**
+   * 群的时间线：用户在群里说的话（和系统提示）+ 各成员在这个群的会话里的回复，按消息 id 排（id 全局递增）。
+   * 成员会话里的 user 消息是发给代理的输入，不算。botId：回复的机器人；用户的话是空串。afterId：只要这之后的。
+   */
+  listGroupMessages(groupId: string, limit = 200, afterId = 0): Array<Message & { botId: string }> {
+    const convs = this.groupConversations(groupId);
+    const botOf = new Map(convs.map((c) => [c.id, c.botId]));
+    const replies = convs.length ? ` OR (conversation_id IN (${convs.map(() => "?").join(", ")}) AND role = 'assistant')` : "";
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM (SELECT id, conversation_id, role, content, created_at, interim, files, CASE WHEN json_valid(activity) THEN json_array_length(activity) ELSE 0 END AS steps FROM messages WHERE id > ? AND (conversation_id = ?${replies}) ORDER BY id DESC LIMIT ?) ORDER BY id`,
+      )
+      .all(afterId, groupPeer(groupId), ...convs.map((c) => c.id), limit) as Row[];
+    return rows.map((r) => ({ ...this.toMessage(r), botId: botOf.get(String(r.conversation_id)) ?? "" }));
+  }
+
   // ---------- messages ----------
   addMessage(conversationId: string, role: Message["role"], content: string, activity?: unknown[], extra: MessageExtra = {}): number {
     const now = Date.now();
@@ -854,20 +932,21 @@ export class Store {
         "SELECT * FROM (SELECT id, conversation_id, role, content, created_at, interim, files, CASE WHEN json_valid(activity) THEN json_array_length(activity) ELSE 0 END AS steps FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT ?) ORDER BY id ASC",
       )
       .all(conversationId, limit) as Row[];
-    return rows.map((r) => {
-      const interim = strings(r.interim);
-      const files = strings(r.files);
-      return {
-        id: Number(r.id),
-        conversationId: String(r.conversation_id),
-        role: String(r.role) as Message["role"],
-        content: String(r.content),
-        createdAt: Number(r.created_at),
-        ...(Number(r.steps) ? { steps: Number(r.steps) } : {}),
-        ...(interim.length ? { interim } : {}),
-        ...(files.length ? { files } : {}),
-      };
-    });
+    return rows.map((r) => this.toMessage(r));
+  }
+  private toMessage(r: Row): Message {
+    const interim = strings(r.interim);
+    const files = strings(r.files);
+    return {
+      id: Number(r.id),
+      conversationId: String(r.conversation_id),
+      role: String(r.role) as Message["role"],
+      content: String(r.content),
+      createdAt: Number(r.created_at),
+      ...(Number(r.steps) ? { steps: Number(r.steps) } : {}),
+      ...(interim.length ? { interim } : {}),
+      ...(files.length ? { files } : {}),
+    };
   }
   /** 这个会话里交付过的文件（真实路径，旧→新，去重） */
   deliveredFiles(conversationId: string): string[] {

@@ -39,5 +39,6 @@ export default {
   resizeSide: "调整侧栏宽度",
   resizePanel: "调整信息面板宽度",
   botMissing: "机器人不存在",
+  groupMissing: "这个群聊已经不在了",
   backToChat: "返回对话",
 };

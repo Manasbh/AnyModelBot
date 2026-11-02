@@ -18,7 +18,8 @@ import { SseReply } from "./sse-reply.js";
 import { LiveTurns, type LiveTurn } from "./live.js";
 import { botWorkspace, describeFile, resolveFile, runnable, sendFile } from "./files.js";
 import { connectionFromPids } from "../agent/peer-guard.js";
-import type { ApprovalRow, Message, Store } from "../store/db.js";
+import { groupPeer, type ApprovalRow, type BotGroup, type Message, type Store } from "../store/db.js";
+import { GroupChats } from "../core/groups.js";
 import { defaultLine } from "../agent/approvals.js";
 import { normalizeSettings } from "../agent/settings.js";
 import { SEARCH_PROVIDERS, normalizeSearxUrl, type SearchProvider } from "../agent/search.js";
@@ -142,12 +143,12 @@ class CollectReply implements ReplySession {
 }
 
 /** 网页控制台对话：每个机器人一个固定会话 <botId>:web:console */
-function webEvent(botId: string, text: string): InboundEvent {
+function webEvent(botId: string, text: string, conversation: InboundEvent["conversation"] = { kind: "dm", id: "console" }): InboundEvent {
   return {
     id: crypto.randomUUID(),
     channel: "web",
     botId,
-    conversation: { kind: "dm", id: "console" },
+    conversation,
     sender: { id: "owner", name: "控制台" },
     parts: [{ type: "text", text }],
     replyHandle: {},
@@ -240,7 +241,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
   /** 排进会话队列交给运行时；结束时先移出登记，再通知发消息的请求和所有接上的界面。不抛错 */
   async function runLive(t: LiveTurn, ev: InboundEvent, out: ReplySession = t): Promise<void> {
     let err: Error | undefined;
-    await app.queue.run(`web:${t.botId}:console`, async () => {
+    await app.queue.run(t.conversationId === consoleConvId(t.botId) ? `web:${t.botId}:console` : `web:${t.conversationId}`, async () => {
       try {
         await app.runtime.handle(ev, out, { signal: t.abort.signal });
       } catch (e) {
@@ -251,6 +252,52 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       log.warn("web chat failed", { message: err.message.slice(0, 300) });
       live.end(t, "error", { message: err.message });
     } else live.end(t, "done", { conversationId: t.conversationId });
+  }
+
+  // —— 应用内群聊（core/groups.ts）：一轮就是成员会话里的一条网页消息，事件转给接着这个群的界面 ——
+  const groupTurns = new Map<string, LiveTurn>();
+  const groups = new GroupChats({
+    store: app.store,
+    runTurn: async (botId, groupId, input) => {
+      const g = app.store.getGroup(groupId);
+      const peer = groupPeer(groupId);
+      const conv = app.store.ensureConversation(botId, "web", peer, g?.name ?? "", "group");
+      const before = app.store.listMessages(conv.id, 1).at(-1)?.id ?? 0;
+      const lt = live.start(conv.id, botId, "", before);
+      groupTurns.set(groupId, lt);
+      groups.emit(groupId, "turn", { botId, conversationId: conv.id, ...lt.snapshot() });
+      let failure = "";
+      const off = lt.subscribe((e, d) => {
+        if (e === "error") failure = String((d as { message?: unknown }).message ?? "");
+        else if (e !== "done") groups.emit(groupId, e, d);
+      });
+      await runLive(lt, webEvent(botId, input, { kind: "group", id: peer }));
+      off();
+      groupTurns.delete(groupId);
+      const replies = app.store.listMessages(conv.id, 20).filter((m) => m.id > before && m.role === "assistant");
+      // 单聊里失败的话只显示在这一轮；群的时间线靠存下来的消息，所以记一条
+      if (!replies.length && (failure || lt.text)) {
+        const text = failure || lt.text;
+        app.store.addMessage(conv.id, "assistant", text.startsWith("⚠️") ? text : `⚠️ ${text}`);
+      }
+      groups.emit(groupId, "turnEnd", { botId });
+      return replies.map((m) => m.content).join("\n\n");
+    },
+  });
+  function publicGroup(g: BotGroup) {
+    const last = app.store.listGroupMessages(g.id, 5).filter((m) => m.role !== "system").at(-1);
+    return {
+      ...g,
+      running: groups.isRunning(g.id),
+      current: groups.current(g.id),
+      last: last ? { id: last.id, botId: last.botId, text: last.content.slice(0, 120), at: last.createdAt } : null,
+    };
+  }
+  /** 请求里的成员：去重、只留还在的机器人，至少两个 */
+  function groupMembers(input: unknown): string[] {
+    const ids = [...new Set(Array.isArray(input) ? input.map(String) : [])].filter((id) => app.store.getBot(id));
+    if (ids.length < 2) throw new HttpError(400, t("web.groupTooFew"));
+    return ids;
   }
 
   /** 停止会话里在处理的消息：网页的（含排队的）和其它渠道的都停 */
@@ -968,6 +1015,75 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         return send(res, 200, { approval: publicApproval(app.store.getApproval(row.id)!, app.store) });
       }
     }
+    if (seg[0] === "groups") {
+      if (seg.length === 1) {
+        if (m === "GET") return send(res, 200, { groups: app.store.listGroups().map(publicGroup) });
+        if (m === "POST") {
+          const b = await readJson(req);
+          const members = groupMembers(b.members);
+          const name = String(b.name ?? "").trim() || members.map((id) => app.store.getBot(id)!.name).join("、");
+          return send(res, 200, { group: publicGroup(app.store.createGroup(name, members)) });
+        }
+      }
+      const groupId = decodeURIComponent(seg[1] ?? "");
+      const group = app.store.getGroup(groupId);
+      if (!group) throw new HttpError(404, t("web.groupNotFound"));
+      if (seg.length === 2) {
+        if (m === "GET") {
+          // 正在答的那一轮由 live 显示；它开始之后存下的回复先不列，免得重复
+          const turn = groupTurns.get(groupId);
+          const messages = app.store.listGroupMessages(groupId).filter((x) => !(turn && x.conversationId === turn.conversationId && x.id > turn.afterMessageId));
+          return send(res, 200, {
+            group: publicGroup(group),
+            messages: messages.map(publicMessage),
+            live: turn ? { botId: turn.botId, conversationId: turn.conversationId, ...turn.snapshot() } : null,
+            pending: app.store.groupConversations(groupId).flatMap((c) => app.store.listApprovals({ status: "pending", conversationId: c.id, limit: 50 }).map((r) => publicApproval(r, app.store))),
+            canOpen: !!app.desktop?.openPath,
+          });
+        }
+        if (m === "PUT") {
+          const b = await readJson(req);
+          app.store.updateGroup(groupId, {
+            ...(b.name !== undefined && String(b.name).trim() ? { name: String(b.name).trim() } : {}),
+            ...(b.members !== undefined ? { members: groupMembers(b.members) } : {}),
+          });
+          return send(res, 200, { group: publicGroup(app.store.getGroup(groupId)!) });
+        }
+        if (m === "DELETE") {
+          groups.stop(groupId);
+          for (const c of app.store.groupConversations(groupId)) {
+            stopConversation(c.id);
+            app.agent.resetConversation(c.id);
+            app.agent.memory.dropGroup(c.id);
+          }
+          app.store.deleteGroup(groupId);
+          return send(res, 200, { ok: true });
+        }
+      }
+      if (seg.length === 3 && seg[2] === "messages" && m === "POST") {
+        const b = await readJson(req);
+        const text = String(b.text ?? "").trim();
+        if (!text) throw new HttpError(400, t("web.emptyText"));
+        if (!group.members.some((id) => app.store.getBot(id))) throw new HttpError(400, t("web.groupTooFew"));
+        groups.send(groupId, text);
+        return send(res, 200, { ok: true });
+      }
+      // 接着这个群：先发正在答的那一轮，之后转发事件（turn、同 chat/stream 的事件、turnEnd），都答完了发 idle 结束
+      if (seg.length === 3 && seg[2] === "live" && m === "GET") {
+        const out = new SseReply(res);
+        if (!groups.isRunning(groupId)) return out.end("done", { idle: true });
+        const turn = groupTurns.get(groupId);
+        if (turn) out.send("turn", { botId: turn.botId, conversationId: turn.conversationId, ...turn.snapshot() });
+        const off = groups.subscribe(groupId, (e, d) => (e === "idle" ? out.end("done", { idle: true }) : out.send(e, d)));
+        res.on("close", off);
+        return;
+      }
+      if (seg.length === 3 && seg[2] === "stop" && m === "POST") {
+        const botId = groups.stop(groupId);
+        if (botId) stopConversation(`${botId}:web:${groupPeer(groupId)}`);
+        return send(res, 200, { stopped: !!botId });
+      }
+    }
     if (seg[0] === "conversations") {
       if (seg.length === 1 && m === "GET") return send(res, 200, { conversations: app.store.listConversations(url.searchParams.get("bot") || undefined) });
       if (seg.length === 3 && seg[2] === "messages" && m === "GET") {
@@ -1270,6 +1386,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
     token,
     close: () =>
       new Promise<void>((r) => {
+        groups.stopAll();
         server.closeAllConnections?.();
         server.close(() => r());
       }),

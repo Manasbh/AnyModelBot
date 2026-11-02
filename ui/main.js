@@ -10,6 +10,7 @@ import { SettingsScreen, SettingsSide, TABS } from "./screens/settings.js";
 import { BotSettingsScreen } from "./screens/bot-settings.js";
 import { NewBotScreen } from "./screens/new-bot.js";
 import { NeedsYouScreen } from "./screens/needs-you.js";
+import { GroupScreen, GroupSheet } from "./screens/group.js";
 import { BotAvatar, MAIN_CHAR, charOf } from "./components/avatar.js";
 import { Onboarding } from "./screens/onboarding.js";
 import { CoachMark } from "./components/guide.js";
@@ -21,11 +22,12 @@ import { prefs, setPrefs } from "./lib/prefs.js";
 import { usePresence } from "./design/motion.js";
 import { t, useLang, adoptServerLang, changeLang, getLangPref, LANG_NAMES } from "./lib/i18n.js";
 
-// —— 路由：#/chat/<bot> · #/new · #/needs · #/settings/<tab>[/<row>] · #/bot/<bot>/settings[/<section>] ——
+// —— 路由：#/chat/<bot> · #/group/<群> · #/new · #/needs · #/settings/<tab>[/<row>] · #/bot/<bot>/settings[/<section>] ——
 function parseHash() {
   const [kind, a, b, c] = location.hash.replace(/^#\/?/, "").split("/").map((x) => decodeURIComponent(x || ""));
   if (kind === "settings") return { view: "settings", tab: TABS.some(([t]) => t === a) ? a : "general", row: b || "" };
   if (kind === "bot" && a && b === "settings") return { view: "bot-settings", botId: a, section: c || "" };
+  if (kind === "group" && a) return { view: "group", groupId: a };
   if (kind === "new") return { view: "new" };
   if (kind === "needs") return { view: "needs" };
   if (kind === "models") return { view: "settings", tab: "modelflare", row: "" }; // 旧链接
@@ -138,6 +140,8 @@ function App() {
   }, [settings && settings.lang]);
   const connected = !!(mf && (mf.mode === "external" || mf.connected));
   const [botsData, botsErr, reloadBots] = useLoader(() => (connected ? api("/bots") : Promise.resolve(null)), [connected]);
+  const [groupsData, , reloadGroups] = useLoader(() => (connected ? api("/groups") : Promise.resolve(null)), [connected]);
+  const [groupSheet, setGroupSheet] = useState(null); // 建群 / 改群的弹窗：{ group? }
   const [modelsData, , loadModels] = useLoader(() => (connected ? api("/models") : Promise.resolve(null)), [connected]);
   // Modelflare 账户与余额：后端每 5 分钟读一次；界面每分钟取快照，切回窗口时请后端立刻刷新
   const [account, , , setAccount] = useLoader(() => api("/account"), [connected]);
@@ -221,10 +225,12 @@ function App() {
     api("/conversations")
       .then((d) => {
         const latest = {};
-        for (const c of d.conversations || []) if (!latest[c.botId] || c.updatedAt > latest[c.botId].updatedAt) latest[c.botId] = c;
+        // 群里的话算在群聊那一行，不算在机器人这一行
+        for (const c of d.conversations || []) if (!c.peerId?.startsWith("group:") && (!latest[c.botId] || c.updatedAt > latest[c.botId].updatedAt)) latest[c.botId] = c;
         setPreviews(Object.fromEntries(Object.entries(latest).map(([k, c]) => [k, { text: (c.lastMessage || "").replace(/^⚠️\s*/, "").replace(/\s+/g, " "), at: c.updatedAt }])));
       })
       .catch(() => {});
+    reloadGroups();
     api("/approvals?status=pending")
       .then((d) => {
         const n = {};
@@ -283,6 +289,11 @@ function App() {
     if (route.view !== "chat") openChat();
   };
   const openNeeds = () => go("/needs");
+  const openGroup = (id) => go(`/group/${encodeURIComponent(id)}`);
+  const onDeletedGroup = (id) => {
+    reloadGroups();
+    if (route.view === "group" && route.groupId === id) go("/chat/");
+  };
   // 「需要你」里的重新扫码：去这个机器人的对话，打开信息面板（渠道在最上面）
   const relogin = () => openSettings("connections");
   useEffect(() => {
@@ -366,6 +377,8 @@ function App() {
   }
 
   const view = route.view;
+  const groups = groupsData ? groupsData.groups : [];
+  const routedGroup = view === "group" ? groups.find((g) => g.id === route.groupId) : null;
   const panelBot = view === "chat" && infoOpen && bot;
   const shownPanel = panelFx.mounted ? panelBot || lastPanel.current : null;
   const routedBot = view === "bot-settings" && bots ? bots.find((b) => b.id === route.botId) : null;
@@ -378,12 +391,15 @@ function App() {
           username=${status && status.username} account=${managed ? account : null} />`
       : html`<${Sidebar} bots=${bots} botsError=${botsErr} reloadBots=${reloadBots} selectedId=${bot && bot.id} view=${view === "chat" && bots && !bots.length ? "new" : view}
           previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null}
-          onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide} />`}
+          onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
+          groups=${groups} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup} />`}
     <${Splitter} class="split-side" size="--side-w" label=${t("app.resizeSide")} value=${sideW} room=${room("--panel-track")} onCommit=${(v) => setPrefs({ sideW: v })} />
     <main class="main">
       ${view === "chat" && bot && html`<${ChatScreen} key=${bot.id} bot=${bot} models=${models} modelsError=${modelsError} reloadModels=${reloadModels}
         defaultModel=${settings && settings.defaultModel} infoOpen=${infoOpen} onToggleInfo=${() => setInfoOpen((v) => !v)}
         onWorking=${onWorking} pending=${pending[bot.id] || 0} serverBusy=${!!agentWorking[bot.id]} onOpenSettings=${openSettings} onOpenBotSettings=${openBotSettings} onBotUpdated=${onBotUpdated} />`}
+      ${view === "group" && routedGroup && bots && html`<${GroupScreen} key=${routedGroup.id} group=${routedGroup} bots=${bots} onEdit=${() => setGroupSheet({ group: routedGroup })} onOpenSettings=${openSettings} onChanged=${reloadGroups} />`}
+      ${view === "group" && groupsData && !routedGroup && html`<div class="empty-state"><b>${t("app.groupMissing")}</b><button type="button" class="text" onClick=${() => openChat()}>${t("app.backToChat")}</button></div>`}
       ${(view === "new" || (view === "chat" && bots && !bots.length)) && html`<${NewBotScreen} first=${!!bots && !bots.length}
         onCreated=${(b) => { reloadBots(); openChat(b.id); }} onCancel=${bots && bots.length ? () => openChat() : null} />`}
       ${view === "settings" && html`<${SettingsScreen} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} focusRow=${route.row}
@@ -403,6 +419,8 @@ function App() {
       onOpenBotSettings=${() => openBotSettings(shownPanel.id)} onOpenChat=${() => setInfoOpen(false)} onOpenConnections=${() => openSettings("connections")} />`}
     <${CoachMark} bot=${view === "chat" ? bot : null} view=${view} infoOpen=${!!panelBot} />
     ${palette && html`<${Palette} commands=${commands} onClose=${() => setPalette(false)} />`}
+    ${groupSheet && bots && html`<${GroupSheet} group=${groupSheet.group} bots=${bots} onClose=${() => setGroupSheet(null)}
+      onSaved=${async (g) => { setGroupSheet(null); await reloadGroups(); openGroup(g.id); }} />`}
     <${DialogHost} />
     <${Toasts} />
   </div>`;

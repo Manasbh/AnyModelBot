@@ -109,6 +109,11 @@ export function streamChat(botId, text, handlers, signal) {
   );
 }
 
+/** 接着一个群聊：turn（轮到谁）、同 streamChat 的事件、turnEnd（这一轮答完），都答完了结束 */
+export function attachGroup(groupId, handlers, signal) {
+  return readEvents(fetch(`/amb/api/groups/${encodeURIComponent(groupId)}/live`, { headers: { "x-amb-lang": getLang() }, signal }), handlers);
+}
+
 /** 接上进行中的那条消息（切走再切回、刷新后）：先 snapshot（到目前为止的样子），之后的事件同 streamChat，最后 done */
 export function attachChat(botId, turnId, handlers, signal) {
   return readEvents(fetch(`/amb/api/bots/${encodeURIComponent(botId)}/chat/live?turn=${encodeURIComponent(turnId)}`, { headers: { "x-amb-lang": getLang() }, signal }), handlers);

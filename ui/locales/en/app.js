@@ -39,5 +39,6 @@ export default {
   resizeSide: "Resize sidebar",
   resizePanel: "Resize info panel",
   botMissing: "Bot not found",
+  groupMissing: "This group chat no longer exists",
   backToChat: "Back to chat",
 };

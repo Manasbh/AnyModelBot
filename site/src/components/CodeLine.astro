@@ -1,0 +1,9 @@
+---
+// 一条能复制的命令（下载页）：完整的命令在 code 里，复制按钮只有图标，点击由 client.ts 的 [data-copy-code] 处理。
+import Icon from "./Icon.astro";
+import { dict, type Lang } from "../i18n";
+interface Props { lang: Lang; code: string; track?: string; trackCommand?: string }
+const { lang, code, track, trackCommand } = Astro.props;
+const copy = dict(lang).ui.copy;
+---
+<div class="code"><code>{code}</code><button type="button" class="copy-btn" data-copy-code data-track={track} data-track-command={trackCommand} aria-label={copy} title={copy}><Icon name="copy" /></button></div>

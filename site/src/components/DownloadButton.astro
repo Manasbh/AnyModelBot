@@ -1,19 +1,20 @@
 ---
 // 分裂下载按钮（§12）：主段按系统识别（client.ts），右段打开平台菜单。无 JS 时主段链接到 /download。
 // 同一行要并排放的按钮（如 Hero 的"看演示"）用 slot="after" 传进来。版本、大小与 SHA-256 在 /download 页。
-// plain：只有一颗带下载图标的按钮（导航用），没有标记和平台菜单；同样按系统换成安装包直链。
+// plain：只有一颗带下载图标的按钮（导航、下载页页头用），没有标记和平台菜单；同样按系统换成安装包直链。
+// fallback：识别不出系统、或没有 JS 时主段链到哪；缺省是 /download，下载页自己传页内锚点。
 import EyesMark from "./EyesMark.astro";
 import Icon from "./Icon.astro";
 import { dict, href, type Lang } from "../i18n";
 import { releases, PLATFORMS } from "../lib/site";
-interface Props { lang: Lang; placement: string; size?: "md" | "sm"; short?: boolean; plain?: boolean; id?: string }
-const { lang, placement, size = "md", short = false, plain = false, id } = Astro.props;
+interface Props { lang: Lang; placement: string; size?: "md" | "sm"; short?: boolean; plain?: boolean; id?: string; fallback?: string }
+const { lang, placement, size = "md", short = false, plain = false, id, fallback } = Astro.props;
 const t = dict(lang);
 const menuId = `dl-menu-${placement}`;
 ---
 {plain ? (
   <div class="dl dl--plain" data-dl data-placement={placement} data-short={short ? "1" : undefined}>
-    <a class:list={["btn btn--primary", { "btn--sm": size === "sm" }]} id={id} href={href(lang, "/download")} data-dl-main>
+    <a class:list={["btn btn--primary", { "btn--sm": size === "sm" }]} id={id} href={fallback ?? href(lang, "/download")} data-dl-main>
       <Icon name="download" size={16} />
       <span class="btn-label" data-dl-label>{t.download.generic}</span>
     </a>

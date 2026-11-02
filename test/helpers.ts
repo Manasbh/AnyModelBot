@@ -328,8 +328,8 @@ export async function mockModelflare() {
     access: new Set<string>(),
     revoked: [] as string[],
     tokenForms: [] as Record<string, string>[],
-    keys: [] as Array<{ id: number; name: string; limit_usd: number | null; used_usd: number; routing_strategy?: string }>,
-    /** 服务端怎么对待 Key 的 routing_strategy：echo = 支持（存下并回显），ignore = 不认也不报错，reject = 400 */
+    keys: [] as Array<{ id: number; name: string; limit_usd: number | null; used_usd: number; created_at: number; routing_strategy?: string }>,
+    /** 服务端怎么对待 Key 的 routing_strategy：echo = 支持（存下并回显，没设过的按均衡），ignore = 不认也不报错，reject = 400 */
     routing: "ignore" as "echo" | "ignore" | "reject",
     /** 收到的 Key 请求（签发、修改）和请求体 */
     keyWrites: [] as Array<{ method: string; id?: number; body: Record<string, unknown> }>,
@@ -344,7 +344,7 @@ export async function mockModelflare() {
   let keySeq = 0;
   const keyOut = ({ routing_strategy, ...k }: (typeof s.keys)[number]) => ({
     ...k,
-    ...(s.routing === "echo" && routing_strategy ? { routing_strategy } : {}),
+    ...(s.routing === "echo" ? { routing_strategy: routing_strategy ?? "balanced" } : {}),
     key_tail: `sk-key-${k.id}`.slice(-4),
     status: "enabled",
     unlimited: k.limit_usd === null,
@@ -399,7 +399,7 @@ export async function mockModelflare() {
         const b = await readJson(req);
         s.keyWrites.push({ method: "POST", body: b });
         if (rejectRouting(b)) return json({ success: false, message: "unknown field: routing_strategy" }, 400);
-        const k = { id: ++keySeq, name: b.name, limit_usd: b.limit_usd ?? null, used_usd: 0, ...(s.routing === "echo" && b.routing_strategy ? { routing_strategy: b.routing_strategy } : {}) };
+        const k = { id: ++keySeq, name: b.name, limit_usd: b.limit_usd ?? null, used_usd: 0, created_at: Math.floor(Date.now() / 1000), ...(s.routing === "echo" && b.routing_strategy ? { routing_strategy: b.routing_strategy } : {}) };
         s.keys.push(k);
         return json({ success: true, data: { ...keyOut(k), key: `sk-key-${k.id}` } });
       }

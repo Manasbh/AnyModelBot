@@ -65,19 +65,28 @@ export interface AccountStatus {
 
 /**
  * 性价比（路由策略）的本机记录，存在 KV 的 account.routing 里：
- * chosen：用户选的（没选过时按 DEFAULT_ROUTING）；support：Modelflare 认不认这个字段（yes = 回显了，no = 拒绝或忽略），
- * checkedAt：上次判断的时间（no 隔一天再试一次）；applied：已经应用到本机全部 Key 的策略。
+ * chosen：现在的策略（在应用里选的，或从 Modelflare 上本机 Key 读回来的；都没有时按 DEFAULT_ROUTING）；
+ * support：Modelflare 认不认这个字段（yes = 回显了，no = 拒绝或忽略），checkedAt：上次判断的时间（no 隔一天再试一次）；
+ * applied：已经应用到本机全部 Key 的策略；migrated：老 Key 的一次性迁移做过了。
  */
 interface RoutingState {
   chosen?: RoutingStrategy;
   support?: "yes" | "no";
   checkedAt?: number;
   applied?: RoutingStrategy;
+  migrated?: boolean;
 }
 
 export const DEFAULT_ROUTING: RoutingStrategy = "balanced";
 /** Modelflare 不认这个字段时，隔多久再试一次（服务端可能已经加上了） */
 const ROUTING_RETRY_MS = 24 * 3600_000;
+/**
+ * 老 Key 的一次性迁移：Modelflare 加上这个字段之前签发的 Key 默认是稳定优先。只把「稳定优先、而且签发于这之前」的
+ * 本机 Key 改成均衡；之后的 stable 是用户自己选的，别的值也是后来改的，都不动（Modelflare 后端的约定）。
+ */
+const LEGACY_ROUTING_BEFORE = Date.parse("2026-10-31T00:00:00+08:00") / 1000;
+/** created_at 一般是秒；万一是毫秒也认 */
+const createdSec = (k: AppKey) => (k.created_at > 1e12 ? k.created_at / 1000 : k.created_at);
 
 const BOT_KEY = (botId: string) => `account.botKey.${botId}`;
 const ALERTED = "account.lowBalanceAlerted";
@@ -501,7 +510,7 @@ export class AccountManager {
     }
     // 预算已经关掉的机器人：只把内置网关里它那把失效的 Key 拿掉
     for (const botId of lost) await this.o.hooks.removeBotKey(botId).catch(() => {});
-    if (this.session === session) await this.syncRouting(session);
+    if (this.session === session) await this.syncRouting(session, keys);
     return replaced;
   }
 
@@ -632,18 +641,42 @@ export class AccountManager {
   }
 
   /**
-   * 核对 Key 时顺带：本机的 Key 还没用上现在的策略就补上。没选过的老用户第一次走到这里，就把默认的均衡
-   * 应用到已有的 Key 上（只这一次，之后控制台里手动改的不会被盖掉）。Modelflare 不认时隔一天再试。不抛错。
+   * 核对 Key 时顺带（keys 是这次核对拿到的 Key 列表），不抛错：
+   * 1. 列表里的 Key 不带 routing_strategy：Modelflare 不认，隔一天再看。
+   * 2. 老 Key 迁移，只做一次：稳定优先、签发于 LEGACY_ROUTING_BEFORE 之前的本机 Key 改成均衡，别的不动。
+   * 3. 在应用里改过、还没改到全部 Key 上的（上次没改完），补上。
+   * 4. 否则以 Modelflare 上本机 Key 的为准：在控制台里改过的，应用跟着显示，不盖掉。
    */
-  private async syncRouting(session: AccountSession): Promise<void> {
+  private async syncRouting(session: AccountSession, keys: AppKey[]): Promise<void> {
     const st = this.routing();
-    const strategy = this.routingStrategy();
-    const due = st.support === "no" ? Date.now() - (st.checkedAt ?? 0) >= ROUTING_RETRY_MS : st.applied !== strategy;
-    if (!due) return;
-    const ids = this.appKeyIds(session);
+    if (st.support === "no" && Date.now() - (st.checkedAt ?? 0) < ROUTING_RETRY_MS) return;
+    const mine = new Set(this.appKeyIds(session));
+    const own = keys.filter((k) => mine.has(k.id));
+    const device = own.find((k) => k.id === session.record.deviceKeyId);
+    if (!device) return; // 本机 Key 刚重签：下次核对再说
+    if (!ROUTING_STRATEGIES.some((x) => x === device.routing_strategy)) {
+      this.noteRouting(false, "key list has no routing_strategy");
+      return;
+    }
+    this.noteRouting(true, "");
     try {
-      if ((await this.applyRouting(strategy, ids)) === "ok") {
-        log.info(st.chosen ? "applied key routing strategy" : "applied the default key routing strategy to existing keys", { strategy, keys: ids.length });
+      if (!st.migrated) {
+        const legacy = own.filter((k) => k.routing_strategy === "stable" && createdSec(k) < LEGACY_ROUTING_BEFORE);
+        if (legacy.length && (await this.applyRouting("balanced", legacy.map((k) => k.id))) === "ok") {
+          for (const k of legacy) k.routing_strategy = "balanced";
+          log.info("moved legacy app keys from stability first to balanced", { keys: legacy.length });
+        }
+        this.saveRouting({ migrated: true });
+      }
+      const cur = this.routing();
+      if (cur.chosen && cur.applied !== cur.chosen) {
+        if ((await this.applyRouting(cur.chosen, own.map((k) => k.id))) === "ok") log.info("applied key routing strategy", { strategy: cur.chosen, keys: own.length });
+        return;
+      }
+      const now = ROUTING_STRATEGIES.find((x) => x === device.routing_strategy)!;
+      if (now !== cur.chosen || cur.applied !== now) {
+        this.saveRouting({ chosen: now, applied: now });
+        if (cur.chosen && now !== cur.chosen) log.info("key routing strategy was changed on Modelflare, following it", { strategy: now });
       }
     } catch (e) {
       log.warn("applying key routing strategy failed", { message: (e as Error).message });

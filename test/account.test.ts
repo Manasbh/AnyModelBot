@@ -327,27 +327,46 @@ describe("AccountManager", () => {
     expect(patches()).toEqual([]);
   });
 
-  it("性价比：已登录、没选过的老用户第一次核对时把均衡应用到已有的全部 Key 上，只这一次", async () => {
+  it("性价比：老 Key 只迁移一次，只改「稳定优先、10/31 之前签发」的；别的值不动，应用跟着 Modelflare 上的显示", async () => {
     mf.s.routing = "echo";
-    manager.botsSource = () => [{ id: "b1", name: "写作助手", budget: { enabled: true, limitUsd: 3 } }];
+    manager.botsSource = () => [
+      { id: "b1", name: "写作助手", budget: { enabled: true, limitUsd: 3 } },
+      { id: "b2", name: "翻译", budget: { enabled: true, limitUsd: 2 } },
+    ];
     await signIn();
-    await until(() => calls.includes("bot:b1:sk-key-2"));
-    // 模拟升级前：Key 上没有策略，本机也没有记录
+    await until(() => calls.includes("bot:b1:sk-key-2") && calls.includes("bot:b2:sk-key-3"));
+    // 模拟升级前：本机没有记录；本机 Key 和 b1 是 10/30 签发的稳定优先，b2 是用户后来在控制台改成的省钱
     store.deleteKV("account.routing");
-    for (const k of mf.s.keys) delete k.routing_strategy;
+    const oct30 = Date.parse("2026-10-30T12:00:00+08:00") / 1000;
+    Object.assign(mf.s.keys[0], { routing_strategy: "stable", created_at: oct30 });
+    Object.assign(mf.s.keys[1], { routing_strategy: "stable", created_at: oct30 });
+    Object.assign(mf.s.keys[2], { routing_strategy: "low_cost", created_at: oct30 });
     mf.s.keyWrites = [];
     const again = make();
     again.botsSource = manager.botsSource;
-    expect(again.status().keyQuality).toEqual({ strategy: "balanced", supported: false });
     await again.repairKeys();
     expect(patches().map((w) => [w.id, w.body])).toEqual([
       [1, { routing_strategy: "balanced" }],
       [2, { routing_strategy: "balanced" }],
     ]);
-    expect(mf.s.keys.map((k) => k.routing_strategy)).toEqual(["balanced", "balanced"]);
+    expect(mf.s.keys.map((k) => k.routing_strategy)).toEqual(["balanced", "balanced", "low_cost"]);
     expect(again.status().keyQuality).toEqual({ strategy: "balanced", supported: true });
+    // 只这一次：之后用户在控制台把本机 Key 改回稳定优先，应用不盖掉，跟着显示
+    mf.s.keys[0].routing_strategy = "stable";
     await again.repairKeys();
     expect(patches()).toHaveLength(2);
+    expect(again.status().keyQuality).toEqual({ strategy: "stable", supported: true });
+  });
+
+  it("性价比：10/31 之后签发的稳定优先是用户自己选的，迁移不动它", async () => {
+    mf.s.routing = "echo";
+    await signIn();
+    store.deleteKV("account.routing");
+    mf.s.keys[0].routing_strategy = "stable";
+    mf.s.keyWrites = [];
+    await make().repairKeys();
+    expect(patches()).toEqual([]);
+    expect(mf.s.keys[0].routing_strategy).toBe("stable");
   });
 
   it("性价比：改了就改 Modelflare 上本机的全部 Key，成功了才算；Modelflare 拒绝时不改、控件收起", async () => {
@@ -373,7 +392,8 @@ describe("AccountManager", () => {
     const rec = JSON.parse(store.getKV("account.routing")!);
     store.setKV("account.routing", JSON.stringify({ ...rec, checkedAt: Date.now() - 25 * 3600_000 }));
     await manager.repairKeys();
-    expect(patches().map((w) => w.body)).toEqual([{ routing_strategy: "balanced" }]);
+    // Modelflare 现在回显了（没设过的按均衡）：记为支持，和本机一致就不用改
+    expect(patches()).toEqual([]);
     expect(manager.status().keyQuality).toEqual({ strategy: "balanced", supported: true });
   });
 

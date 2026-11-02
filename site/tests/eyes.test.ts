@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener() {} }));
+vi.stubGlobal("document", { querySelectorAll: () => [] });
 const { aim, aimFace } = await import("../src/lib/eyes");
 
 const rect = (size: number) => ({ left: 500, top: 500, width: size, height: size });

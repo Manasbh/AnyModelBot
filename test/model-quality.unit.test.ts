@@ -296,6 +296,20 @@ describe("界面：选择器的两个滑块", () => {
     expect(find(v, (n) => n.props?.class === "tier-val custom")).toBeTruthy();
   });
 
+  it("彩蛋：看得见的滑块都拉到最右才有（质量 + 最强）；差一档都没有", () => {
+    const maxed = (v: any) => v.props.class === "tiers maxed";
+    const sparks = (v: any) => all(v, (n) => typeof n.type === "function" && n.type.name === "Sparks");
+    expect(maxed(panel({ strategy: "stable", cur: 4, model: "claude-opus-5-5" }))).toBe(true);
+    expect(sparks(panel({ strategy: "stable", cur: 4, model: "claude-opus-5-5" }))).toHaveLength(1);
+    expect(maxed(panel({ strategy: "balanced", cur: 4, model: "claude-opus-5-5" }))).toBe(false);
+    expect(maxed(panel({ strategy: "stable", cur: 3 }))).toBe(false);
+    expect(maxed(panel({ strategy: "stable", cur: -1, model: "kimi-k3" }))).toBe(false);
+    expect(sparks(panel({ strategy: "stable", cur: 3 }))).toHaveLength(0);
+    // 没有性价比滑块时，只看模型智能
+    expect(maxed(panel({ showStrategy: false, cur: 4, model: "claude-opus-5-5" }))).toBe(true);
+    expect(maxed(panel({ showStrategy: false, stops: stops.slice(0, 1), cur: 0 }))).toBe(false);
+  });
+
   it("滑块和模型名：拖到第几档就选那个模型；点模型名去完整列表；恢复默认只在不是默认时出现", () => {
     const got: string[] = [];
     const v = panel({ onStop: (m: string) => got.push(`stop:${m}`), onStrategy: (s: string) => got.push(`strategy:${s}`), onList: () => got.push("list") });

@@ -91,7 +91,10 @@ export function TierPanel({ strategy, showStrategy, stops, cur, anchor, model, c
   const n = stops.length;
   const si = STRATEGIES.indexOf(strategy);
   const level = levelLabel(cur, n);
-  return html`<div class="tiers">
+  // 彩蛋：看得见的滑块都拉到最右（质量 + 最强）时，弹窗发光、轨道流动、四周飘几粒光点
+  const maxed = n >= 2 && cur === n - 1 && (!showStrategy || si === STRATEGIES.length - 1);
+  return html`<div class=${`tiers${maxed ? " maxed" : ""}`}>
+    ${maxed && html`<${Sparks} />`}
     ${canReset && html`<button type="button" class="icon-btn tiers-reset" title=${t("models.tiers.reset")} aria-label=${t("models.tiers.reset")} onClick=${onReset}><${Icon} name="reset" size="sm" /></button>`}
     ${showStrategy && html`<section class="tier">
       <div class="tier-head"><span class="tier-name">${t("models.tiers.value")}</span><span class="tier-val">${strategyLabel(strategy)}</span></div>
@@ -107,6 +110,16 @@ export function TierPanel({ strategy, showStrategy, stops, cur, anchor, model, c
     </section>
     <p class="tier-foot">${t("models.tiers.foot", { aa: html`<a href=${AA_URL} target="_blank" rel="noopener noreferrer">Artificial Analysis</a>` })}</p>
   </div>`;
+}
+
+// 光点的位置、大小、节奏是固定的（重绘不跳）：沿着四条边各撒几粒
+const SPARKS = [
+  [9, 5, 3, 0], [31, 3, 2, 1.1], [57, 6, 3, 2.3], [83, 4, 2, 0.6],
+  [16, 95, 2, 1.7], [44, 92, 3, 0.3], [70, 96, 2, 2.8], [91, 91, 3, 1.4],
+  [3, 28, 2, 2.1], [5, 61, 3, 0.9], [96, 22, 3, 1.9], [94, 50, 2, 0.2], [97, 77, 3, 2.6],
+];
+function Sparks() {
+  return html`<div class="tiers-sparks" aria-hidden="true">${SPARKS.map(([x, y, s, d], i) => html`<i key=${i} style=${`--x:${x}%;--y:${y}%;--s:${s}px;--d:${d}s`} />`)}</div>`;
 }
 
 /**

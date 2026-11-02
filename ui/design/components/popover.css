@@ -52,6 +52,48 @@
 .tier-foot { margin: 0; padding-top: var(--space-2-5); border-top: 1px solid var(--line-2); text-align: center; font-size: var(--fs-2xs); color: var(--muted); }
 .tier-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .tier-foot a:hover { color: var(--fg-2); }
+
+/* —— 彩蛋：两个滑块都拉满（.tiers.maxed）——
+   弹窗外圈一层荧光绿的光，内沿一圈缓慢转动的渐变描边；两条轨道的填充换成流动的绿色渐变（浅色下也是荧光绿，
+   不再是墨色）；四周飘几粒光点。减少 / 关闭动画时只留静止的光和描边。 */
+@property --tiers-spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.pop.model-picker { transition: box-shadow var(--t-moderate); }
+.pop.model-picker:has(> .tiers.maxed) {
+  --egg-1: var(--lime-500);
+  --egg-2: #3dffb5;                     /* 薄荷绿：只用在彩蛋里，让渐变流动看得出来 */
+  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in srgb, var(--egg-1) 55%, transparent),
+    0 0 20px color-mix(in srgb, var(--egg-1) 38%, transparent), 0 0 44px color-mix(in srgb, var(--egg-2) 16%, transparent);
+}
+.tiers.maxed::before {
+  content: ""; position: absolute; inset: 0; border-radius: var(--pop-r); padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--tiers-spin), var(--egg-1), var(--egg-2), transparent 40%, var(--egg-1) 60%, var(--egg-2) 80%, var(--egg-1));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+  animation: tiers-spin 5s linear infinite;
+}
+@keyframes tiers-spin { to { --tiers-spin: 360deg; } }
+.tiers.maxed .stops {
+  --stops-fill-bg: linear-gradient(90deg, var(--egg-1), var(--egg-2), var(--lime-300), var(--egg-1)) 0 0 / 200% 100%;
+  --stops-dot-on: color-mix(in srgb, var(--olive-950) 40%, transparent);
+  --stops-knob-bg: var(--white);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--egg-1) 45%, transparent);
+}
+.tiers.maxed .stops-fill { animation: tiers-flow 2.4s linear infinite; }
+@keyframes tiers-flow { to { background-position: -200% 0; } }
+.tiers-sparks { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.tiers-sparks i {
+  position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%;
+  background: var(--egg-1); box-shadow: 0 0 6px 1px color-mix(in srgb, var(--egg-1) 70%, transparent), 0 0 0 .5px color-mix(in srgb, var(--olive-950) 25%, transparent);
+  opacity: 0; animation: tiers-spark 3.2s var(--ease-in-out) var(--d) infinite;
+}
+@keyframes tiers-spark {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(.6); }
+  40% { opacity: .9; transform: translateY(calc(-6px * var(--motion))) scale(1); }
+  70% { opacity: .35; transform: translateY(calc(-10px * var(--motion))) scale(.8); }
+}
+:root:is([data-motion="reduce"], [data-motion="off"]) .tiers.maxed::before,
+:root:is([data-motion="reduce"], [data-motion="off"]) .tiers.maxed .stops-fill { animation: none; }
+:root:is([data-motion="reduce"], [data-motion="off"]) .tiers-sparks i { animation: none; opacity: .5; }
 :is(.pop, .palette) .search .search-back { margin-left: calc(-1 * var(--space-1)); color: var(--muted); }
 
 /* —— 命令面板 —— */

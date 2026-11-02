@@ -60,16 +60,16 @@
 .pop.model-picker { transition: box-shadow var(--t-moderate); }
 .pop.model-picker:has(> .tiers.maxed) {
   --egg-1: var(--lime-500);
-  --egg-2: #3dffb5;                     /* 薄荷绿：只用在彩蛋里，让渐变流动看得出来 */
-  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in srgb, var(--egg-1) 55%, transparent),
-    0 0 20px color-mix(in srgb, var(--egg-1) 38%, transparent), 0 0 44px color-mix(in srgb, var(--egg-2) 16%, transparent);
+  --egg-2: var(--mint-400);
+  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in srgb, var(--egg-1) 55%, transparent), 0 0 20px color-mix(in srgb, var(--egg-1) 38%, transparent), 0 0 44px color-mix(in srgb, var(--egg-2) 16%, transparent);   /* 描边：彩蛋的发光边 */
 }
 .tiers.maxed::before {
-  content: ""; position: absolute; inset: 0; border-radius: var(--pop-r); padding: 1.5px; pointer-events: none;
+  content: ""; position: absolute; inset: 0; border-radius: var(--pop-r); pointer-events: none;
+  padding: 1.5px;   /* 微调：渐变描边的粗细 */
   background: conic-gradient(from var(--tiers-spin), var(--egg-1), var(--egg-2), transparent 40%, var(--egg-1) 60%, var(--egg-2) 80%, var(--egg-1));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
-  animation: tiers-spin 5s linear infinite;
+  -webkit-mask: linear-gradient(var(--black) 0 0) content-box, linear-gradient(var(--black) 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(var(--black) 0 0) content-box, linear-gradient(var(--black) 0 0); mask-composite: exclude;
+  animation: tiers-spin var(--dur-egg-spin) linear infinite;
 }
 @keyframes tiers-spin { to { --tiers-spin: 360deg; } }
 .tiers.maxed .stops {
@@ -78,13 +78,13 @@
   --stops-knob-bg: var(--white);
   box-shadow: 0 0 12px color-mix(in srgb, var(--egg-1) 45%, transparent);
 }
-.tiers.maxed .stops-fill { animation: tiers-flow 2.4s linear infinite; }
+.tiers.maxed .stops-fill { animation: tiers-flow var(--dur-egg-flow) linear infinite; }
 @keyframes tiers-flow { to { background-position: -200% 0; } }
 .tiers-sparks { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
 .tiers-sparks i {
-  position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%;
-  background: var(--egg-1); box-shadow: 0 0 6px 1px color-mix(in srgb, var(--egg-1) 70%, transparent), 0 0 0 .5px color-mix(in srgb, var(--olive-950) 25%, transparent);
-  opacity: 0; animation: tiers-spark 3.2s var(--ease-in-out) var(--d) infinite;
+  position: absolute; left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%; background: var(--egg-1);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--egg-1) 70%, transparent), 0 0 0 .5px color-mix(in srgb, var(--olive-950) 25%, transparent);   /* 描边：光点的光晕和浅色底上的一道细边 */
+  opacity: 0; animation: tiers-spark var(--dur-egg-spark) var(--ease-in-out) var(--d) infinite;
 }
 @keyframes tiers-spark {
   0%, 100% { opacity: 0; transform: translateY(0) scale(.6); }

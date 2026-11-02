@@ -27,6 +27,9 @@
   --dur-blink: 1s;
   --dur-shimmer: 1.2s;
   --dur-sheen: 2.4s;    /* 文字微光（思考中 / 正在回复）：扫过一遍后停一拍，比骨架慢，不抢正文的注意力 */
+  --dur-egg-spin: 5s;     /* 模型选择器彩蛋：内沿渐变描边转一圈 */
+  --dur-egg-flow: 2.4s;   /* 彩蛋：轨道渐变流过一遍 */
+  --dur-egg-spark: 3.2s;  /* 彩蛋：光点亮起、上浮、熄灭一次 */
   --dur-pulse: 1.4s;
   --dur-flash: 1.2s;
   --dur-ambient: 1.2s;  /* 环境光换色（切换机器人时） */

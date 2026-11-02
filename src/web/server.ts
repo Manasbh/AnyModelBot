@@ -11,7 +11,7 @@ import { findAppRoot } from "../magpie/supervisor.js";
 import { logFilePath, logger, readLogTail, registerSecret } from "../log.js";
 import { diagnosticsReport, safeStatus, testAgent, testModel } from "../diagnostics.js";
 import { ZOOMS, normalizeLowBalance, saveConfigFile } from "../config.js";
-import { ApiError } from "../account/client.js";
+import { ApiError, ROUTING_STRATEGIES } from "../account/client.js";
 import { OAuthError } from "../account/oauth.js";
 import { normalizeLine } from "../modelflare.js";
 import { SseReply } from "./sse-reply.js";
@@ -444,6 +444,13 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       if (sub === "notifications" && m === "GET") return send(res, 200, { data: await accountCall(() => app.account.notifications()) });
       if (sub === "invite" && m === "GET") return send(res, 200, await accountCall(() => app.account.invite()));
       if (sub === "budgets" && m === "GET") return send(res, 200, { budgets: await accountCall(() => app.account.botBudgets()) });
+      if (sub === "key-quality" && m === "PUT") {
+        const b = await readJson(req);
+        const strategy = ROUTING_STRATEGIES.find((x) => x === b.strategy);
+        if (!strategy) throw new HttpError(400, t("account.routing_invalid"));
+        await accountCall(() => app.account.setRoutingStrategy(strategy));
+        return send(res, 200, status());
+      }
     }
     if (p === "/settings") {
       if (m === "PUT") {

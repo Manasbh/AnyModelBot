@@ -1,7 +1,7 @@
 /**
  * Modelflare 账户：登录 / 退出、本机设备 Key、余额与低余额提醒、每个机器人的预算 Key、
- * 用量 / 通知 / 邀请。只用 API Key 连接（没有登录账户）时，余额改从 credit_grants 读，
- * 依赖账户授权的功能（用量、通知、邀请、机器人预算）不可用。
+ * 用量 / 通知 / 邀请、Key 的性价比（路由策略）。只用 API Key 连接（没有登录账户）时，余额改从 credit_grants 读，
+ * 依赖账户授权的功能（用量、通知、邀请、机器人预算、性价比）不可用。
  */
 import os from "node:os";
 import { logger } from "../log.js";
@@ -9,7 +9,7 @@ import { t } from "../i18n/index.js";
 import type { Store } from "../store/db.js";
 import { MODELFLARE_CLIENT_ID, MODELFLARE_SCOPES, MODELFLARE_WEB, UTM, webUrl, type KeyBalance } from "../modelflare.js";
 import { discover, OAuthError, revokeToken, startLogin, type LoginAttempt, type OidcEndpoints } from "./oauth.js";
-import { AccountRevokedError, AccountSession, ApiError, type AppKey, type ConnectedAccount, type UsageRow } from "./client.js";
+import { AccountRevokedError, AccountSession, ApiError, ROUTING_STRATEGIES, type AppKey, type ConnectedAccount, type RoutingStrategy, type UsageRow } from "./client.js";
 import type { AccountRecord, AccountVault } from "./vault.js";
 
 const log = logger("account");
@@ -59,10 +59,31 @@ export interface AccountStatus {
   loginUrl: string;
   alerts: AlertSettings;
   lowBalance: boolean;
+  /** Key 的性价比：supported = Modelflare 认这个设置（回显过 routing_strategy），否则界面不显示这个控件 */
+  keyQuality: { strategy: RoutingStrategy; supported: boolean };
 }
+
+/**
+ * 性价比（路由策略）的本机记录，存在 KV 的 account.routing 里：
+ * chosen：用户选的（没选过时按 DEFAULT_ROUTING）；support：Modelflare 认不认这个字段（yes = 回显了，no = 拒绝或忽略），
+ * checkedAt：上次判断的时间（no 隔一天再试一次）；applied：已经应用到本机全部 Key 的策略。
+ */
+interface RoutingState {
+  chosen?: RoutingStrategy;
+  support?: "yes" | "no";
+  checkedAt?: number;
+  applied?: RoutingStrategy;
+}
+
+export const DEFAULT_ROUTING: RoutingStrategy = "balanced";
+/** Modelflare 不认这个字段时，隔多久再试一次（服务端可能已经加上了） */
+const ROUTING_RETRY_MS = 24 * 3600_000;
 
 const BOT_KEY = (botId: string) => `account.botKey.${botId}`;
 const ALERTED = "account.lowBalanceAlerted";
+const ROUTING = "account.routing";
+/** 服务端拒绝了请求里的某个字段（校验失败）；HTTP 200 + success:false 也按 400 算 */
+const rejected = (e: unknown) => e instanceof ApiError && (e.status === 400 || e.status === 422);
 
 export class AccountManager {
   private session: AccountSession | undefined;
@@ -82,6 +103,8 @@ export class AccountManager {
   private refreshing: Promise<AccountStatus> | undefined;
   private keyCheck: Promise<boolean> | undefined;
   private keysChecked = { at: 0, replaced: false };
+  /** 改性价比和核对时的应用排成一队，免得旧的策略后到、盖掉新的 */
+  private routingQueue: Promise<unknown> = Promise.resolve();
 
   constructor(
     private o: {
@@ -126,6 +149,7 @@ export class AccountManager {
       loginUrl: this.state === "signing_in" ? (this.login?.url ?? "") : "",
       alerts,
       lowBalance: bal !== null && alerts.lowBalanceUsd > 0 && bal < alerts.lowBalanceUsd,
+      keyQuality: { strategy: this.routingStrategy(), supported: this.routing().support === "yes" },
     };
   }
 
@@ -185,7 +209,7 @@ export class AccountManager {
     const session = this.newSession(rec, { token: tokens.accessToken, expiresAt: tokens.expiresAt });
     try {
       const account = await session.account();
-      const key = await session.createKey(this.deviceKeyName());
+      const key = await this.issueKey((routing) => session.createKey(this.deviceKeyName(), undefined, routing));
       if (!key.key) throw new Error(t("account.no_new_key"));
       try {
         await this.o.hooks.connectKey(key.key);
@@ -195,6 +219,8 @@ export class AccountManager {
         throw e;
       }
       session.updateRecord({ deviceKeyId: key.id });
+      // 刚登录时本机只有这一把 Key：它带着策略签发成功，就算已经应用过了
+      if (key.routing_strategy === this.routingStrategy()) this.saveRouting({ applied: this.routingStrategy() });
       this.session = session;
       this.state = "signed_in";
       this.applyAccount(account);
@@ -235,6 +261,7 @@ export class AccountManager {
     this.session = undefined;
     this.state = "signed_out";
     this.o.vault.clear();
+    this.saveRouting({ applied: undefined });
     await this.o.hooks.disconnect();
     for (const botId of this.botKeyIds().keys()) this.o.store.deleteKV(BOT_KEY(botId));
     this.snapshot = { name: "", source: "none", balanceUsd: null, usedUsd: null, billedToEnterprise: false, updatedAt: 0, error: "" };
@@ -383,7 +410,7 @@ export class AccountManager {
         id = undefined; // 在控制台里被删掉了：重新签发
       }
     }
-    const key = await this.call((s) => s.createKey(keyName(botName), budget.limitUsd));
+    const key = await this.issueKey((routing) => this.call((s) => s.createKey(keyName(botName), budget.limitUsd, routing)));
     if (!key.key) throw new Error(t("account.no_new_key"));
     try {
       await this.o.hooks.setBotKey(botId, key.key);
@@ -440,7 +467,7 @@ export class AccountManager {
     if (!alive.has(session.record.deviceKeyId) && !this.adoptDeviceKey(session, keys, botKeys) && (await this.o.hooks.sharedKeyRejected())) {
       if (this.session !== session) return false;
       log.warn("device key is gone on Modelflare, issuing a new one", { id: session.record.deviceKeyId });
-      const key = await this.call((s) => s.createKey(this.deviceKeyName()));
+      const key = await this.issueKey((routing) => this.call((s) => s.createKey(this.deviceKeyName(), undefined, routing)));
       if (!key.key) throw new Error(t("account.no_new_key"));
       try {
         await this.o.hooks.connectKey(key.key);
@@ -474,6 +501,7 @@ export class AccountManager {
     }
     // 预算已经关掉的机器人：只把内置网关里它那把失效的 Key 拿掉
     for (const botId of lost) await this.o.hooks.removeBotKey(botId).catch(() => {});
+    if (this.session === session) await this.syncRouting(session);
     return replaced;
   }
 
@@ -488,6 +516,138 @@ export class AccountManager {
     if (!k) return false;
     session.updateRecord({ deviceKeyId: k.id });
     return true;
+  }
+
+  // ---------- 性价比（Key 的路由策略） ----------
+
+  private routing(): RoutingState {
+    try {
+      const v = JSON.parse(this.o.store.getKV(ROUTING) ?? "{}") as RoutingState;
+      return v && typeof v === "object" ? v : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private saveRouting(patch: Partial<RoutingState>): void {
+    this.o.store.setKV(ROUTING, JSON.stringify({ ...this.routing(), ...patch }));
+  }
+
+  /** 现在的性价比：用户选的，没选过时是均衡 */
+  routingStrategy(): RoutingStrategy {
+    const c = this.routing().chosen;
+    return c && ROUTING_STRATEGIES.includes(c) ? c : DEFAULT_ROUTING;
+  }
+
+  /** 记下 Modelflare 认不认这个字段；不认时写日志（只在状态变了时） */
+  private noteRouting(supported: boolean, why: string): void {
+    const before = this.routing().support;
+    this.saveRouting({ support: supported ? "yes" : "no", checkedAt: Date.now() });
+    if (!supported && before !== "no") log.warn("Modelflare doesn't accept a routing strategy on app keys", { why });
+  }
+
+  /** 签发 Key 时要带的策略：Modelflare 最近说过不认就不带（隔一天再试） */
+  private routingToSend(): RoutingStrategy | undefined {
+    const st = this.routing();
+    if (st.support === "no" && Date.now() - (st.checkedAt ?? 0) < ROUTING_RETRY_MS) return undefined;
+    return this.routingStrategy();
+  }
+
+  /**
+   * 签发一把 Key，带上性价比。被拒（400 / 422）就不带再签一次，记下"不支持"；签发本身绝不因为这个字段失败。
+   * 签发成功后看回显：带回同样的 routing_strategy 才算支持，没回显说明服务端忽略了它。
+   */
+  private async issueKey(create: (routing?: RoutingStrategy) => Promise<AppKey>): Promise<AppKey> {
+    const routing = this.routingToSend();
+    if (!routing) return create();
+    let key: AppKey;
+    try {
+      key = await create(routing);
+    } catch (e) {
+      if (!rejected(e)) throw e;
+      key = await create();
+      this.noteRouting(false, `create rejected: ${(e as Error).message}`);
+      return key;
+    }
+    this.noteRouting(key.routing_strategy === routing, "create ignored the field");
+    return key;
+  }
+
+  /**
+   * 把策略应用到本机签发的全部 Key（本机 Key + 各机器人的预算 Key）。
+   * 返回 ok；unsupported = Modelflare 拒绝或忽略了这个字段；网络等其他错误照常抛出。已被删除的 Key 跳过（核对时会重签）。
+   */
+  private applyRouting(strategy: RoutingStrategy, ids: number[]): Promise<"ok" | "unsupported"> {
+    const run = async (): Promise<"ok" | "unsupported"> => {
+      for (const id of ids) {
+        let k: AppKey;
+        try {
+          k = await this.call((s) => s.updateKey(id, { routing_strategy: strategy }));
+        } catch (e) {
+          if (e instanceof ApiError && e.status === 404) continue;
+          if (!rejected(e)) throw e;
+          this.noteRouting(false, `update rejected: ${(e as Error).message}`);
+          return "unsupported";
+        }
+        if (k?.routing_strategy !== strategy) {
+          this.noteRouting(false, "update ignored the field");
+          return "unsupported";
+        }
+        this.noteRouting(true, "");
+      }
+      this.saveRouting({ applied: strategy });
+      return "ok";
+    };
+    const p = this.routingQueue.then(run, run);
+    this.routingQueue = p.catch(() => undefined);
+    return p;
+  }
+
+  private appKeyIds(session: AccountSession): number[] {
+    return [session.record.deviceKeyId, ...this.botKeyIds().values()].filter((id) => id > 0);
+  }
+
+  /**
+   * 改性价比：先改 Modelflare 上本机签发的全部 Key，成功了才算改好。Modelflare 不认这个字段时不改，返回 409，
+   * 状态里 supported 变成 false（界面随之收起这个控件）。
+   */
+  async setRoutingStrategy(strategy: RoutingStrategy): Promise<AccountStatus> {
+    if (!this.session) throw new ApiError(t("account.sign_in_first"), 409);
+    if (!ROUTING_STRATEGIES.includes(strategy)) throw new ApiError(t("account.routing_invalid"), 400);
+    const prev = this.routing().chosen;
+    this.saveRouting({ chosen: strategy });
+    let r: "ok" | "unsupported";
+    try {
+      r = await this.applyRouting(strategy, this.appKeyIds(this.session));
+    } catch (e) {
+      this.saveRouting({ chosen: prev });
+      throw e;
+    }
+    if (r === "unsupported") {
+      this.saveRouting({ chosen: prev });
+      throw new ApiError(t("account.routing_unsupported"), 409);
+    }
+    log.info("key routing strategy changed", { strategy });
+    return this.status();
+  }
+
+  /**
+   * 核对 Key 时顺带：本机的 Key 还没用上现在的策略就补上。没选过的老用户第一次走到这里，就把默认的均衡
+   * 应用到已有的 Key 上（只这一次，之后控制台里手动改的不会被盖掉）。Modelflare 不认时隔一天再试。不抛错。
+   */
+  private async syncRouting(session: AccountSession): Promise<void> {
+    const st = this.routing();
+    const strategy = this.routingStrategy();
+    const due = st.support === "no" ? Date.now() - (st.checkedAt ?? 0) >= ROUTING_RETRY_MS : st.applied !== strategy;
+    if (!due) return;
+    const ids = this.appKeyIds(session);
+    try {
+      if ((await this.applyRouting(strategy, ids)) === "ok") {
+        log.info(st.chosen ? "applied key routing strategy" : "applied the default key routing strategy to existing keys", { strategy, keys: ids.length });
+      }
+    } catch (e) {
+      log.warn("applying key routing strategy failed", { message: (e as Error).message });
+    }
   }
 
   /** App 注入：当前机器人及其预算设置 */

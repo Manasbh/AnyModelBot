@@ -285,6 +285,103 @@ describe("AccountManager", () => {
   it("没登录时不核对", async () => {
     expect(await manager.repairKeys()).toBe(false);
   });
+
+  // —— 性价比（Key 的路由策略 routing_strategy）——
+  const posts = () => mf.s.keyWrites.filter((w) => w.method === "POST");
+  const patches = () => mf.s.keyWrites.filter((w) => w.method === "PATCH");
+
+  it("性价比：登录签发的 Key 带着均衡；Modelflare 回显了才算支持，核对时不再重复改", async () => {
+    mf.s.routing = "echo";
+    await signIn();
+    expect(posts()).toMatchObject([{ body: { name: "AnyModelBot · test-pc", routing_strategy: "balanced" } }]);
+    expect(manager.status().keyQuality).toEqual({ strategy: "balanced", supported: true });
+    await manager.repairKeys();
+    expect(patches()).toEqual([]);
+    // 预算 Key 也带着
+    await manager.setBotBudget("b1", "写作助手", { enabled: true, limitUsd: 5 });
+    expect(posts()[1].body).toMatchObject({ limit_usd: 5, routing_strategy: "balanced" });
+  });
+
+  it("性价比：Modelflare 拒绝这个字段时不带它再签一次，登录和预算照常，之后一天内不再带；控件不显示", async () => {
+    mf.s.routing = "reject";
+    await signIn();
+    expect(calls).toEqual(["connect:sk-key-1"]);
+    expect(posts().map((w) => w.body.routing_strategy)).toEqual(["balanced", undefined]);
+    expect(manager.status().keyQuality).toEqual({ strategy: "balanced", supported: false });
+    await manager.setBotBudget("b1", "写作助手", { enabled: true, limitUsd: 5 });
+    expect(calls).toContain("bot:b1:sk-key-2");
+    expect(posts()[2].body).not.toHaveProperty("routing_strategy");
+    // 核对不去改；硬要改时 409，设置不变
+    await manager.repairKeys();
+    expect(patches()).toEqual([]);
+    await expect(manager.setRoutingStrategy("low_cost")).rejects.toMatchObject({ status: 409 });
+    expect(manager.status().keyQuality).toEqual({ strategy: "balanced", supported: false });
+  });
+
+  it("性价比：Modelflare 不认也不报错（不回显）时同样记为不支持", async () => {
+    await signIn(); // mock 默认 ignore
+    expect(posts()[0].body.routing_strategy).toBe("balanced");
+    expect(calls).toEqual(["connect:sk-key-1"]);
+    expect(manager.status().keyQuality.supported).toBe(false);
+    await manager.repairKeys();
+    expect(patches()).toEqual([]);
+  });
+
+  it("性价比：已登录、没选过的老用户第一次核对时把均衡应用到已有的全部 Key 上，只这一次", async () => {
+    mf.s.routing = "echo";
+    manager.botsSource = () => [{ id: "b1", name: "写作助手", budget: { enabled: true, limitUsd: 3 } }];
+    await signIn();
+    await until(() => calls.includes("bot:b1:sk-key-2"));
+    // 模拟升级前：Key 上没有策略，本机也没有记录
+    store.deleteKV("account.routing");
+    for (const k of mf.s.keys) delete k.routing_strategy;
+    mf.s.keyWrites = [];
+    const again = make();
+    again.botsSource = manager.botsSource;
+    expect(again.status().keyQuality).toEqual({ strategy: "balanced", supported: false });
+    await again.repairKeys();
+    expect(patches().map((w) => [w.id, w.body])).toEqual([
+      [1, { routing_strategy: "balanced" }],
+      [2, { routing_strategy: "balanced" }],
+    ]);
+    expect(mf.s.keys.map((k) => k.routing_strategy)).toEqual(["balanced", "balanced"]);
+    expect(again.status().keyQuality).toEqual({ strategy: "balanced", supported: true });
+    await again.repairKeys();
+    expect(patches()).toHaveLength(2);
+  });
+
+  it("性价比：改了就改 Modelflare 上本机的全部 Key，成功了才算；Modelflare 拒绝时不改、控件收起", async () => {
+    mf.s.routing = "echo";
+    await signIn();
+    await manager.setBotBudget("b1", "写作助手", { enabled: true, limitUsd: 5 });
+    const st = await manager.setRoutingStrategy("low_cost");
+    expect(st.keyQuality).toEqual({ strategy: "low_cost", supported: true });
+    expect(mf.s.keys.map((k) => k.routing_strategy)).toEqual(["low_cost", "low_cost"]);
+    // 新签发的也跟着
+    await manager.setBotBudget("b2", "翻译", { enabled: true, limitUsd: 1 });
+    expect(posts().at(-1)!.body.routing_strategy).toBe("low_cost");
+    mf.s.routing = "reject";
+    await expect(manager.setRoutingStrategy("stable")).rejects.toMatchObject({ status: 409 });
+    expect(manager.status().keyQuality).toEqual({ strategy: "low_cost", supported: false });
+  });
+
+  it("性价比：不支持的隔一天再试一次，Modelflare 加上了就补上", async () => {
+    await signIn(); // ignore：记为不支持
+    mf.s.routing = "echo";
+    await manager.repairKeys();
+    expect(patches()).toEqual([]);
+    const rec = JSON.parse(store.getKV("account.routing")!);
+    store.setKV("account.routing", JSON.stringify({ ...rec, checkedAt: Date.now() - 25 * 3600_000 }));
+    await manager.repairKeys();
+    expect(patches().map((w) => w.body)).toEqual([{ routing_strategy: "balanced" }]);
+    expect(manager.status().keyQuality).toEqual({ strategy: "balanced", supported: true });
+  });
+
+  it("性价比：不认识的值 400，没登录 409", async () => {
+    await expect(manager.setRoutingStrategy("balanced")).rejects.toMatchObject({ status: 409 });
+    await signIn();
+    await expect(manager.setRoutingStrategy("fastest" as never)).rejects.toMatchObject({ status: 400 });
+  });
 });
 
 describe("账户文件加密", () => {

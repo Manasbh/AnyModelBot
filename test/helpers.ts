@@ -328,7 +328,11 @@ export async function mockModelflare() {
     access: new Set<string>(),
     revoked: [] as string[],
     tokenForms: [] as Record<string, string>[],
-    keys: [] as Array<{ id: number; name: string; limit_usd: number | null; used_usd: number }>,
+    keys: [] as Array<{ id: number; name: string; limit_usd: number | null; used_usd: number; routing_strategy?: string }>,
+    /** 服务端怎么对待 Key 的 routing_strategy：echo = 支持（存下并回显），ignore = 不认也不报错，reject = 400 */
+    routing: "ignore" as "echo" | "ignore" | "reject",
+    /** 收到的 Key 请求（签发、修改）和请求体 */
+    keyWrites: [] as Array<{ method: string; id?: number; body: Record<string, unknown> }>,
     balance: 12.5,
     revokeAll: false,
     /** GET /api-keys 被请求的次数 */
@@ -338,7 +342,15 @@ export async function mockModelflare() {
   let n = 0;
   // Key 的 id 和服务端一样只增不减：删掉一把后新签发的不会和它重号
   let keySeq = 0;
-  const keyOut = (k: (typeof s.keys)[number]) => ({ ...k, key_tail: `sk-key-${k.id}`.slice(-4), status: "enabled", unlimited: k.limit_usd === null, remain_usd: k.limit_usd });
+  const keyOut = ({ routing_strategy, ...k }: (typeof s.keys)[number]) => ({
+    ...k,
+    ...(s.routing === "echo" && routing_strategy ? { routing_strategy } : {}),
+    key_tail: `sk-key-${k.id}`.slice(-4),
+    status: "enabled",
+    unlimited: k.limit_usd === null,
+    remain_usd: k.limit_usd,
+  });
+  const rejectRouting = (b: Record<string, unknown>) => s.routing === "reject" && "routing_strategy" in b;
   const issue = (res: http.ServerResponse) => {
     const access = `at-${++n}`;
     const refresh = `rt-${n}`;
@@ -385,7 +397,9 @@ export async function mockModelflare() {
       if (p === "/account") return json({ success: true, data: { display_name: "Ada", username: "ada", group: "default", balance_usd: s.balance, used_usd: 3, billed_to_enterprise: false, quota_per_unit: 500000 } });
       if (p === "/api-keys" && req.method === "POST") {
         const b = await readJson(req);
-        const k = { id: ++keySeq, name: b.name, limit_usd: b.limit_usd ?? null, used_usd: 0 };
+        s.keyWrites.push({ method: "POST", body: b });
+        if (rejectRouting(b)) return json({ success: false, message: "unknown field: routing_strategy" }, 400);
+        const k = { id: ++keySeq, name: b.name, limit_usd: b.limit_usd ?? null, used_usd: 0, ...(s.routing === "echo" && b.routing_strategy ? { routing_strategy: b.routing_strategy } : {}) };
         s.keys.push(k);
         return json({ success: true, data: { ...keyOut(k), key: `sk-key-${k.id}` } });
       }
@@ -396,9 +410,13 @@ export async function mockModelflare() {
       const m = p.match(/^\/api-keys\/(\d+)$/);
       if (m && req.method === "PATCH") {
         const k = s.keys.find((x) => x.id === Number(m[1]));
+        const b = await readJson(req);
+        s.keyWrites.push({ method: "PATCH", id: Number(m[1]), body: b });
         if (!k) return json({ success: false, message: "not found" }, 404);
-        Object.assign(k, { limit_usd: (await readJson(req)).limit_usd });
-        return json({ success: true, data: k });
+        if (rejectRouting(b)) return json({ success: false, message: "unknown field: routing_strategy" }, 400);
+        if ("limit_usd" in b) k.limit_usd = b.limit_usd;
+        if (s.routing === "echo" && b.routing_strategy) k.routing_strategy = b.routing_strategy;
+        return json({ success: true, data: keyOut(k) });
       }
       if (m && req.method === "DELETE") {
         s.keys = s.keys.filter((x) => x.id !== Number(m[1]));

@@ -19,6 +19,13 @@ export interface ConnectedAccount {
   quota_per_unit: number;
 }
 
+/**
+ * Key 的路由策略（Modelflare 控制台 Smart API Key 的 routing_strategy）：low_cost = 低价优先，balanced = 均衡
+ * （控制台的默认：从价格居中的分组开始，先往贵的试再往便宜的试），stable = 稳定优先（分组倍率最高的先试）。
+ */
+export type RoutingStrategy = "low_cost" | "balanced" | "stable";
+export const ROUTING_STRATEGIES: readonly RoutingStrategy[] = ["low_cost", "balanced", "stable"];
+
 export interface AppKey {
   id: number;
   name: string;
@@ -31,6 +38,8 @@ export interface AppKey {
   used_usd: number;
   created_at: number;
   accessed_at: number;
+  /** 服务端支持路由策略时回显；没有这个字段说明服务端没认它 */
+  routing_strategy?: string;
   /** 只在创建时返回一次 */
   key?: string;
 }
@@ -151,10 +160,10 @@ export class AccountSession {
   listKeys(): Promise<AppKey[]> {
     return this.request("GET", "/api-keys");
   }
-  createKey(name: string, limitUsd?: number): Promise<AppKey> {
-    return this.request("POST", "/api-keys", { name, ...(limitUsd !== undefined ? { limit_usd: limitUsd } : {}) });
+  createKey(name: string, limitUsd?: number, routing?: RoutingStrategy): Promise<AppKey> {
+    return this.request("POST", "/api-keys", { name, ...(limitUsd !== undefined ? { limit_usd: limitUsd } : {}), ...(routing ? { routing_strategy: routing } : {}) });
   }
-  updateKey(id: number, patch: { name?: string; limit_usd?: number; unlimited?: boolean }): Promise<AppKey> {
+  updateKey(id: number, patch: { name?: string; limit_usd?: number; unlimited?: boolean; routing_strategy?: RoutingStrategy }): Promise<AppKey> {
     return this.request("PATCH", `/api-keys/${id}`, patch);
   }
   async deleteKey(id: number): Promise<void> {

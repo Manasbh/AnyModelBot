@@ -19,13 +19,17 @@ interface Props {
   description?: string;
   jsonLd?: object[];
   noindex?: boolean;
+  /** 分享图，url 写完整地址。不传就用当前语言的默认图（1200×630） */
+  ogImage?: { url: string; width: number; height: number };
+  /** 方图要配 summary，默认的大图卡片会把它裁掉一截 */
+  twitterCard?: "summary" | "summary_large_image";
 }
-const { lang, path, title, description, jsonLd = [], noindex = false } = Astro.props;
+const { lang, path, title, description, jsonLd = [], noindex = false, ogImage, twitterCard = "summary_large_image" } = Astro.props;
 const t = dict(lang);
 const pageTitle = title ?? t.meta.title;
 const desc = description ?? t.meta.description;
 const canonical = `${ORIGIN}${href(lang, path)}`;
-const og = `${ORIGIN}${t.meta.ogImage}`;
+const og = ogImage ?? { url: `${ORIGIN}${t.meta.ogImage}`, width: 1200, height: 630 };
 const dlData = {
   version: releases.version,
   publishedAt: releases.publishedAt,
@@ -56,15 +60,15 @@ const dlData = {
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={desc} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={og} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image" content={og.url} />
+    <meta property="og:image:width" content={String(og.width)} />
+    <meta property="og:image:height" content={String(og.height)} />
     <meta property="og:locale" content={LOCALES[lang].og} />
     {READY_LANGS.filter((l) => l !== lang).map((l) => <meta property="og:locale:alternate" content={LOCALES[l].og} />)}
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content={twitterCard} />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={desc} />
-    <meta name="twitter:image" content={og} />
+    <meta name="twitter:image" content={og.url} />
     <meta name="theme-color" content="#060706" data-theme-color />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />

@@ -12,7 +12,7 @@ import VendorLogo from "../components/VendorLogo.astro";
 import VendorSprite from "../components/VendorSprite.astro";
 import { buildVars, dict, fmt, href, type Lang } from "../i18n";
 import { CHAR_KEYS } from "../lib/bots";
-import { MF, PARTNERS_EMAIL, pricing } from "../lib/site";
+import { MF, ORIGIN, PARTNERS_EMAIL, pricing } from "../lib/site";
 import { vendorLogo } from "../lib/vendors";
 import "../styles/pages.css";
 interface Props { lang: Lang }
@@ -26,8 +26,10 @@ const whoIcons = ["monitor", "chat", "server"] as const;
 const count = (vd: string) => pricing.rows.filter((r) => r.vendor === vd).length;
 const vendors = pricing.vendors.filter((vd) => vendorLogo(vd)).map((vd, i) => ({ vd, n: count(vd), i })).sort((x, y) => y.n - x.n || x.i - y.i).map((x) => x.vd).slice(0, 9);
 const [dataItem, keyItem, botsItem] = p.why.items;
+// 微信分享卡片用方图，只有中文页用；其他语言继续用各自语言的默认分享图
+const share = lang === "zh" ? { ogImage: { url: `${ORIGIN}/og/wechat-share.png`, width: 600, height: 600 }, twitterCard: "summary" as const } : {};
 ---
-<Base lang={lang} path="/partners" title={p.pageTitle} description={p.pageDescription}>
+<Base lang={lang} path="/partners" title={p.pageTitle} description={p.pageDescription} {...share}>
   <VendorSprite vendors={vendors} color />
   <div class="page pt-page">
     <div class="scene-top hero-scene">

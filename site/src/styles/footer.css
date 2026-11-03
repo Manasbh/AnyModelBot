@@ -65,6 +65,11 @@
   .footer__badge[data-kind="html"] a img { flex: none; width: 18px !important; height: 18px !important; border-radius: 4px !important; }
   .footer__badge[data-kind="html"] a > span > span:first-child { color: var(--text-2) !important; font-size: 8px !important; }
   .footer__badge[data-kind="html"] a > span > span:last-child { font-size: 11.5px !important; }
+  /* WhatTheAI 的 logo 是深绿字、透明底的横版字标，站方没有深色款，去掉白底在深色主题下看不清：两个主题都留白底和站方的字色。
+     原码写死了 232×58 和阴影，这里盖掉；logo 不压成方块，按自己的比例缩 */
+  .footer__badge[data-kind="html"] a[title="Featured on WhatTheAI"] { width: auto !important; height: var(--badge-h) !important; background: #fff !important; box-shadow: none !important; }
+  .footer__badge[data-kind="html"] a[title="Featured on WhatTheAI"] span { margin-right: 0 !important; }
+  .footer__badge[data-kind="html"] a[title="Featured on WhatTheAI"] img { width: auto !important; height: 14px !important; border-radius: 0 !important; }
   @media (max-width: 1023px) {
     .footer__featured { grid-template-columns: minmax(0, 1fr) auto; }
     .footer__more { grid-column: 2; }

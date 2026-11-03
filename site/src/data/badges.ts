@@ -273,6 +273,13 @@ export const BADGES: Badge[] = [
     dark: `<a href="https://www.agenthunter.io" target="_blank" rel="noopener noreferrer"><img alt="AgentHunter Badge" width="40" height="40" src="https://www.agenthunter.io/logo-dark.svg"> AgentHunter - Featured AI Agent</a>`,
   },
   {
+    // 收录已上线，站方没有要求一定挂（用户 2026-11-02 记为可选）。rel 里的 nofollow 是站方原码自带的。
+    // 复制按钮的内容是前端拼的，这段是从它的 JS 模板按 toolName=anymodelbot 展开的。站方没有深色款，样式见 footer.css
+    name: "WhatTheAI",
+    kind: "html",
+    html: `<a href="https://whattheai.tech/tools/anymodelbot" target="_blank" rel="noopener nofollow" title="Featured on WhatTheAI" style="display:inline-block;width:232px;height:58px;line-height:56px;padding:0 12px;box-sizing:border-box;border-radius:10px;border:1px solid #182F07;background:#ffffff;box-shadow:0 7px 29px 0 rgba(100,100,111,0.2);text-align:center;white-space:nowrap;text-decoration:none;font-family:Arial,Helvetica,sans-serif;"><span style="display:inline-block;vertical-align:middle;line-height:1;font-size:11px;font-weight:600;color:#182F07;margin-right:8px;">Featured on</span><img src="https://whattheai.tech/WTAILogo.png" alt="Featured on WhatTheAI" width="125" height="26" style="display:inline-block;vertical-align:middle;width:125px;height:26px;border:0;" /></a>`,
+  },
+  {
     name: "AI Toolz Dir",
     kind: "text",
     html: `<a href="https://www.aitoolzdir.com" target="_blank">AI Toolz Dir</a>`,

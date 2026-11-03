@@ -1,5 +1,6 @@
 # 生成静态图形资源：favicon / App 图标（Eyes 标记，静态居中）与 OG 分享图（zh / en，1200×630）。
 # 产物提交到 public/；改了文案或标记后手动运行：python3 scripts/make-og.py（需要 Pillow 与 Noto Sans SC）。
+# 中文首页的微信分享方图单独生成：python3 scripts/make-og.py wechat-home
 import os
 import sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -138,7 +139,24 @@ def og(lang):
     print(out, os.path.getsize(out) // 1024, "KB")
 
 
+def wechat_home():
+    """中文首页的微信分享方图（600×600）：版式同 og/wechat-share.png，字够大，缩到聊天里的小方格也看得清"""
+    S = 1200  # 先画两倍再缩小，字的边缘更干净
+    im = Image.new("RGBA", (S, S), BG + (255,))
+    m = mark(480)
+    im.alpha_composite(m, ((S - m.width) // 2, 122))
+    d = ImageDraw.Draw(im)
+    d.text((S / 2, 660), "你的 AI 搭子", font=font(CJK, 180, 800), fill=TEXT, anchor="ma")
+    d.text((S / 2, 940), "AnyModelBot", font=font(CJK, 96, 700), fill=LIME, anchor="ma")
+    out = os.path.join(PUB, "og", "wechat-home.png")
+    im.resize((600, 600), Image.LANCZOS).convert("RGB").save(out, optimize=True)
+    print(out, os.path.getsize(out) // 1024, "KB")
+
+
 if __name__ == "__main__":
+    if sys.argv[1:] == ["wechat-home"]:
+        wechat_home()
+        sys.exit(0)
     # Specify languages to regenerate only those sharing cards, leaving icons intact.
     selected = sys.argv[1:] or list(COPY)
     if not sys.argv[1:]:

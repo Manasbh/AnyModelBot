@@ -2,11 +2,23 @@
  * Bot 包格式：一个 Bot 就是一个目录（docs/bot-framework.md）。这里定义 bot.json 的结构、权限和各种上限，
  * App 运行时、amb-bot 工具和约束检查都只认这一份。
  */
+import fs from "node:fs";
+import path from "node:path";
 import { BOT_AVATARS, type BotAvatarKey } from "../agent/settings.js";
 
 /** 文案必须有这两种语言；其余语言缺了退回 en */
 export const REQUIRED_LANGS = ["zh-CN", "en"] as const;
 export const BOT_LANGS = ["zh-CN", "en", "ja", "ko", "ru"] as const;
+
+/** 示例数据按语言放一份：sample.<语言>.json。规则和文案一样，zh-CN、en 必须有，其余语言缺了退回 en */
+export const sampleName = (lang: string): string => `sample.${lang}.json`;
+export const SAMPLE_FILES = BOT_LANGS.map(sampleName);
+
+/** 这种语言该显示哪一份示例数据。lang 来自请求头，不在语言列表里的一律退回 en */
+export function samplePath(dir: string, lang: string): string {
+  const own = (BOT_LANGS as readonly string[]).includes(lang) ? path.join(dir, sampleName(lang)) : "";
+  return own && fs.existsSync(own) ? own : path.join(dir, sampleName("en"));
+}
 
 /**
  * Bot 能声明的权限。没声明的运行时拒绝（agent/host.ts、dsh-runtime/plugins/amb-bot-gate.mjs）：
@@ -34,7 +46,15 @@ export const LIMITS = {
   stateBytes: 2 * 1024 * 1024,
   /** 用户放进 app/inbox/ 的单个文件上限 */
   inboxBytes: 32 * 1024 * 1024,
+  /** 界面用 readImage 读的单个图片上限 */
+  imageBytes: 16 * 1024 * 1024,
 } as const;
+
+/**
+ * 界面套件后来加的能力，从哪个 App 版本开始有。套件随 App 发布，界面用到的话 minAppVersion 不能更低，
+ * 否则老版本的 App 上这些调用会失败。加新能力时在这里登记（check.ts 的 ui.min-app-version）。
+ */
+export const KIT_SINCE: Record<string, string> = { readImage: "0.1.20", openFile: "0.1.20", openUrl: "0.1.20", Link: "0.1.20" };
 
 export const BOT_ID = /^[a-z0-9][a-z0-9-]{1,47}$/;
 export const SKILL_NAME = /^[a-z0-9][a-z0-9-]{0,63}$/;

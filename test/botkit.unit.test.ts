@@ -1,5 +1,5 @@
 // 目录 Bot 框架：格式校验、约束检查、打包签名、目录同步、实例的安装升级下架、静态路由的沙箱头。
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -7,7 +7,9 @@ import path from "node:path";
 import type { AddressInfo } from "node:net";
 import { dirHash, packFiles, readBundle, safeRelPath, sha256, unpackTo } from "../src/botkit/bundle.js";
 import { BotCatalog } from "../src/botkit/catalog.js";
+import { catalogConfig } from "../src/botkit/config.js";
 import { checkStatic } from "../src/botkit/check.js";
+import { runEvals } from "../src/botkit/evals.js";
 import { localized, parseManifest, versionGte } from "../src/botkit/format.js";
 import { BotInstaller, CatalogError, instanceId } from "../src/botkit/installer.js";
 import { packCatalog, whoUsesSkill } from "../src/botkit/pack.js";
@@ -16,6 +18,8 @@ import { generateCatalogKeys, signCatalog, verifyCatalog } from "../src/botkit/s
 import { botPrompt } from "../src/agent/prompts/system.js";
 import { Store } from "../src/store/db.js";
 import { botAppCsp, serveBotAppStatic } from "../src/web/botapp.js";
+// @ts-expect-error 前端模块是无类型的原生 ES 模块
+import { safeExternalUrl } from "../ui/lib/bot-bridge.js";
 
 const TEMPLATE = path.join(import.meta.dirname, "..", "assets", "bot-template");
 let tmp: string;
@@ -29,7 +33,7 @@ afterEach(() => {
 /** 从模板起一个填好 TODO 的 Bot 包 */
 function makeBot(dest: string, id = "fixture-bot", version = "1.0.0"): string {
   fs.cpSync(TEMPLATE, dest, { recursive: true });
-  for (const f of ["bot.json", "persona.md", "sample.json", "ui/locales/zh-CN.json", "ui/locales/en.json", "evals/tasks.json"]) {
+  for (const f of ["bot.json", "persona.md", "sample.zh-CN.json", "sample.en.json", "ui/locales/zh-CN.json", "ui/locales/en.json", "evals/tasks.json"]) {
     const p = path.join(dest, f);
     fs.writeFileSync(p, fs.readFileSync(p, "utf8").replaceAll("TODO", "filled").replaceAll("__ID__", id).replaceAll("__APP_VERSION__", "0.1.0").replaceAll("__AVATAR__", "blue").replace('"version": "1.0.0"', `"version": "${version}"`));
   }
@@ -132,12 +136,23 @@ describe("约束检查", () => {
     expect(rules(raw)).toContain("format.placeholder");
   });
   it("缺文件", () => {
-    fs.rmSync(path.join(dir, "sample.json"));
+    fs.rmSync(path.join(dir, "sample.en.json"));
     expect(rules(dir)).toContain("format.missing");
   });
-  it("示例数据要符合约定", () => {
-    write(dir, "sample.json", '{"title":1,"items":[]}');
+  it("示例数据要符合约定，每种语言都查", () => {
+    write(dir, "sample.ko.json", '{"title":1,"items":[]}');
     expect(rules(dir)).toContain("format.sample");
+  });
+  it("示例数据里的 TODO 也要填完", () => {
+    write(dir, "sample.en.json", '{"title":"TODO title","items":[]}');
+    expect(checkStatic(dir).issues).toContainEqual(expect.objectContaining({ rule: "format.placeholder", file: "sample.en.json" }));
+  });
+  it("示例数据的文件名不对会报出来，不会被悄悄忽略", () => {
+    for (const f of ["sample.json", "sample.fr.json"]) {
+      write(dir, f, '{"title":"x","items":[]}');
+      expect(checkStatic(dir).issues).toContainEqual(expect.objectContaining({ rule: "format.sample", file: f }));
+      fs.rmSync(path.join(dir, f));
+    }
   });
   it("界面规则", () => {
     write(dir, "ui/index.html", '<link href="/amb/botapp/kit/kit.css"><script>1</script><img src="https://x/y.png"><div style="a" onclick="b"></div><iframe></iframe>');
@@ -153,6 +168,51 @@ describe("约束检查", () => {
     write(dir, "ui/app.css", ".a{color:#fff;margin:12px;font-size:14px;background:url(https://x)}\n@import 'x';");
     const r = rules(dir);
     for (const k of ["ui.hardcoded-color", "ui.hardcoded-space", "ui.hardcoded-font", "ui.external", "ui.css-import"]) expect(r).toContain(k);
+  });
+  it("界面 JS 里的样式也只能用 token", () => {
+    const kit = 'import { html } from "/amb/botapp/kit/kit.js";\n';
+    const hit = (code: string) => {
+      write(dir, "ui/app.js", `${kit}${code}\n`);
+      return rules(dir).filter((r) => r.startsWith("ui.hardcoded"));
+    };
+    expect(hit('const a = { color: "#ff0000" };')).toEqual(["ui.hardcoded-color"]);
+    expect(hit('el.style.border = "1px solid rgb(0, 0, 0)";')).toEqual(["ui.hardcoded-color"]);
+    expect(hit('html`<svg fill="#abc"></svg>`;')).toEqual(["ui.hardcoded-color"]);
+    expect(hit('const a = { padding: "13px" };')).toEqual(["ui.hardcoded-space"]);
+    expect(hit('const a = { marginTop: 13 };')).toEqual(["ui.hardcoded-space"]);
+    expect(hit('el.style.gap = "12px";')).toEqual(["ui.hardcoded-space"]);
+    expect(hit('html`<div style="padding: 13px"></div>`;')).toEqual(["ui.hardcoded-space"]);
+    expect(hit('const a = { fontSize: 14 };')).toEqual(["ui.hardcoded-font"]);
+    // token、算出来的值、注释、页内锚点和私有方法都不算
+    expect(hit('const a = { color: "var(--fg)", padding: "var(--space-3)", gap: "var(--space-2)" };')).toEqual([]);
+    expect(hit('const a = { width: `${n}%`, height: "300px", padding: 0 };')).toEqual([]);
+    expect(hit('// color: #ff0000\n/* padding: 13px */')).toEqual([]);
+    expect(hit('html`<a href="#add"></a>`;')).toEqual([]);
+    expect(hit('class A { #add() {} go() { this.#add(); } }')).toEqual([]);
+  });
+  it("外部链接要走套件：普通链接和 window.open 在沙箱里都不行", () => {
+    const kit = 'import { html } from "/amb/botapp/kit/kit.js";\n';
+    const hit = (code: string) => {
+      write(dir, "ui/app.js", `${kit}${code}\n`);
+      return rules(dir).includes("ui.link");
+    };
+    expect(hit('html`<a href="https://x.test">x</a>`;')).toBe(true);
+    expect(hit('html`<a href=${url}>x</a>`;')).toBe(true);
+    expect(hit('window.open(url);')).toBe(true);
+    expect(hit('location.href = url;')).toBe(true);
+    expect(hit('html`<${Link} href=${url}>x<//>`;')).toBe(false);
+    expect(hit('html`<a href="#top">x</a>`;')).toBe(false);
+    expect(hit('if (location.href === a) b();')).toBe(false);
+  });
+  it("外部链接的地址：只放行 http(s)，不带账号密码，不超长", () => {
+    expect(safeExternalUrl("https://example.com/a?b=1")).toBe("https://example.com/a?b=1");
+    expect(safeExternalUrl("http://example.com")).toBe("http://example.com/");
+    for (const bad of ["javascript:alert(1)", "file:///etc/passwd", "data:text/html,x", "https://u:p@example.com", "not a url", "", undefined]) expect(safeExternalUrl(bad)).toBeNull();
+    expect(safeExternalUrl(`https://example.com/${"a".repeat(3000)}`)).toBeNull();
+  });
+  it("用了外部链接，minAppVersion 不能低于支持它的版本", () => {
+    write(dir, "ui/app.js", 'import { html, Link } from "/amb/botapp/kit/kit.js";\nhtml`<${Link} href="https://x.test">x<//>`;\n');
+    expect(rules(dir)).toContain("ui.min-app-version");
   });
   it("脚本联网要声明权限", () => {
     write(dir, "skills/s/SKILL.md", "---\nname: s\n---\n");
@@ -185,6 +245,40 @@ describe("约束检查", () => {
   it("不能占用保留的技能名", () => {
     write(dir, "skills/media/SKILL.md", "x");
     expect(rules(dir)).toContain("source.skill-name");
+  });
+  it("文件数和解开后的大小在检查时就拦下，不等到用户安装时才失败", () => {
+    for (let i = 0; i < 2001; i++) write(dir, `skills/many/f${i}.txt`, "x");
+    write(dir, "skills/many/SKILL.md", "---\nname: many\ndescription: d\n---\n");
+    expect(rules(dir)).toContain("source.files");
+    fs.rmSync(path.join(dir, "skills", "many"), { recursive: true });
+    for (let i = 0; i < 2001; i++) write(dir, `ui/f/${i}.txt`, "x");
+    expect(rules(dir)).toContain("ui.files");
+  });
+  it("常驻项规则只看真正的配置文件，不误伤带 .profile 的名字", () => {
+    write(dir, "skills/s/SKILL.md", "---\nname: s\ndescription: d\n---\n");
+    write(dir, "skills/s/a.py", 'SCHEMA = "pkg.conversion.profile.v1"\nx = self.profile\n');
+    expect(rules(dir)).not.toContain("risk.persistence");
+    for (const line of ['echo x >> ~/.profile', 'echo x >> .bashrc', 'open("$HOME/.zshrc")']) {
+      write(dir, "skills/s/a.sh", line);
+      expect(rules(dir)).toContain("risk.persistence");
+    }
+  });
+  it("用了套件后来加的能力，minAppVersion 不能低于它出现的版本", () => {
+    write(dir, "ui/x.js", "export const f = (bot) => bot.openFile('app/a.pptx');\n");
+    expect(rules(dir)).toContain("ui.min-app-version");
+    const f = path.join(dir, "bot.json");
+    fs.writeFileSync(f, JSON.stringify({ ...JSON.parse(fs.readFileSync(f, "utf8")), minAppVersion: "0.1.20" }));
+    expect(rules(dir)).not.toContain("ui.min-app-version");
+  });
+  it("评测任务的 file 和 files 写错了要报出来", () => {
+    const f = path.join(dir, "evals", "tasks.json");
+    const good = JSON.parse(fs.readFileSync(f, "utf8"));
+    fs.writeFileSync(f, JSON.stringify([...good, { id: "x", prompt: "p", files: [{ match: "(" }] }]));
+    expect(rules(dir)).toContain("evals.tasks");
+    fs.writeFileSync(f, JSON.stringify([...good, { id: "x", prompt: "p", file: { name: "a" } }]));
+    expect(rules(dir)).toContain("evals.tasks");
+    fs.writeFileSync(f, JSON.stringify([...good, { id: "x", prompt: "p", file: { name: "a", text: "t" }, files: [{ match: "^app/", absent: true }] }]));
+    expect(rules(dir)).not.toContain("evals.tasks");
   });
   it("界面包不能太大", () => {
     write(dir, "ui/big.bin", Buffer.from(Array.from({ length: 800_000 }, () => Math.floor(Math.random() * 256))) as unknown as string);
@@ -227,6 +321,15 @@ describe("目录", () => {
   });
   afterEach(() => site.close());
 
+  it("默认连线上的目录；AMB_CATALOG=off 时不联网，目录是空的", async () => {
+    const on = catalogConfig({});
+    expect(on.url).toBe("https://anymodel.bot/catalog/index.json");
+    expect(on.publicKey).toMatch(/^[A-Za-z0-9+/]+=*$/);
+    const data = Buffer.from("x");
+    expect(verifyCatalog(data, signCatalog(data, generateCatalogKeys().privateKey), on.publicKey)).toBe(false);
+    expect(catalogConfig({ AMB_CATALOG: "off" })).toEqual({ url: "", publicKey: "" });
+    expect(new BotCatalog({ dataDir: tmp, appVersion: "0.1.0", ...catalogConfig({ AMB_CATALOG: "off" }) }).remoteEnabled).toBe(false);
+  });
   it("没配置地址或公钥时不联网，目录是空的", async () => {
     const c = new BotCatalog({ dataDir: path.join(tmp, "d"), appVersion: "1.0.0" });
     expect(c.remoteEnabled).toBe(false);
@@ -234,7 +337,7 @@ describe("目录", () => {
     expect(c.list()).toEqual([]);
   });
   it("没过检查的 Bot 整批不发布", () => {
-    write(path.join(repo, "bots", "fixture-bot"), "sample.json", "{");
+    write(path.join(repo, "bots", "fixture-bot"), "sample.en.json", "{");
     const r = pack();
     expect(r.failures.length).toBe(1);
     expect(fs.existsSync(path.join(out, "index.json"))).toBe(false);
@@ -334,12 +437,23 @@ describe("目录", () => {
     const skills = (...p: string[]) => path.join(data, "dsh", id, "skills", ...p);
 
     it("只看不建实例：读到的是示例数据，本地没有工作区和进程目录", async () => {
-      const f = await inst.previewFile(c.get("fixture-bot")!, "app/state.json");
+      const f = await inst.previewFile(c.get("fixture-bot")!, "app/state.json", "zh-CN");
       expect((f!.json as any).title).toBeTruthy();
-      expect(await inst.previewFile(c.get("fixture-bot")!, "app/other.json")).toBeUndefined();
+      expect(await inst.previewFile(c.get("fixture-bot")!, "app/other.json", "zh-CN")).toBeUndefined();
       expect(store.getBot(id)).toBeUndefined();
       expect(fs.existsSync(ws())).toBe(false);
       expect(fs.existsSync(skills())).toBe(false);
+    });
+    it("示例数据跟着语言走：缺的语言和不认识的语言退回 en", async () => {
+      const title = async (lang: string) => ((await inst.previewFile(c.get("fixture-bot")!, "app/state.json", lang))!.json as any).title;
+      expect(await title("zh-CN")).toBe("filled 示例标题");
+      expect(await title("en")).toBe("filled sample title");
+      expect(await title("ko")).toBe("filled sample title");
+      expect(await title("../../secret")).toBe("filled sample title");
+    });
+    it("初始状态用第一次发消息时的语言", async () => {
+      await inst.install("fixture-bot", "en");
+      expect(JSON.parse(fs.readFileSync(ws("app", "state.json"), "utf8")).title).toBe("filled sample title");
     });
     it("第一次发消息才建实例：人设、权限、技能、初始状态都到位", async () => {
       const bot = await inst.install("fixture-bot", "zh-CN");
@@ -452,6 +566,86 @@ describe("目录", () => {
     c.removeDev("dev-bot");
     expect(c.list()).toEqual([]);
   });
+});
+
+describe("评测", () => {
+  afterEach(() => void vi.unstubAllGlobals());
+  it("每种语言的可点的话都跑，并且用那种语言安装", async () => {
+    const dir = makeBot(path.join(tmp, "bot"));
+    const installs: Array<string | undefined> = [];
+    let n = 0;
+    vi.stubGlobal("fetch", async (url: string, init: { headers: Record<string, string> }) => {
+      if (url.includes("/chat/stream")) return new Response("");
+      if (url.endsWith("/install")) installs.push(init.headers["x-amb-lang"]);
+      return Response.json(url.includes("/app/file") ? { json: { n: n++ }, issues: [] } : {});
+    });
+    const report = await runEvals({ dir, manifest: checkStatic(dir).manifest!, app: "http://app" });
+    expect(installs.filter(Boolean)).toEqual(["zh-CN", "zh-CN", "en", "en"]);
+    expect(report.results.filter((r) => r.kind === "starter")).toHaveLength(4);
+  });
+  it("产物只信文件本身：存在、大小、zip 条目、不该有的文件", async () => {
+    const dir = makeBot(path.join(tmp, "bot"));
+    write(dir, "evals/tasks.json", JSON.stringify([
+      { id: "good", prompt: "p", file: { name: "a.md", text: "hi" }, files: [{ match: "^app/out/a\\.pptx$", minBytes: 3, zipHas: ["ppt/slides/slide1.xml"] }, { match: "\\.tmp$", absent: true }] },
+      { id: "no-file", prompt: "p", files: [{ match: "^app/none$" }] },
+      { id: "too-small", prompt: "p", files: [{ match: "^app/out/a\\.pptx$", minBytes: 9999 }] },
+      { id: "bad-zip", prompt: "p", files: [{ match: "^app/out/a\\.pptx$", zipHas: ["ppt/slides/slide9.xml"] }] },
+      { id: "should-be-absent", prompt: "p", files: [{ match: "^app/out/a\\.pptx$", absent: true }] },
+    ]));
+    let n = 0;
+    const prompts: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: { body?: string }) => {
+      if (url.includes("/chat/stream")) {
+        prompts.push(JSON.parse(init.body!).text);
+        return new Response("");
+      }
+      if (url.includes("/app/inbox")) return Response.json({ path: "app/inbox/a.md" });
+      if (url.includes("/app/list")) return Response.json({ files: [{ path: "app/out/a.pptx", size: 100 }] });
+      if (url.includes("/app/download")) return new Response("PK..ppt/slides/slide1.xml..");
+      return Response.json(url.includes("/app/file") ? { json: { n: n++ }, issues: [] } : {});
+    });
+    const report = await runEvals({ dir, manifest: checkStatic(dir).manifest!, app: "http://app" });
+    const tasks = Object.fromEntries(report.results.filter((r) => r.kind === "task").map((r) => [r.id, r]));
+    expect(tasks.good.ok).toBe(true);
+    expect(prompts[0]).toContain("app/inbox/a.md");
+    expect(tasks["no-file"].note).toContain("缺少文件");
+    expect(tasks["too-small"].ok).toBe(false);
+    expect(tasks["bad-zip"].note).toContain("slide9");
+    expect(tasks["should-be-absent"].note).toContain("不该有");
+    expect(report.issues.map((i) => i.rule)).toContain("behavior.completion");
+  });
+  it("没人点审批：声明过的权限放行，其余拒绝，提问就答一句", async () => {
+    const dir = makeBot(path.join(tmp, "bot"));
+    const f = path.join(dir, "bot.json");
+    fs.writeFileSync(f, JSON.stringify({ ...JSON.parse(fs.readFileSync(f, "utf8")), permissions: ["workspace-write", "network"] }));
+    let n = 0;
+    let first = true;
+    let pending: Array<{ id: string; kind: string; tool: string }> = [
+      { id: "a", kind: "approval", tool: "web_search" },
+      { id: "b", kind: "approval", tool: "task_start" },
+      { id: "c", kind: "question", tool: "" },
+    ];
+    const decided: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      if (url.includes("/chat/stream")) {
+        if (first) await new Promise((r) => setTimeout(r, 1200));
+        first = false;
+        return new Response("");
+      }
+      if (url.includes("/approvals?")) {
+        const out = pending;
+        pending = [];
+        return Response.json({ approvals: out });
+      }
+      if (url.includes("/approvals/")) {
+        decided.push(url.split("/approvals/")[1]);
+        return Response.json({});
+      }
+      return Response.json(url.includes("/app/file") ? { json: { n: n++ }, issues: [] } : {});
+    });
+    await runEvals({ dir, manifest: checkStatic(dir).manifest!, app: "http://app" });
+    expect(decided.sort()).toEqual(["a/approve", "b/deny", "c/answer"]);
+  }, 20_000);
 });
 
 describe("界面的静态路由", () => {

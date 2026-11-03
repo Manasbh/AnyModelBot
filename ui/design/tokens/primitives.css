@@ -47,6 +47,31 @@
   --bot-purple-glow: #c24dff;
   --bot-orange-eye: #fdd77c;
   --bot-orange-glow: #ff8c1a;
+  /* 12 个领域专家：眼睛色从原图取，光色贴着各自的配件 */
+  --bot-law-eye: #fcde80;
+  --bot-law-glow: #d9a441;
+  --bot-health-eye: #8ff7f5;
+  --bot-health-glow: #22c7c0;
+  --bot-finance-eye: #fdeb85;
+  --bot-finance-glow: #e8b923;
+  --bot-code-eye: #7df8fc;
+  --bot-code-glow: #22d3ee;
+  --bot-design-eye: #fcf5e2;
+  --bot-design-glow: #ff7a66;
+  --bot-writing-eye: #fdd56b;
+  --bot-writing-glow: #f0a93a;
+  --bot-education-eye: #fcdf80;
+  --bot-education-glow: #f7b733;
+  --bot-science-eye: #b1fbe0;
+  --bot-science-glow: #2fe0b5;
+  --bot-data-eye: #a8eefb;
+  --bot-data-glow: #5cc2ff;
+  --bot-marketing-eye: #fcd8f1;
+  --bot-marketing-glow: #ff4fa3;
+  --bot-cooking-eye: #fcbf55;
+  --bot-cooking-glow: #ff9838;
+  --bot-translate-eye: #fce8a3;
+  --bot-translate-glow: #e8607f;
   --bot-blush: #ff7aa8;
   --bot-glint: rgba(255, 255, 255, .8);   /* 镜片、宝石上扫过的反光 */
 

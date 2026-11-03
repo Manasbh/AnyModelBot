@@ -1,0 +1,2 @@
+# 目录 Bot 的技能按内容算哈希（bot.json 的 sha256），不能转换换行符
+bots/*/skills/** -text

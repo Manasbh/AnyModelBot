@@ -5,10 +5,10 @@ import { html, Button, IconButton, Notice, Spinner } from "../components/ui.js";
 import { BotAvatar } from "../components/avatar.js";
 import { ChatScreen, PromptCard } from "./chat.js";
 import { api, streamChat, watchApp } from "../lib/api.js";
-import { attachBridge, currentEnv, pickFiles, watchEnv } from "../lib/bot-bridge.js";
+import { attachBridge, currentEnv, pickFiles, safeExternalUrl, watchEnv } from "../lib/bot-bridge.js";
 import { markCatalogSeen, tr } from "../lib/catalog.js";
 import { guide, markSeen } from "../lib/guide.js";
-import { toast } from "../lib/store.js";
+import { confirmSheet, toast } from "../lib/store.js";
 import { t, useLang } from "../lib/i18n.js";
 
 const errorText = (e) => {
@@ -43,11 +43,21 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
   const [side, setSide] = useState(null); // "chat" | "info" | null
   const [prompts, setPrompts] = useState([]); // 这一轮里 Bot 在等用户确认的事（权限、提问）
   const [used, setUsed] = useState(!!bot);
+  const [desktop, setDesktop] = useState(false);
   const frame = useRef(null);
   const bridge = useRef(null);
+  const urlConfirming = useRef(false);
   // 桥接的回调要读到最新的状态
   const live = useRef(/** @type {any} */ ({}));
-  live.current = { bot, entry, messages, used };
+  live.current = { bot, entry, messages, used, desktop };
+
+  useEffect(() => {
+    let alive = true;
+    api("/status").then((s) => alive && setDesktop(!!s?.desktop)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // 打开：有实例读实例，没有就只准备界面
   useEffect(() => {
@@ -97,8 +107,8 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
   }, [base, lang]);
 
   const envOf = () => {
-    const { bot: b, entry: e, messages: m } = live.current;
-    return { ...currentEnv(), sample: !b, messages: m || {}, bot: { id: b?.id || null, name: b?.name || tr(e?.name, lang) || "", avatar: e?.avatar || "" } };
+    const { bot: b, entry: e, messages: m, desktop: d } = live.current;
+    return { ...currentEnv(), sample: !b, desktop: !!d, messages: m || {}, bot: { id: b?.id || null, name: b?.name || tr(e?.name, lang) || "", avatar: e?.avatar || "" } };
   };
 
   /** 第一次发消息才创建实例 */
@@ -163,6 +173,35 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
     const br = attachBridge(el, {
       init: () => envOf(),
       readFile: ({ path }) => fileApi(path),
+      readImage: ({ path }) => {
+        const b = live.current.bot;
+        if (!b) throw new Error("no_instance");
+        return api(`/bots/${encodeURIComponent(b.id)}/app/image?path=${encodeURIComponent(path)}`);
+      },
+      // 只响应用户刚点过的操作：界面不能自己打开文件（点击的用户激活会传到父页面）
+      openFile: async ({ path, reveal }) => {
+        const b = live.current.bot;
+        if (!b) throw new Error("no_instance");
+        if (navigator.userActivation && !navigator.userActivation.isActive) throw new Error("needs_user_gesture");
+        const id = encodeURIComponent(b.id);
+        if (live.current.desktop) return api(`/bots/${id}/app/open`, { method: "POST", body: { path, reveal: !!reveal } });
+        window.open(`/amb/api/bots/${id}/app/download?path=${encodeURIComponent(path)}`, "_blank", "noopener");
+        return { ok: true };
+      },
+      // 外部链接：地址可能来自网页内容，打开前让用户看清楚。同一时间只有一个确认框，界面刷不出一串弹窗
+      openUrl: async ({ url }) => {
+        const safe = safeExternalUrl(url);
+        if (!safe) throw new Error("invalid_url");
+        if (urlConfirming.current) return false;
+        urlConfirming.current = true;
+        try {
+          const ok = await confirmSheet({ title: t("botapp.app.openUrlTitle"), body: safe, confirmLabel: t("botapp.app.openUrlConfirm") });
+          if (ok) window.open(safe, "_blank", "noopener,noreferrer");
+          return !!ok;
+        } finally {
+          urlConfirming.current = false;
+        }
+      },
       send: ({ text, action }) => {
         // 界面上的操作以用户的身份发给 Bot（约定在 botkit/app-skill.ts）
         const line = action ? `[ui-action] ${JSON.stringify(action)}${text ? `\n${text}` : ""}` : text;
@@ -193,10 +232,10 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
     };
   }, [base, uiFailed]);
 
-  // 文案读到之后再告诉界面一次
+  // 文案读到之后、知道是不是桌面版之后再告诉界面一次
   useEffect(() => {
     if (messages) bridge.current?.post("env", envOf());
-  }, [messages]);
+  }, [messages, desktop]);
 
   // app/ 下的文件变了（Bot 改的，包括微信里改的）：转告界面
   const botId = bot?.id;

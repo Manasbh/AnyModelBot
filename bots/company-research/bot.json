@@ -1,0 +1,37 @@
+{
+  "id": "company-research",
+  "version": "1.0.0",
+  "minAppVersion": "0.1.20",
+  "name": { "zh-CN": "尽调助手", "en": "Company Research" },
+  "summary": {
+    "zh-CN": "本机公司尽调：四路研究、策展、简报与可溯源报告/PDF",
+    "en": "Local company diligence with parallel research, curation, and sourced reports"
+  },
+  "about": {
+    "zh-CN": [
+      "研究流程和 PDF 导出对齐开源项目 Company Research Agent",
+      "报告和来源留在你的设备上；在聊天渠道里发起，结果也发回那里",
+      "仅供信息与学习参考，不构成投资建议"
+    ],
+    "en": [
+      "Follows the research flow and PDF export of the open-source Company Research Agent",
+      "Reports and sources stay on your device; start it in a chat channel and the result comes back there",
+      "For information and learning only, not investment advice"
+    ]
+  },
+  "avatar": "data",
+  "permissions": ["workspace-write", "network"],
+  "starters": {
+    "zh-CN": [
+      "对 Stripe 做完整尽调并生成报告",
+      "打开上一份报告的来源与策展列表",
+      "把当前报告导出为 PDF"
+    ],
+    "en": [
+      "Run full diligence on Stripe and generate a report",
+      "Open sources and curation from the latest report",
+      "Export the current report to PDF"
+    ]
+  },
+  "skills": []
+}

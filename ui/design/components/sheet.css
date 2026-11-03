@@ -18,7 +18,7 @@
 }
 .sheet.wide { --sheet-w: 640px; }
 .sheet h2 { font-size: var(--fs-xl); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); }
-.sheet .body { color: var(--fg-2); line-height: var(--lh-relaxed); }
+.sheet .body { color: var(--fg-2); line-height: var(--lh-relaxed); overflow-wrap: anywhere; }
 .sheet .actions { display: flex; justify-content: flex-end; gap: var(--ctl-gap); margin-top: var(--space-1); }
 .sheet pre.doc { white-space: pre-wrap; font: var(--fs-xs)/var(--lh-normal) var(--code); color: var(--fg-2); margin: 0; max-height: 60vh; overflow: auto; }
 

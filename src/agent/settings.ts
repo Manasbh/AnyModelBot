@@ -5,8 +5,8 @@ export type CuBackend = "cua" | "codex";
 export type CuApproval = "auto" | "ask-input";
 /** auto = 只在预计花费超过上限时问（视频算不出花费也问）；always = 每次生成前都问 */
 export type MediaConfirm = "auto" | "always";
-/** 内置头像角色（ui/components/avatar.js 的 BOT_CHARS）；blue 是默认头像 */
-export const BOT_AVATARS = ["blue", "yellow", "green", "red", "purple", "orange"] as const;
+/** 内置头像角色（ui/components/avatar.js 的 BOT_CHARS）：6 个基础角色 + 12 个领域专家；blue 是默认头像 */
+export const BOT_AVATARS = ["blue", "yellow", "green", "red", "purple", "orange", "law", "health", "finance", "code", "design", "writing", "education", "science", "data", "marketing", "cooking", "translate"] as const;
 export type BotAvatarKey = (typeof BOT_AVATARS)[number];
 
 export interface BotSettings {

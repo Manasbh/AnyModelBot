@@ -74,6 +74,7 @@
 - Feishu 채널: Feishu Open Platform과 지속 연결 유지.
 - Telegram, Slack, Discord 채널: 연결 후 `api.telegram.org`, `slack.com`, `discord.com` 및 파일 호스트와 통신해 메시지와 첨부 파일 송수신.
 - Windows에서 에이전트 모드가 켜져 있고 사용 가능한 PowerShell 7이 없으면 Microsoft 공식 릴리스 위치에서 PowerShell 7 다운로드(`AMB_PWSH_AUTO_INSTALL=0`으로 끌 수 있음, [개발 안내](./development_ko.md) 참조).
+- 「둘러보기」의 봇 목록: 시작할 때와 이후 6시간마다 `anymodel.bot/catalog/`에서 목록을 읽고, 봇을 열거나 사용할 때 해당 패키지를 내려받습니다. 이 요청은 내려받기만 하며 사용자의 데이터를 올리지 않습니다. 내려받은 내용은 서명과 해시로 검증합니다(`AMB_CATALOG=off`로 끌 수 있습니다).
 
 ## 컴퓨터 사용과 스크린샷
 

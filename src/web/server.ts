@@ -368,6 +368,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         readJson,
         appLang: () => String(req.headers["x-amb-lang"] || "en"),
         loopback: isLoopback(host),
+        desktop: app.desktop,
       });
       if (handled) return;
     }

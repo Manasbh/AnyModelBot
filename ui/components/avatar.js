@@ -1,4 +1,4 @@
-// 机器人头像：6 个内置毛绒角色（蓝色的"天天"是默认头像），每个机器人配一个，只决定长相，和它做什么无关；会看指针、眨眼，并对平台里发生的事做出反应。
+// 机器人头像：内置毛绒角色（6 个基础角色 + 12 个领域专家，蓝色的"天天"是默认头像），每个机器人配一个，只决定长相，和它做什么无关；会看指针、眨眼，并对平台里发生的事做出反应。
 // 图层由 scripts/build-bot-avatars.py 从 anymodelbot_design/logo avator/ 生成（ui/design/bots/<key>.webp）；
 // 下面的几何是相对头像方框的百分比，和脚本输出的是同一套数，换图后要一起更新。
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -10,7 +10,7 @@ import { t } from "../lib/i18n.js";
  * 角色。eyes：两眼中心；r：眼睛半径；earL / earR / top：耳朵与头顶配件的转轴；tip：配件的中心（特效从这里发出）；
  * lens：护目镜镜片（只有飞飞有）。
  * 名字 name、一句介绍 about 在词典 avatar.chars.<key> 里，用 charText(key) 取；BOT_CHARS[key].name / .about 也能读（getter，读的时候按当前语言翻译）。
- * 角色没有定位：机器人做什么由人设决定，不要在这里给角色写岗位，也不要让模板绑定角色。
+ * 基础角色没有定位：机器人做什么由人设决定，不要在这里给基础角色写岗位，也不要让模板绑定角色。
  */
 export const BOT_CHARS = {
   blue: {
@@ -33,11 +33,57 @@ export const BOT_CHARS = {
     lens: [[35.27, 40.85], [64.81, 40.85], 6.4],
   },
 };
+/** 基础角色：没选过头像的机器人只在这六个里挑（charOf），官网也只用这六个。site/scripts/sync-from-app.ts 比对的是上面这一段的几何，专家不要写进去 */
+export const BASE_KEYS = Object.keys(BOT_CHARS);
+/**
+ * 12 个领域专家：用户 2026-11-03 要的，形象带领域（avatar.chars.<key>.field），在选择器里单独一组。
+ * 选了也只换长相，人设、模型和能力不变；模板同样不绑定它们。字段同上，原图在 anymodelbot_design/logo avator/专家/。
+ */
+export const EXPERT_CHARS = {
+  law: {
+    eyes: [[38.8, 62.95], [60.87, 62.95]], r: 3.41, earL: [18.45, 62.21], earR: [81.4, 62.21], top: [49.73, 31.94], tip: [49.7, 21.5],
+  },
+  health: {
+    eyes: [[38.9, 61.56], [61.02, 61.56]], r: 3.41, earL: [17.6, 60.5], earR: [82.25, 60.5], top: [50.0, 30.0], tip: [50.0, 21.2],
+  },
+  finance: {
+    eyes: [[38.69, 62.89], [60.88, 62.89]], r: 3.41, earL: [18.06, 61.63], earR: [81.32, 61.63], top: [49.42, 30.78], tip: [49.5, 20.9],
+  },
+  code: {
+    eyes: [[38.85, 62.92], [60.85, 62.93]], r: 3.41, earL: [18.45, 62.02], earR: [81.24, 62.02], top: [49.88, 31.32], tip: [49.9, 21.9],
+  },
+  design: {
+    eyes: [[38.81, 62.86], [60.95, 62.88]], r: 3.49, earL: [18.22, 61.86], earR: [81.32, 61.86], top: [49.92, 31.55], tip: [50.8, 21.6],
+  },
+  writing: {
+    eyes: [[38.98, 62.96], [61.17, 62.97]], r: 3.49, earL: [18.99, 62.4], earR: [81.09, 62.4], top: [50.08, 33.02], tip: [50.1, 21.9],
+  },
+  education: {
+    eyes: [[38.74, 60.26], [61.16, 60.25]], r: 3.41, earL: [18.06, 59.77], earR: [81.47, 59.77], top: [50.16, 29.15], tip: [49.8, 20.7],
+  },
+  science: {
+    eyes: [[38.69, 63.0], [60.77, 62.99]], r: 3.41, earL: [18.45, 62.25], earR: [81.4, 62.25], top: [49.81, 31.71], tip: [49.9, 21.4],
+  },
+  data: {
+    eyes: [[38.65, 62.99], [60.68, 63.0]], r: 3.41, earL: [18.29, 62.36], earR: [81.32, 62.36], top: [48.99, 31.94], tip: [49.7, 21.9],
+  },
+  marketing: {
+    eyes: [[38.79, 62.99], [60.82, 62.99]], r: 3.57, earL: [18.45, 62.25], earR: [81.47, 62.25], top: [49.69, 31.71], tip: [52.8, 21.6],
+  },
+  cooking: {
+    eyes: [[38.67, 62.52], [61.35, 62.52]], r: 3.57, earL: [18.37, 61.71], earR: [81.63, 61.71], top: [50.12, 33.1], tip: [50.0, 22.2],
+  },
+  translate: {
+    eyes: [[38.79, 63.55], [60.92, 63.55]], r: 3.41, earL: [18.6, 62.95], earR: [81.32, 62.95], top: [49.26, 32.33], tip: [50.0, 21.6],
+  },
+};
+export const EXPERT_KEYS = Object.keys(EXPERT_CHARS);
+Object.assign(BOT_CHARS, EXPERT_CHARS);
 export const CHAR_KEYS = Object.keys(BOT_CHARS);
 export const MAIN_CHAR = "blue";
 
-/** 角色的名字和介绍（按当前语言） */
-export const charText = (key) => ({ name: t(`avatar.chars.${key}.name`), about: t(`avatar.chars.${key}.about`) });
+/** 角色的名字、介绍和领域（按当前语言）；基础角色没有领域 */
+export const charText = (key) => ({ name: t(`avatar.chars.${key}.name`), about: t(`avatar.chars.${key}.about`), field: EXPERT_CHARS[key] ? t(`avatar.chars.${key}.field`) : "" });
 for (const k of CHAR_KEYS)
   for (const f of ["name", "about"]) Object.defineProperty(BOT_CHARS[k], f, { get: () => t(`avatar.chars.${k}.${f}`), enumerable: true });
 
@@ -49,12 +95,12 @@ function hash(s) {
   }
   return h >>> 0;
 }
-/** 机器人用哪个角色：设置里选过的 > 默认机器人用默认头像 > 由 id 稳定地挑一个 */
+/** 机器人用哪个角色：设置里选过的 > 默认机器人用默认头像 > 由 id 稳定地在基础角色里挑一个（不能用全部角色：加了角色，老机器人的头像就变了） */
 export function charOf(bot) {
   const a = bot && bot.settings && bot.settings.avatar;
   if (a && BOT_CHARS[a]) return a;
   if (!bot || bot.id === "default") return MAIN_CHAR;
-  return CHAR_KEYS[hash(String(bot.id || bot.name || "?")) % CHAR_KEYS.length];
+  return BASE_KEYS[hash(String(bot.id || bot.name || "?")) % BASE_KEYS.length];
 }
 
 // —— 指针：一个全局监听，写每张脸的 --look-x / --look-y（只有指针靠近的脸会看过去） ——
@@ -226,18 +272,22 @@ export function BotAvatar({ bot, id, name, char, size = 34, state = "idle", work
   </div>`;
 }
 
-/** 选角色：一排 6 个头像（单选）。value 为空时高亮 fallback（当前由 id 决定的那个） */
+/** 选角色（单选）：基础角色一组，领域专家一组，每行 6 个。value 为空时高亮 fallback（当前由 id 决定的那个） */
 export function AvatarPicker({ value, fallback, onChange, size = 44, label = t("avatar.label") }) {
   const cur = value || fallback;
+  const opt = (k) => {
+    const c = charText(k);
+    return html`<button type="button" key=${k} class=${`avatar-opt${k === cur ? " on" : ""}`} role="radio" aria-checked=${k === cur}
+        title=${`${c.name} · ${c.about}`} onClick=${() => k !== cur && onChange(k)}>
+      <${BotAvatar} char=${k} size=${size} state=${k === cur ? "listening" : "idle"} />
+      <span class="avatar-name">${c.name}</span>
+      ${c.field && html`<span class="avatar-field">${c.field}</span>`}
+    </button>`;
+  };
   return html`<div class="avatar-picker" role="radiogroup" aria-label=${label}>
-    ${CHAR_KEYS.map((k) => {
-      const c = charText(k);
-      return html`<button type="button" key=${k} class=${`avatar-opt${k === cur ? " on" : ""}`} role="radio" aria-checked=${k === cur}
-          title=${`${c.name} · ${c.about}`} onClick=${() => k !== cur && onChange(k)}>
-        <${BotAvatar} char=${k} size=${size} state=${k === cur ? "listening" : "idle"} />
-        <span class="avatar-name">${c.name}</span>
-      </button>`;
-    })}
+    <div class="avatar-group">${BASE_KEYS.map(opt)}</div>
+    <div class="t-label">${t("avatar.groups.expert")}</div>
+    <div class="avatar-group">${EXPERT_KEYS.map(opt)}</div>
   </div>`;
 }
 

@@ -16,6 +16,8 @@ export default {
     conversation: "完整对话",
     info: "信息",
     uiFailed: "界面出了问题，已切换到对话。",
+    openUrlTitle: "打开这个网页？",
+    openUrlConfirm: "打开",
     removed: "这个 Bot 已下架，你的数据还在。",
     removedSecurity: "这个 Bot 因安全原因已下架，它的技能已经停用，你的数据还在。",
   },

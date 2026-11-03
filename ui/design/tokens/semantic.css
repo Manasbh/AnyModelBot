@@ -85,6 +85,9 @@
   --accent-solid: var(--lime-500);    /* 黄绿填充面：应用标志、"已保存"、选中模板的图标 */
   --on-accent: var(--olive-950);      /* 黄绿面上的字，15.39:1 */
   --accent-line: color-mix(in srgb, var(--olive-500) 35%, transparent);
+  --brand: var(--lime-500);  /* 品牌填充：只给应用标志 */
+  --on-brand: var(--olive-950);
+  --brand-line: color-mix(in srgb, var(--olive-500) 35%, transparent);
   --accent-soft: color-mix(in srgb, var(--lime-500) 45%, transparent);  /* 焦点光晕 */
   --accent-wash: color-mix(in srgb, var(--lime-500) 14%, transparent);  /* 选中卡片的底 */
   --mark: color-mix(in srgb, var(--lime-500) 55%, var(--white));        /* 荧光笔：文字选区、定位闪烁 */
@@ -267,6 +270,7 @@
   --send-bg: var(--lime-500);
   --send-fg: var(--olive-950);
   --accent: var(--lime-500);
+  --brand-line: color-mix(in srgb, var(--lime-500) 30%, transparent);
   --accent-soft: color-mix(in srgb, var(--lime-500) 14%, transparent);
   --accent-line: color-mix(in srgb, var(--lime-500) 30%, transparent);
   --accent-wash: color-mix(in srgb, var(--lime-500) 7%, transparent);

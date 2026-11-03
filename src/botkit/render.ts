@@ -8,7 +8,7 @@ import path from "node:path";
 import type { AddressInfo } from "node:net";
 import { serveBotAppStatic } from "../web/botapp.js";
 import type { BotCatalog } from "./catalog.js";
-import type { BotManifest, Issue } from "./format.js";
+import { samplePath, type BotManifest, type Issue } from "./format.js";
 
 /** 模拟父页面：用示例数据回应桥接请求 */
 const harness = (src: string, sample: string, messages: string) => `<!doctype html><meta charset="utf-8"><style>html,body,iframe{margin:0;width:100%;height:100%;border:0}</style>
@@ -53,13 +53,13 @@ export async function renderCheck(dir: string, manifest: BotManifest, uiRoot: st
     return [{ rule: "render.playwright", message: "渲染检查需要 Playwright：npm i --no-save playwright && npx playwright install chromium" }];
   }
   const catalog = { get: (id: string) => (id === manifest.id ? { dev: path.resolve(dir) } : undefined), uiDirIfPresent: () => undefined, thumb: async () => undefined } as unknown as BotCatalog;
-  const sample = fs.readFileSync(path.join(dir, "sample.json"), "utf8");
   const src = `/amb/botapp/d/${manifest.id}/index.html`;
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || "/", "http://localhost");
     if (serveBotAppStatic(req, res, url, { uiDir: uiRoot, vendor, catalog })) return;
     const lang = url.searchParams.get("lang") || "zh-CN";
     const messages = fs.readFileSync(path.join(dir, "ui", "locales", `${lang}.json`), "utf8");
+    const sample = fs.readFileSync(samplePath(dir, lang), "utf8");
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(harness(src, sample, messages));
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", () => r()));
@@ -69,12 +69,12 @@ export async function renderCheck(dir: string, manifest: BotManifest, uiRoot: st
   fs.mkdirSync(out, { recursive: true });
   const browser = await chromium.launch();
   try {
-    for (const [name, theme, width, height] of [["light", "light", 1200, 750], ["dark", "dark", 1200, 750], ["mobile", "light", 390, 780]] as const) {
+    for (const [name, theme, width, height, lang] of [["light", "light", 1200, 750, "zh-CN"], ["dark", "dark", 1200, 750, "zh-CN"], ["mobile", "light", 390, 780, "zh-CN"], ["mobile-en", "light", 390, 780, "en"]] as const) {
       const page = await browser.newPage({ viewport: { width, height } });
       const errors: string[] = [];
       page.on("pageerror", (e: Error) => errors.push(e.message));
       page.on("console", (m: any) => m.type() === "error" && errors.push(m.text()));
-      await page.goto(`http://127.0.0.1:${port}/?theme=${theme}`);
+      await page.goto(`http://127.0.0.1:${port}/?theme=${theme}&lang=${lang}`);
       await page.waitForFunction("window.__rendered === true", undefined, { timeout: 10_000 }).catch(() => errors.push("界面没有调用 mount"));
       await page.waitForTimeout(300);
       const frame = page.frames().find((f: any) => f !== page.mainFrame());

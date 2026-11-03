@@ -4,6 +4,20 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.20 - 2026-11-03
+
+### New
+
+- **Discover:** The sidebar now has Discover, with ready-made bots that each have their own view. Opening one shows a sample, and it's only installed when you send your first message. Remove it whenever you like.
+- **Company Research:** Give it a company name and it researches financials, news, industry and business, then writes a report with source links for key facts. It can export a PDF if Python is installed.
+- **US Stock Research:** Writes research reports from SEC filings, with every number traceable.
+- **PPT Master:** Turns documents or topics into editable PPTX decks, and can also make templates or edit decks you have. It needs Python.
+- **12 expert avatars:** The avatar picker now has characters for 12 fields, including law, health, finance, coding and design.
+
+### Privacy
+
+- At startup and every 6 hours, the app reads the bot catalog from anymodel.bot, and it downloads a bot's package when you open or use it. These requests only download; your data isn't uploaded. To turn the catalog off, set the environment variable `AMB_CATALOG=off`.
+
 ## 0.1.19 - 2026-11-03
 
 ### Important changes

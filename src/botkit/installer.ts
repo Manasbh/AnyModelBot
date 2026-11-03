@@ -11,13 +11,16 @@ import { logger } from "../log.js";
 import { appSkill } from "./app-skill.js";
 import { safeRelPath } from "./bundle.js";
 import type { BotCatalog, CatalogEntry } from "./catalog.js";
-import { LIMITS, localized, RESERVED_SKILLS, type BotAppRef } from "./format.js";
+import { LIMITS, localized, RESERVED_SKILLS, samplePath, type BotAppRef } from "./format.js";
 import { prune, validate, type JsonSchema } from "./schema.js";
+import type { ResolvedFile } from "../web/files.js";
 
 const log = logger("botkit");
 
 export const instanceId = (catalogId: string) => `cat-${catalogId}`;
 const STATE_FILE = "app/state.json";
+/** 界面能用 readImage 读的类型。SVG 也可以：只放进沙箱页的 <img>，里面的脚本不会运行 */
+const IMAGE_MIME: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml" };
 
 export class CatalogError extends Error {
   constructor(readonly code: string, readonly status = 400) {
@@ -116,7 +119,7 @@ export class BotInstaller {
     // 移除时保留了数据的话接着用原来的
     if (!fs.existsSync(state)) {
       fs.mkdirSync(path.dirname(state), { recursive: true });
-      fs.copyFileSync(path.join(uiDir, "sample.json"), state);
+      fs.copyFileSync(samplePath(uiDir, lang), state);
     }
     const ref: BotAppRef = { catalogId, version: entry.version, ui: entry.ui.sha256, runtime: entry.runtime.sha256, permissions: entry.permissions, skills };
     const bot = this.o.store.createBot({ id, name: localized(entry.name, lang) ?? catalogId, systemPrompt: persona, settings: settingsFor(entry), origin: "catalog", app: ref });
@@ -227,11 +230,45 @@ export class BotInstaller {
     return out;
   }
 
+  /** 界面读图片：只读 app/ 下，读成 data URL。沙箱页连不上接口，图片也只能这样给 */
+  readImage(bot: Bot, rel: unknown): { path: string; url: string; size: number } | undefined {
+    const f = this.resolveAppPath(bot.id, rel);
+    const mime = f && IMAGE_MIME[path.extname(f).toLowerCase()];
+    if (!f || !mime) return undefined;
+    const st = fs.statSync(f);
+    if (!st.isFile() || st.size > LIMITS.imageBytes) return undefined;
+    return { path: rel as string, url: `data:${mime};base64,${fs.readFileSync(f).toString("base64")}`, size: st.size };
+  }
+
+  /** 给「打开」和下载用：app/ 下的普通文件（硬链接看不出指向哪里，不给），走不出去 */
+  appFile(bot: Bot, rel: unknown): ResolvedFile | undefined {
+    const f = this.resolveAppPath(bot.id, rel);
+    if (!f) return undefined;
+    const st = fs.statSync(f);
+    return st.isFile() && st.nlink === 1 ? { path: f, size: st.size, mtimeMs: st.mtimeMs, mode: st.mode } : undefined;
+  }
+
+  /** 列出 app/ 下的文件（评测用它检查产物）。不跟随符号链接 */
+  listApp(botId: string, limit = 5000): Array<{ path: string; size: number }> {
+    const out: Array<{ path: string; size: number }> = [];
+    const walkDir = (dir: string, rel: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (out.length >= limit) return;
+        const r = `${rel}/${e.name}`;
+        if (e.isDirectory()) walkDir(path.join(dir, e.name), r);
+        else if (e.isFile()) out.push({ path: r, size: fs.statSync(path.join(dir, e.name)).size });
+      }
+    };
+    const root = path.join(this.workspace(botId), "app");
+    if (fs.existsSync(root)) walkDir(root, "app");
+    return out;
+  }
+
   /** 还没有实例时：界面读到的就是示例数据 */
-  async previewFile(entry: CatalogEntry, rel: unknown): Promise<{ path: string; text?: string; json?: unknown; issues: string[] } | undefined> {
+  async previewFile(entry: CatalogEntry, rel: unknown, lang: string): Promise<{ path: string; text?: string; json?: unknown; issues: string[] } | undefined> {
     if (rel !== STATE_FILE) return undefined;
     const dir = await this.o.catalog.ensureUi(entry);
-    return this.filePayload(fs.readFileSync(path.join(dir, "sample.json")), STATE_FILE, this.readSchema(dir).schema);
+    return this.filePayload(fs.readFileSync(samplePath(dir, lang)), STATE_FILE, this.readSchema(dir).schema);
   }
 
   /** 用户选的文件放进 app/inbox/，重名时加序号；返回工作区里的相对路径 */

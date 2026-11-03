@@ -74,6 +74,7 @@
 - Feishu：Feishu Open Platform との持続接続。
 - Telegram、Slack、Discord：接続後に `api.telegram.org`、`slack.com`、`discord.com` と各ファイル配信先を利用してメッセージやファイルを送受信。
 - Windows でエージェントが有効かつ使用可能な PowerShell 7 がない場合、Microsoft の公式配布先から PowerShell 7 を取得（`AMB_PWSH_AUTO_INSTALL=0` で停止可能。[開発ガイド](./development_ja.md) 参照）。
+- 「見つける」の Bot 一覧：起動時とその後 6 時間ごとに `anymodel.bot/catalog/` から一覧を読み込み、Bot を開くか使うときにそのパッケージをダウンロードします。これらの通信はダウンロードのみで、あなたのデータはアップロードしません。ダウンロードした内容は署名とハッシュで検証します（`AMB_CATALOG=off` で無効にできます）。
 
 ## コンピューター操作とスクリーンショット
 

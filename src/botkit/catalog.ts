@@ -17,7 +17,7 @@ const log = logger("botkit");
 export const SYNC_INTERVAL_MS = 6 * 3600_000;
 
 export interface CatalogEntry extends BotManifest {
-  /** 界面包：ui/、sample.json、state.schema.json、bot.json */
+  /** 界面包：ui/、sample.<语言>.json、state.schema.json、bot.json */
   ui: { sha256: string; size: number };
   /** 运行包：persona.md、skills/ */
   runtime: { sha256: string; size: number };
@@ -229,7 +229,7 @@ export class BotCatalog extends EventEmitter {
     return p;
   }
 
-  /** 界面目录（里面有 ui/、sample.json、state.schema.json） */
+  /** 界面目录（里面有 ui/、sample.<语言>.json、state.schema.json） */
   async ensureUi(e: CatalogEntry): Promise<string> {
     if (e.dev) return e.dev;
     await this.ensureBundle(e.ui.sha256, LIMITS.uiBundleBytes);

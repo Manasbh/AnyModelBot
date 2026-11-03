@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-把 anymodelbot_design/logo avator/ 里的 6 张毛绒机器人原图拆成可动的图层，输出 ui/design/bots/<key>.webp。
+把 anymodelbot_design/logo avator/ 里的毛绒机器人原图（6 个基础角色 + 专家/ 下的 12 个领域专家）拆成可动的图层，输出 ui/design/bots/<key>.webp。
 
 每个角色一张横向精灵图，8 格，每格 CELL×CELL，坐标系相同（叠在一起就是原图）：
   0 head      头（不含耳朵和头顶配件；面罩上的眼睛已抹掉，眼睛由 avatar.js 用 SVG 画，才能眨眼、换表情）
@@ -9,7 +9,7 @@
   3 top       头顶配件（天线球 / 星星 / 嫩芽 / 角 / 宝石 / 天线），同样向头里多留一截
   4–7         上面四层各自的"发光部分"（哒哒的灯带、晶晶的霓虹线），没有就是空的
 
-只用 numpy + Pillow：  python3 scripts/build-bot-avatars.py
+只用 numpy + Pillow：  python3 scripts/build-bot-avatars.py [角色 ...]（不写角色就全部重新生成）
 官网的 AVIF 版要从无损的精灵图编码（site/scripts/make-bot-avif.ts）：  python3 scripts/build-bot-avatars.py --out <目录> --png
   --out 改输出目录（默认 ui/design/bots），--png 另存一份无损 PNG
 几何（源图像素）和 ui/components/avatar.js 里的 BOT_CHARS 是同一套数，改一边要改另一边。
@@ -51,6 +51,31 @@ CHARS = {
                    glow=("g", 80, 170, "hlrt")),
     "orange": dict(src="橙色探险者.png", eyes=[(615.0, 663.0), (920.0, 663.0)], er=46, patch=(1.6, 2.4), visor=(447, 517, 1090, 805, 90),
                    ear=dict(cutL=324, cutR=1210, y0=488, y1=830), top=dict(x0=655, x1=880, cut=220, stem=(695, 842))),
+    # —— 12 个领域专家（anymodelbot_design/logo avator/专家/）：几何是从图上量出来再核对过的，字段同上 ——
+    "law": dict(src="专家/法律-衡衡.png", eyes=[(622.6, 678.2), (907.4, 678.2)], er=44, patch=(1.6, 2.4), visor=(463, 533, 1071, 816, 135),
+                ear=dict(cutL=360, cutR=1172, y0=516, y1=821), top=dict(x0=541, x1=985, cut=278, stem=(708, 819))),
+    "health": dict(src="专家/医疗健康-安安.png", eyes=[(623.8, 660.2), (909.1, 660.1)], er=44, patch=(1.6, 2.4), visor=(465, 517, 1070, 792, 132),
+                ear=dict(cutL=349, cutR=1183, y0=499, y1=794), top=dict(x0=622, x1=913, cut=253, stem=(723, 811))),
+    "finance": dict(src="专家/金融-元元.png", eyes=[(621.2, 677.4), (907.5, 677.3)], er=44, patch=(1.6, 2.4), visor=(461, 533, 1067, 816, 135),
+                ear=dict(cutL=355, cutR=1171, y0=501, y1=821), top=dict(x0=631, x1=887, cut=263, stem=(705, 814))),
+    "code": dict(src="专家/编程-码码.png", eyes=[(623.2, 677.7), (907.1, 677.8)], er=44, patch=(1.6, 2.4), visor=(475, 545, 1058, 801, 122),
+                ear=dict(cutL=360, cutR=1170, y0=512, y1=820), top=dict(x0=592, x1=939, cut=270, stem=(711, 820)), glow=("g", 175, 240, "hlrt")),
+    "design": dict(src="专家/设计-彩彩.png", eyes=[(622.7, 677.0), (908.3, 677.1)], er=45, patch=(1.6, 2.4), visor=(464, 534, 1069, 812, 133),
+                ear=dict(cutL=357, cutR=1171, y0=509, y1=819), top=dict(x0=588, x1=966, cut=273, stem=(714, 818))),
+    "writing": dict(src="专家/写作-墨墨.png", eyes=[(624.8, 678.2), (911.1, 678.1)], er=45, patch=(1.6, 2.4), visor=(474, 547, 1061, 803, 122),
+                ear=dict(cutL=367, cutR=1168, y0=520, y1=822), top=dict(x0=636, x1=900, cut=292, stem=(714, 822))),
+    "education": dict(src="专家/教育-学学.png", eyes=[(621.8, 643.3), (910.9, 643.2)], er=44, patch=(1.6, 2.4), visor=(463, 503, 1069, 783, 134),
+                ear=dict(cutL=355, cutR=1173, y0=484, y1=790), top=dict(x0=490, x1=1039, cut=242, stem=(712, 826))),
+    "science": dict(src="专家/科研-泡泡.png", eyes=[(621.2, 678.6), (905.9, 678.6)], er=44, patch=(1.6, 2.4), visor=(463, 533, 1067, 816, 135),
+                ear=dict(cutL=360, cutR=1172, y0=519, y1=819), top=dict(x0=642, x1=890, cut=275, stem=(705, 824))),
+    "data": dict(src="专家/数据分析-数数.png", eyes=[(620.7, 678.7), (904.9, 678.8)], er=44, patch=(1.6, 2.4), visor=(461, 532, 1068, 817, 136),
+                ear=dict(cutL=358, cutR=1171, y0=521, y1=820), top=dict(x0=625, x1=902, cut=278, stem=(701, 807))),
+    "marketing": dict(src="专家/营销-响响.png", eyes=[(622.5, 678.4), (906.7, 678.4)], er=46, patch=(1.6, 2.4), visor=(465, 535, 1068, 815, 134),
+                ear=dict(cutL=360, cutR=1173, y0=519, y1=819), top=dict(x0=637, x1=970, cut=275, stem=(719, 807))),
+    "cooking": dict(src="专家/烹饪-香香.png", eyes=[(620.9, 672.5), (913.5, 672.6)], er=46, patch=(1.6, 2.4), visor=(464, 531, 1073, 811, 134),
+                ear=dict(cutL=359, cutR=1175, y0=505, y1=819), top=dict(x0=500, x1=1035, cut=293, stem=(598, 939))),
+    "translate": dict(src="专家/翻译-通通.png", eyes=[(622.4, 685.8), (907.8, 685.8)], er=44, patch=(1.6, 2.4), visor=(465, 542, 1068, 822, 134),
+                ear=dict(cutL=362, cutR=1171, y0=529, y1=827), top=dict(x0=632, x1=901, cut=283, stem=(726, 789))),
 }
 
 

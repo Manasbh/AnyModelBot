@@ -16,6 +16,8 @@ export default {
     conversation: "Full conversation",
     info: "Info",
     uiFailed: "The view hit a problem, so this switched to the conversation.",
+    openUrlTitle: "Open this page?",
+    openUrlConfirm: "Open",
     removed: "This bot was removed from the catalog. Your data is still here.",
     removedSecurity: "This bot was removed for security reasons and its skills are disabled. Your data is still here.",
   },

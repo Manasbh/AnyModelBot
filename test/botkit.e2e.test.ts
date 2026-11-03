@@ -22,7 +22,7 @@ const post = (p: string, body: unknown = {}) => api(p, { method: "POST", body: J
 /** 用命令行起一个 Bot 包，把 TODO 填掉 */
 function scaffold(dir: string, id: string): void {
   bot("new", id, "--dir", dir);
-  for (const f of ["bot.json", "persona.md", "sample.json", "ui/locales/zh-CN.json", "ui/locales/en.json", "evals/tasks.json"]) {
+  for (const f of ["bot.json", "persona.md", "sample.zh-CN.json", "sample.en.json", "ui/locales/zh-CN.json", "ui/locales/en.json", "evals/tasks.json"]) {
     const p = path.join(dir, f);
     fs.writeFileSync(p, fs.readFileSync(p, "utf8").replaceAll("TODO", "filled"));
   }
@@ -99,7 +99,9 @@ describe("服务端", () => {
     expect(html.status).toBe(200);
     expect(html.headers.get("content-security-policy")).toContain("connect-src 'none'");
     const file = await api(`/catalog/${id}/file?path=${encodeURIComponent("app/state.json")}`);
-    expect(file.body.json.title).toBe("filled 示例标题");
+    expect(file.body.json.title).toBe("filled sample title");
+    const zh = await api(`/catalog/${id}/file?path=${encodeURIComponent("app/state.json")}`, { headers: { "x-amb-lang": "zh-CN" } });
+    expect(zh.body.json.title).toBe("filled 示例标题");
     expect((await api("/bots")).body.bots.some((b: any) => b.id === inst)).toBe(false);
     expect(fs.existsSync(path.join(tmp, "data", "workspaces", inst))).toBe(false);
   });
@@ -114,7 +116,7 @@ describe("服务端", () => {
     const r = await post(`/catalog/${id}/install`);
     expect(r.body.bot).toMatchObject({ id: inst, origin: "catalog", app: { catalogId: id, permissions: ["workspace-write"] } });
     expect((await api(`/bots/${inst}/app`)).body).toMatchObject({ base: `/amb/botapp/d/${id}/`, ref: { catalogId: id } });
-    expect((await api(`/bots/${inst}/app/file?path=${encodeURIComponent("app/state.json")}`)).body.json.title).toBe("filled 示例标题");
+    expect((await api(`/bots/${inst}/app/file?path=${encodeURIComponent("app/state.json")}`)).body.json.title).toBe("filled sample title");
     expect((await api(`/bots/${inst}/app/file?path=${encodeURIComponent("../../anymodel.db")}`)).status).toBe(404);
     expect((await api(`/catalog`)).body.bots[0].instanceId).toBe(inst);
   });
@@ -126,6 +128,28 @@ describe("服务端", () => {
     const r = await post(`/bots/${inst}/app/inbox`, { name: "a.txt", base64: Buffer.from("hi").toString("base64") });
     expect(r.body).toMatchObject({ path: "app/inbox/a.txt", size: 2 });
     expect(fs.readFileSync(path.join(tmp, "data", "workspaces", inst, "app", "inbox", "a.txt"), "utf8")).toBe("hi");
+  });
+  it("读图片、列文件、下载、打开：都只在 app/ 下", async () => {
+    const q = (p: string) => encodeURIComponent(p);
+    const app = path.join(tmp, "data", "workspaces", inst, "app");
+    fs.mkdirSync(path.join(app, "out"), { recursive: true });
+    fs.writeFileSync(path.join(app, "out", "p.svg"), "<svg/>");
+    fs.writeFileSync(path.join(app, "out", "d.pptx"), "PK");
+    const image = await api(`/bots/${inst}/app/image?path=${q("app/out/p.svg")}`);
+    expect(image.body).toMatchObject({ path: "app/out/p.svg", url: `data:image/svg+xml;base64,${Buffer.from("<svg/>").toString("base64")}` });
+    expect((await api(`/bots/${inst}/app/image?path=${q("app/out/d.pptx")}`)).status).toBe(404);
+    expect((await api(`/bots/${inst}/app/image?path=${q("../../anymodel.db")}`)).status).toBe(404);
+    expect((await api(`/bots/${inst}/app/list`)).body.files).toContainEqual({ path: "app/out/d.pptx", size: 2 });
+    const res = await fetch(`${base}/amb/api/bots/${inst}/app/download?path=${q("app/out/d.pptx")}`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-disposition")).toContain("attachment");
+    expect(await res.text()).toBe("PK");
+    expect((await api(`/bots/${inst}/app/download?path=${q("../../anymodel.db")}`)).status).toBe(404);
+    expect((await post(`/bots/${inst}/app/open`, { path: "../../anymodel.db" })).status).toBe(404);
+    // 不是桌面版
+    const open = await post(`/bots/${inst}/app/open`, { path: "app/out/d.pptx" });
+    expect(open.status).toBe(400);
+    expect(open.body.code).toBe("desktop_only");
   });
   it("改过人设就不再跟随目录升级", async () => {
     await api(`/bots/${inst}`, { method: "PUT", body: JSON.stringify({ systemPrompt: "我自己写的" }) });

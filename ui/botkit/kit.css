@@ -22,6 +22,7 @@
   .kit-table th { text-align: left; font-weight: var(--fw-medium); color: var(--fg-2); font-size: var(--fs-sm); padding: var(--space-1) var(--space-2); }
   .kit-table td { padding: var(--space-2); }
   .kit-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .kit-link { text-decoration: underline; text-decoration-color: var(--line); overflow-wrap: anywhere; }
   /* 被 Bot 改动的内容：设计系统的高亮底色 */
   .kit-changed { background: var(--accent-soft); }
   @media (max-width: 480px) {

@@ -8,27 +8,17 @@ While the catalog is empty, existing users see no change: no new sidebar entries
 
 ## Getting started
 
-First set up the environment. You need Node.js 22.13+ and Go 1.26.8+:
+You need Node.js 22.13+:
 
 ```bash
 git clone git@github.com:modelflare-ai/AnyModelBot.git
 cd AnyModelBot
 npm install
-npm run setup
-npm start                          # open http://127.0.0.1:3600/ and sign in to Modelflare
-```
-
-In another terminal, start on the bot:
-
-```bash
 npm run bot -- new <id>            # scaffold bots/<id>/ from the template
 npm run bot -- check bots/<id>     # static checks; fails until every TODO is filled in
-npm run bot -- dev bots/<id>       # register this folder with the running app
 ```
 
-`dev` prints a URL that opens the bot. Refresh to see UI changes. After changing skills or the persona, remove the instance from the sidebar and send a message to reinstall.
-
-When it's ready, run `check --full`, ask someone to judge whether it's worth shipping, then commit directly to master, including the screenshots in `.check/`. There's no need for a PR.
+Once `check` passes, ask someone to judge whether it's worth shipping, then commit directly to master. There's no need for a PR.
 
 ## Architecture
 
@@ -64,7 +54,7 @@ bots/<id>/
   skills/            Skills. Imported skills live here too and ship with the catalog
   ui/                The UI: index.html, static files, locales/
   state.schema.json  The data contract between the UI and the bot
-  sample.json        Sample data shown on open
+  sample.<lang>.json Sample data shown on open, in the user's language. zh-CN and en are required; other languages fall back to en
   evals/             tasks.json (eval tasks), injection.json (prompt injection cases)
 ```
 
@@ -77,7 +67,7 @@ bots/<id>/
 | `name`, `summary` | Name (≤ 24 characters), one line (≤ 80 characters) |
 | `about` | 1–3 lines shown in the info panel |
 | `starters` | 2–3 clickable sentences; each must visibly change the view |
-| `avatar` | One of `blue`, `yellow`, `green`, `red`, `purple`, `orange`. It only sets the look |
+| `avatar` | A base character (`blue`, `yellow`, `green`, `red`, `purple`, `orange`) or a field expert (`law`, `health`, `finance`, `code`, `design`, `writing`, `education`, `science`, `data`, `marketing`, `cooking`, `translate`). It only sets the look. Older apps don't know the experts, so set `minAppVersion` to the release that added them |
 | `permissions` | See below |
 | `skills` | Imported skills: `name`, `source`, `sha256` (from `amb-bot hash`), `author`, `license`, `url`. Your own skills aren't listed |
 
@@ -130,15 +120,19 @@ mount(App);
 | `send(text, action)` | Send a message as the user. `action` is a UI action; the bot receives `[ui-action] {…}` |
 | `stop()` | Stop the current turn |
 | `pickFile({ accept, multiple })` | Let the user pick files into `app/inbox/`; returns `[{ name, size, path }]` |
-| `readFile(path)` | Read other files under `app/` |
+| `readFile(path)` | Read other text files under `app/` (up to 2 MB) |
+| `readImage(path)` | Read an image under `app/` (png, jpg, gif, webp, svg, up to 16 MB). Returns `{ url }` for an `<img>`. Needs an instance; images for sample data live under `ui/` and use relative paths |
+| `openFile(path, { reveal })` | Open a file under `app/`. Call it from a user click. The desktop app opens it with the system app or shows it in its folder (anything that would run on opening is only shown in its folder). On the web it downloads |
+| `desktop` | This is the desktop app, so files can open with the system app |
+| `openUrl(url)` | Open an external page once the user confirms the address; http(s) only |
 
 The kit follows the app's theme, language, text size and motion preference on its own.
 
 ### Components
 
-`Page`, `Section`, `Card` (`on` adds the highlight background), `Row`, `Stack`, `Grid`, `Button`, `Field`, `Notice`, `Empty`, `Meter`, `Table`. Design system classes (`.btn`, `.field`, `.t-title`…) and tokens (`--fg`, `--well`, `--space-*`, `--fs-*`) work directly; see [ui/design/README.md](../ui/design/README.md).
+`Page`, `Section`, `Card` (`on` adds the highlight background), `Row`, `Stack`, `Grid`, `Button`, `Field`, `Notice`, `Empty`, `Meter`, `Table`, `Link` (an external link the user confirms before it opens). Design system classes (`.btn`, `.field`, `.t-title`…) and tokens (`--fg`, `--well`, `--space-*`, `--fs-*`) work directly; see [ui/design/README.md](../ui/design/README.md). `style` in JS can't hardcode colors, spacing or font sizes either; use it only for computed values, such as a bar's width.
 
-Add components to `ui/botkit/kit.js` as real bots need them, rather than working around the kit in one bot.
+Add components to `ui/botkit/kit.js` as real bots need them, rather than working around the kit in one bot. The kit ships with the app, so adding to it needs a release. Register new abilities in `KIT_SINCE` in `src/botkit/format.ts`: a bot using one can't have a lower `minAppVersion`, and the check enforces it (`ui.min-app-version`).
 
 ### Bridge
 
@@ -147,11 +141,13 @@ Add components to `ui/botkit/kit.js` as real bots need them, rather than working
 | Method | Purpose |
 | --- | --- |
 | `init` | Language, theme, text size, motion, text and basic bot info |
-| `readFile` | Read-only access to `app/` in the workspace, with no way out |
+| `readFile`, `readImage` | Read-only access to `app/` in the workspace, with no way out |
+| `openFile` | Open or download a file under `app/`. Runs only if the parent page confirms the user just clicked |
 | `send`, `stop` | Send a message, stop |
 | `subscribe` | Receive `turn`, `file` and `env` events |
 | `pickFile` | Pick files |
 | `openChannels` | Open connection settings so the user can link a chat channel |
+| `openUrl` | Open an external page once the user confirms the address |
 | `reportError`, `rendered` | Report an error (falls back to the conversation), rendering finished |
 
 The microphone, camera and external maps aren't available in the first phase. If one is truly needed, work out how to open it safely, then add it to the bridge and the checks.
@@ -165,6 +161,15 @@ Every catalog bot automatically gets the host-generated `amb-app` skill (`src/bo
 Supported schema keywords: `type`, `properties`, `required`, `additionalProperties`, `items`, `enum`, `const`, `minimum`, `maximum`, `minLength`, `maxLength`, `minItems`, `maxItems`. Other keywords fail the checks.
 
 Models don't always follow the contract, so files are validated on read. Invalid fields are removed, list items missing required fields are removed, the UI renders what it can, and the problem goes to the local log.
+
+### What the framework doesn't allow
+
+These are runtime limits to design around:
+
+- **No custom tools.** A bot's abilities come from the model's built-in tools, skill instructions and scripts in its skills.
+- **Scripts can't call the model or read the user's environment variables.** Steps that need the model are done by the bot and its subagents (the `agent` tool). Use `web_search` for search; the host manages the search API and key from the app's settings.
+- **Background tasks can only write to their own folder** (`tasks/<slug>-<id>/`), so they can't write `app/state.json`. Long work that must update the view live runs in the current turn, which has a default limit of 30 minutes.
+- **Results go back to the conversation that started the work.** Start it in a chat channel and the result returns there; a bot can't pick another channel.
 
 ## User flow
 
@@ -183,27 +188,27 @@ A bot that was only viewed leaves nothing behind. Once newer bots push it out of
 
 ```bash
 npm run bot -- check bots/<id>          # static: seconds, run after every change
-npm run bot -- check bots/<id> --full   # adds rendering and the real model; run before publishing
+npm run bot -- check bots/<id> --full   # optional: adds rendering and the real model; publishing doesn't depend on it
 ```
 
 | Category | Rule prefix | What it checks |
 | --- | --- | --- |
 | Format | `format.*` | Required files, valid `bot.json`, no TODOs left, sample data matches the contract |
-| Source | `source.*` | Imported skills have an author and source page, an allowed license (MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, CC0-1.0), a matching hash, and no symlinks |
+| Source | `source.*` | Imported skills have an author and source page, an allowed license (MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, CC0-1.0), a matching hash, and no symlinks; the runtime bundle stays within the file count and unpacked size limits the client enforces |
 | Permissions | `permissions.*`, `risk.*` | Network use must be declared; piping to a shell, deleting outside the workspace, reading secrets, obfuscated execution, persistence and privilege escalation always fail |
-| UI | `ui.*` | No hardcoded colors, spacing or font sizes; no inline scripts or external resources; no network, storage or parent access; ≤ 500 KB compressed; matching zh-CN and en keys |
+| UI | `ui.*` | No hardcoded colors, spacing or font sizes in CSS or JS; no inline scripts or external resources, and `Link` for external links; no network, storage or parent access; ≤ 500 KB compressed; matching zh-CN and en keys |
 | Rendering | `render.*` | No errors, blank pages, overflow or contrast problems in light, dark and 390px |
 | Behavior | `behavior.*` | Eval completion ≥ 80%, every starter changes the view, written state matches the contract |
 | Security | `security.*` | Every prompt injection case passes |
 
 Failures name the exact rule. When a new kind of problem turns up, add a rule to `src/botkit/check.ts`.
 
-`--full` needs two things:
+Rendering, behavior and security only run under `--full`. `--full` is optional: packing and publishing don't depend on it. Running it needs two things:
 
-- Rendering uses Playwright, which isn't an app dependency: `npm i --no-save playwright && npx playwright install chromium`. Screenshots stay in `.check/`, become Discover thumbnails when packing, and should be committed.
-- Evals connect to a running app (`--app <url>`, by default the configured local port; set `AMB_UI_TOKEN` if it has a token). They really install the bot and call the model, then clean up.
+- Rendering uses Playwright, which isn't an app dependency: `npm i --no-save playwright && npx playwright install chromium`. Screenshots stay in `.check/` and, once committed, become Discover thumbnails when packing. Without them, Discover cards show the avatar.
+- Evals connect to a running app: install Go 1.26.8+, run `npm run setup && npm start`, and sign in to Modelflare (`--app <url>`, by default the configured local port; set `AMB_UI_TOKEN` if it has a token). They really install the bot and call the model, then clean up.
 
-Eval tasks go in `evals/tasks.json`: `{ id, prompt, changed?, contains?, notContains? }`, at least 3. Injection cases go in `evals/injection.json`: `{ id, prompt, file?: { name, text }, mustNotContain }`, at least 1.
+Eval tasks go in `evals/tasks.json`: `{ id, prompt, changed?, contains?, notContains?, file?, files? }`, at least 3. `file: { name, text }` puts a file in `app/inbox/`. `files` checks outputs against the files themselves: `{ match (a regex for the path), minBytes?, zipHas? (entries the zip must contain), absent? (no such file may exist) }`. Nobody can click approvals during evals: the first-use prompt for a declared permission passes, everything else is denied, and the bot's questions get "go ahead with your recommendation". Injection cases go in `evals/injection.json`: `{ id, prompt, file?: { name, text }, mustNotContain }`, at least 1.
 
 ## Publishing and takedowns
 
@@ -212,7 +217,7 @@ The catalog repository looks like this:
 ```text
 bots/<id>/          One folder per bot
 catalog.json        { "featured": [id…], "removed": { id: { reason, security? } } }
-catalog.lock.json   Last published record per bot, maintained by pack; commit it
+catalog.lock.json   Last published record per bot, maintained by pack; kept on the release machine
 ```
 
 ```bash
@@ -226,16 +231,16 @@ npm run bot -- who-uses <skill> --root .
 - After a takedown, run `pack` and publish again; clients pick it up within 24 hours. A normal takedown only notifies users. `--security` stops the process and deletes the skills right away, leaving the user's data alone.
 - `.github/workflows/bot-catalog.yml` checks and packs when `bots/**` or `catalog.json` is pushed to master, and keeps the output as a CI artifact. How it reaches production is up to the release environment. Until the repository has `AMB_CATALOG_PRIVATE_KEY`, it only checks and doesn't pack.
 
-### Going live
+### The live catalog
 
-The public key in the code is empty, so the app stays offline and the catalog stays empty. To go live:
+The app ships with the catalog's public key and address (`src/botkit/config.ts`). The address is `https://anymodel.bot/catalog/index.json`.
 
-1. Run `npm run bot -- keygen`, put the public key in `CATALOG_PUBLIC_KEY` in `src/botkit/config.ts`, and release.
-2. Put the private key in `AMB_CATALOG_PRIVATE_KEY` in the release environment. Never commit it.
-3. Put the `pack` output at `CATALOG_URL` (by default `https://anymodel.bot/catalog/index.json`).
+- **Private key:** It's kept only on the release machine (`AMB_CATALOG_PRIVATE_KEY`) and never committed. Losing it means changing the public key and releasing the app again, so keep a separate backup.
+- **Publishing:** On the release machine, pull the latest master, run `pack`, and put the output at the catalog address. Adding or updating a bot doesn't need an app release unless the bot uses something only a newer app has.
+- **`catalog.lock.json`:** It stays on the release machine and goes back in the repository root before each `pack`.
+- **Turning the catalog off:** Set `AMB_CATALOG=off`. The app stays off the network for this, and the catalog is empty. Tests run this way.
 
-For local testing, set `AMB_CATALOG_URL` and `AMB_CATALOG_PUBKEY` instead of changing the code.
-
+To test locally without changing code, set `AMB_CATALOG_URL` and `AMB_CATALOG_PUBKEY`.
 ## Building bots with Claude
 
 `.claude/skills/amb-bot-dev/` is the bot dev skill, which turns these rules into steps for Claude. Tell Claude what to build; it scaffolds from the template and works until `check` passes. A future batch pipeline would just be one more author, and its output would pass the same checks.
@@ -256,6 +261,10 @@ All under `/amb/api`. Errors only return a `code`; the text lives in the UI dict
 | `GET /bots/:id/app` | Instance source, version, whether an update exists |
 | `POST /bots/:id/app/update` | Update |
 | `GET /bots/:id/app/file?path=` | Read a file under `app/` |
+| `GET /bots/:id/app/image?path=` | Read an image under `app/` as a data URL |
+| `GET /bots/:id/app/list` | List files under `app/` (used by evals) |
+| `GET /bots/:id/app/download?path=` | Download a file under `app/` |
+| `POST /bots/:id/app/open` | Desktop app: open a file under `app/` or show it in its folder |
 | `POST /bots/:id/app/inbox` | Put a file in `app/inbox/` |
 | `GET /bots/:id/app/watch` | SSE: file changes under `app/` |
 

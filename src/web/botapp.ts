@@ -11,6 +11,7 @@ import { LIMITS } from "../botkit/format.js";
 import { safeRelPath } from "../botkit/bundle.js";
 import type { BotCatalog, CatalogEntry } from "../botkit/catalog.js";
 import { CatalogError, instanceId, uiBase, type BotInstaller } from "../botkit/installer.js";
+import { runnable, sendFile } from "./files.js";
 import { SseReply } from "./sse-reply.js";
 
 const MIME: Record<string, string> = {
@@ -179,6 +180,8 @@ export interface ApiDeps {
   appLang: () => string;
   /** 只有界面监听在本机时才能登记本机目录 */
   loopback: boolean;
+  /** 桌面版才有：用系统程序打开、在文件夹中显示 */
+  desktop?: { openPath?: (p: string) => unknown; showItemInFolder?: (p: string) => unknown };
 }
 
 function fail(res: http.ServerResponse, d: ApiDeps, e: unknown): void {
@@ -248,7 +251,7 @@ export async function botAppApi(req: http.IncomingMessage, res: http.ServerRespo
         return true;
       }
       if (seg[2] === "file" && m === "GET") {
-        const file = await d.installer.previewFile(entry, url.searchParams.get("path"));
+        const file = await d.installer.previewFile(entry, url.searchParams.get("path"), d.appLang());
         if (!file) throw new CatalogError("file_not_found", 404);
         d.send(res, 200, file);
         return true;
@@ -279,6 +282,38 @@ export async function botAppApi(req: http.IncomingMessage, res: http.ServerRespo
         const file = await d.installer.readFile(bot, url.searchParams.get("path"));
         if (!file) throw new CatalogError("file_not_found", 404);
         d.send(res, 200, file);
+        return true;
+      }
+      if (sub === "image" && m === "GET") {
+        const image = d.installer.readImage(bot, url.searchParams.get("path"));
+        if (!image) throw new CatalogError("file_not_found", 404);
+        d.send(res, 200, image);
+        return true;
+      }
+      if (sub === "list" && m === "GET") {
+        d.send(res, 200, { files: d.installer.listApp(botId) });
+        return true;
+      }
+      if (sub === "download" && m === "GET") {
+        const file = d.installer.appFile(bot, url.searchParams.get("path"));
+        if (!file) throw new CatalogError("file_not_found", 404);
+        sendFile(req, res, file);
+        return true;
+      }
+      // 打开就会运行的文件不直接打开，只在文件夹中显示（同 /conversations/:id/file/open）
+      if (sub === "open" && m === "POST") {
+        const b = await d.readJson(req);
+        const file = d.installer.appFile(bot, b.path);
+        if (!file) throw new CatalogError("file_not_found", 404);
+        if (!d.desktop?.openPath) throw new CatalogError("desktop_only", 400);
+        if (!b.reveal && !runnable(file)) {
+          d.desktop.openPath(file.path);
+          d.send(res, 200, { ok: true });
+          return true;
+        }
+        if (d.desktop.showItemInFolder) d.desktop.showItemInFolder(file.path);
+        else d.desktop.openPath(path.dirname(file.path));
+        d.send(res, 200, { ok: true, revealed: true });
         return true;
       }
       if (sub === "inbox" && m === "POST") {

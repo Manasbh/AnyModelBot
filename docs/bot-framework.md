@@ -8,27 +8,17 @@
 
 ## 上手
 
-先准备环境，需要 Node.js 22.13+ 和 Go 1.26.8+：
+需要 Node.js 22.13+：
 
 ```bash
 git clone git@github.com:modelflare-ai/AnyModelBot.git
 cd AnyModelBot
 npm install
-npm run setup
-npm start                          # 打开 http://127.0.0.1:3600/，登录 Modelflare
-```
-
-另开一个终端，开始做 Bot：
-
-```bash
 npm run bot -- new <id>            # 从模板起一个目录：bots/<id>/
 npm run bot -- check bots/<id>     # 静态检查，模板里的 TODO 填完才能过
-npm run bot -- dev bots/<id>       # 把这个目录登记到运行中的 App
 ```
 
-`dev` 会打印一个地址，打开就能看到这个 Bot。改界面文件后刷新就能看到；改了技能或人设，要在侧边栏移除实例再发消息，才会重新安装。
-
-做好后跑一遍 `check --full`，请人看一眼值不值得上，然后直接提交到 master，连同 `.check/` 里的截图一起提交。不用提 PR。
+`check` 通过后，请人看一眼值不值得上，然后直接提交到 master。不用提 PR。
 
 ## 架构
 
@@ -64,7 +54,7 @@ bots/<id>/
   skills/            技能。引入的技能也放这里，随目录一起发布
   ui/                界面：index.html、静态资源、locales/
   state.schema.json  界面和 Bot 之间的数据约定
-  sample.json        示例数据，打开时显示
+  sample.<lang>.json 示例数据，打开时按用户的语言显示。zh-CN、en 必须有，其余语言缺了退回 en
   evals/             tasks.json（评测任务）、injection.json（提示注入用例）
 ```
 
@@ -77,7 +67,7 @@ bots/<id>/
 | `name`、`summary` | 名称（≤ 24 字符）、一句话（≤ 80 字符） |
 | `about` | 1–3 行说明，显示在信息面板 |
 | `starters` | 2–3 句可点的话，每句都要让界面发生看得见的变化 |
-| `avatar` | `blue`、`yellow`、`green`、`red`、`purple`、`orange` 之一；只决定长相 |
+| `avatar` | 基础角色 `blue`、`yellow`、`green`、`red`、`purple`、`orange`，或领域专家 `law`、`health`、`finance`、`code`、`design`、`writing`、`education`、`science`、`data`、`marketing`、`cooking`、`translate`；只决定长相。专家要新版 App 才认得，用了就把 `minAppVersion` 设到发布它们的那个版本 |
 | `permissions` | 见下表 |
 | `skills` | 引入的技能：`name`、`source`、`sha256`（`amb-bot hash` 算）、`author`、`license`、`url`。自己写的不用列 |
 
@@ -130,15 +120,19 @@ mount(App);
 | `send(text, action)` | 以用户身份发消息。`action` 是界面操作，Bot 收到 `[ui-action] {…}` |
 | `stop()` | 停止当前回合 |
 | `pickFile({ accept, multiple })` | 让用户选文件，放进 `app/inbox/`，返回 `[{ name, size, path }]` |
-| `readFile(path)` | 读 `app/` 下的其他文件 |
+| `readFile(path)` | 读 `app/` 下的其他文本文件（≤ 2 MB） |
+| `readImage(path)` | 读 `app/` 下的图片（png、jpg、gif、webp、svg，≤ 16 MB），返回 `{ url }`，放进 `<img>`；需要实例，示例数据里的图放在 `ui/` 下用相对路径 |
+| `openFile(path, { reveal })` | 打开 `app/` 下的文件。要在用户点击时调用。桌面版用系统程序打开或在文件夹中显示（打开就会运行的只在文件夹中显示），网页里下载 |
+| `desktop` | 是桌面版，能用系统程序打开文件 |
+| `openUrl(url)` | 打开外部网页：用户确认地址后才打开，只放行 http(s) |
 
 主题、语言、字号、动效偏好由套件自动跟随，界面不用管。
 
 ### 组件
 
-`Page`、`Section`、`Card`（`on` 时用高亮底色）、`Row`、`Stack`、`Grid`、`Button`、`Field`、`Notice`、`Empty`、`Meter`、`Table`。设计系统的类（`.btn`、`.field`、`.t-title`…）和 token（`--fg`、`--well`、`--space-*`、`--fs-*`）都能直接用，规范见 [ui/design/README.md](../ui/design/README.md)。
+`Page`、`Section`、`Card`（`on` 时用高亮底色）、`Row`、`Stack`、`Grid`、`Button`、`Field`、`Notice`、`Empty`、`Meter`、`Table`、`Link`（外部链接，点开前让用户确认）。设计系统的类（`.btn`、`.field`、`.t-title`…）和 token（`--fg`、`--well`、`--space-*`、`--fs-*`）都能直接用，规范见 [ui/design/README.md](../ui/design/README.md)。JS 里的 `style` 同样不能写死颜色、间距和字号，只放算出来的值，比如条形的宽度。
 
-组件按真实需要加到 `ui/botkit/kit.js`：加进套件，不要在单个 Bot 里绕过。
+组件按真实需要加到 `ui/botkit/kit.js`：加进套件，不要在单个 Bot 里绕过。套件随 App 发布，所以往里加东西要发版。新能力登记在 `src/botkit/format.ts` 的 `KIT_SINCE`，用到它的 Bot 的 `minAppVersion` 不能更低，检查会拦（`ui.min-app-version`）。
 
 ### 桥接
 
@@ -147,11 +141,13 @@ mount(App);
 | 方法 | 作用 |
 | --- | --- |
 | `init` | 下发语言、主题、字号、动效偏好、文案和 Bot 基本信息 |
-| `readFile` | 只读工作区 `app/` 下的文件，走不出去 |
+| `readFile`、`readImage` | 只读工作区 `app/` 下的文件，走不出去 |
+| `openFile` | 打开或下载 `app/` 下的文件。父页面确认用户刚点过才执行 |
 | `send`、`stop` | 发消息、停止 |
 | `subscribe` | 接收 `turn`、`file`、`env` 事件 |
 | `pickFile` | 选文件 |
 | `openChannels` | 打开连接设置，让用户绑定聊天渠道 |
+| `openUrl` | 用户确认地址后打开外部网页 |
 | `reportError`、`rendered` | 上报错误（退回对话视图）、渲染完成 |
 
 一期不开放麦克风、摄像头和外部地图。确实需要时评估怎么安全地开放，加进桥接和约束检查。
@@ -165,6 +161,15 @@ Bot 维护工作区里的 `app/state.json`，结构由 `state.schema.json` 规�
 Schema 支持的关键字：`type`、`properties`、`required`、`additionalProperties`、`items`、`enum`、`const`、`minimum`、`maximum`、`minLength`、`maxLength`、`minItems`、`maxItems`。用了别的关键字，检查会报错。
 
 模型不一定每次都照约定写，所以读文件时先校验：不合约定的字段去掉，缺必填字段的列表项去掉，界面能渲染多少渲染多少，同时写本地日志。
+
+### 框架的边界
+
+这几条是运行时的限制，设计 Bot 时要考虑：
+
+- **不能注册工具**：Bot 的能力来自模型自带的工具、技能说明和技能里的脚本。
+- **脚本调不到模型，也读不到用户的环境变量**：需要模型的步骤由 Bot 和它的子代理（`agent` 工具）完成；搜索用 `web_search`，App 设置里的搜索接口和 Key 由宿主管理。
+- **后台任务只能写自己的文件夹**（`tasks/<slug>-<id>/`），写不了 `app/state.json`：要让界面实时更新的长任务放在当前回合里跑，单回合默认上限 30 分钟。
+- **结果回到发起的会话**：在聊天渠道里发起就回到那个渠道，不能指定发到别的渠道。
 
 ## 用户怎么走
 
@@ -183,27 +188,27 @@ Schema 支持的关键字：`type`、`properties`、`required`、`additionalProp
 
 ```bash
 npm run bot -- check bots/<id>          # 静态：几秒，每次改完都跑
-npm run bot -- check bots/<id> --full   # 再跑渲染和真实模型，上架前跑一遍
+npm run bot -- check bots/<id> --full   # 可选：再跑渲染和真实模型，上架不依赖它
 ```
 
 | 类别 | 规则前缀 | 检查什么 |
 | --- | --- | --- |
 | 格式 | `format.*` | 必需文件齐全，`bot.json` 合法，TODO 填完，示例数据符合约定 |
-| 来源 | `source.*` | 引入的技能有作者和原页面，许可证在白名单（MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、CC0-1.0），哈希对得上，没有符号链接 |
+| 来源 | `source.*` | 引入的技能有作者和原页面，许可证在白名单（MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、CC0-1.0），哈希对得上，没有符号链接；运行包文件数和解开后的大小不超限（客户端解包时同样的上限） |
 | 权限 | `permissions.*`、`risk.*` | 脚本联网要声明；管道执行、删工作区外的文件、读密钥、混淆执行、留常驻项、提权一律不过 |
-| 界面 | `ui.*` | 不写死颜色、间距、字号；没有内联脚本和外部资源；不联网，不碰存储和外层页面；压缩后 ≤ 500 KB；中英文案键一致 |
+| 界面 | `ui.*` | CSS 和 JS 里都不写死颜色、间距、字号；没有内联脚本和外部资源，外部链接用 `Link`；不联网，不碰存储和外层页面；压缩后 ≤ 500 KB；中英文案键一致 |
 | 渲染 | `render.*` | 浅色、深色、390px 没有报错、空白、溢出和对比度问题 |
 | 行为 | `behavior.*` | 评测任务完成率 ≥ 80%，每句可点的话都让界面变化，写出的状态符合约定 |
 | 安全 | `security.*` | 提示注入用例全部通过 |
 
 不通过时会指出具体哪一条。每发现一类新问题，就在 `src/botkit/check.ts` 加一条规则，不靠人记。
 
-`--full` 需要两样东西：
+渲染、行为、安全三类只在 `--full` 里跑。`--full` 是可选的，打包和上架都不依赖它。要跑的话需要两样东西：
 
-- 渲染用 Playwright，不是 App 的依赖：`npm i --no-save playwright && npx playwright install chromium`。截图留在 `.check/`，打包时用作发现页缩略图，要一起提交。
-- 评测连到运行中的 App（`--app <地址>`，默认本机配置的端口；有令牌时设 `AMB_UI_TOKEN`），会真实安装并调用模型，跑完清掉。
+- 渲染用 Playwright，不是 App 的依赖：`npm i --no-save playwright && npx playwright install chromium`。截图留在 `.check/`，提交后打包时用作发现页缩略图；没有截图时，发现页卡片显示头像。
+- 评测连到运行中的 App：先装 Go 1.26.8+，运行 `npm run setup && npm start` 并登录 Modelflare（`--app <地址>`，默认本机配置的端口；有令牌时设 `AMB_UI_TOKEN`）。评测会真实安装并调用模型，跑完清掉。
 
-评测任务写在 `evals/tasks.json`：`{ id, prompt, changed?, contains?, notContains? }`，至少 3 个。注入用例写在 `evals/injection.json`：`{ id, prompt, file?: { name, text }, mustNotContain }`，至少 1 个。
+评测任务写在 `evals/tasks.json`：`{ id, prompt, changed?, contains?, notContains?, file?, files? }`，至少 3 个。`file: { name, text }` 把文件放进 `app/inbox/`。`files` 检查产物，只信文件本身：`{ match（路径的正则）, minBytes?, zipHas?（zip 里要有的条目）, absent?（这样的文件不能存在） }`。评测时没人点审批：Bot 声明过的权限第一次用时的确认算通过，其余拒绝，Bot 的提问答“按你的建议继续”。注入用例写在 `evals/injection.json`：`{ id, prompt, file?: { name, text }, mustNotContain }`，至少 1 个。
 
 ## 发布和下架
 
@@ -212,7 +217,7 @@ npm run bot -- check bots/<id> --full   # 再跑渲染和真实模型，上架�
 ```text
 bots/<id>/          每个 Bot 一个目录
 catalog.json        { "featured": [id…], "removed": { id: { reason, security? } } }
-catalog.lock.json   每个 Bot 上次发布的记录，由 pack 维护，要提交
+catalog.lock.json   每个 Bot 上次发布的记录，由 pack 维护，留在发布机器上
 ```
 
 ```bash
@@ -226,13 +231,14 @@ npm run bot -- who-uses <技能> --root .
 - 下架后重新 `pack` 并发布，24 小时内客户端生效。普通下架只提示用户；`--security` 会立刻停掉进程、删掉技能，用户的数据不动。
 - `.github/workflows/bot-catalog.yml` 在 `bots/**` 或 `catalog.json` 推到 master 时检查并打包，产物作为 CI artifact；怎么放到线上由发布环境决定。仓库还没配置 `AMB_CATALOG_PRIVATE_KEY` 时只检查，不打包。
 
-### 上线目录要做的事
+### 线上目录
 
-代码里的公钥现在是空的，所以 App 不联网，目录是空的。真正上线时：
+App 里写着目录的公钥和地址（`src/botkit/config.ts`），地址是 `https://anymodel.bot/catalog/index.json`。
 
-1. `npm run bot -- keygen`，公钥填到 `src/botkit/config.ts` 的 `CATALOG_PUBLIC_KEY`，发版。
-2. 私钥放进发布环境的 `AMB_CATALOG_PRIVATE_KEY`，不要提交。
-3. 把 `pack` 的产物放到 `CATALOG_URL`（默认 `https://anymodel.bot/catalog/index.json`）。
+- **私钥**只放在发布机器上（`AMB_CATALOG_PRIVATE_KEY`），不要提交。丢了就要换公钥并发版，所以要另外备份。
+- **发布**：在发布机器上拉最新的 master，运行 `pack`，把产物放到目录地址下。上架和更新 Bot 都不用发版，除非 Bot 要用新版 App 才有的能力。
+- **`catalog.lock.json`** 留在发布机器上，每次 `pack` 前放回仓库根目录。
+- **关闭目录**：设环境变量 `AMB_CATALOG=off`，App 不联网，目录是空的。测试就是这样跑的。
 
 本地联调可以不改代码：设环境变量 `AMB_CATALOG_URL` 和 `AMB_CATALOG_PUBKEY`。
 
@@ -256,6 +262,10 @@ npm run bot -- who-uses <技能> --root .
 | `GET /bots/:id/app` | 实例的来源、版本、有没有新版本 |
 | `POST /bots/:id/app/update` | 升级 |
 | `GET /bots/:id/app/file?path=` | 读 `app/` 下的文件 |
+| `GET /bots/:id/app/image?path=` | 读 `app/` 下的图片，返回 data URL |
+| `GET /bots/:id/app/list` | 列出 `app/` 下的文件（评测用） |
+| `GET /bots/:id/app/download?path=` | 下载 `app/` 下的文件 |
+| `POST /bots/:id/app/open` | 桌面版打开 `app/` 下的文件，或在文件夹中显示 |
 | `POST /bots/:id/app/inbox` | 放文件进 `app/inbox/` |
 | `GET /bots/:id/app/watch` | SSE：`app/` 下的文件变化 |
 

@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BOT_CHARS_HASH } from "../src/lib/bots";
+import { BOT_CHARS_HASH, CHAR_KEYS } from "../src/lib/bots";
 
 const site = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const app = path.dirname(site);
@@ -15,7 +15,9 @@ if (!fs.existsSync(path.join(app, "ui/components/avatar.js"))) {
 }
 const bots = path.join(app, "ui/design/bots");
 fs.mkdirSync(path.join(site, "public/bots"), { recursive: true });
-for (const f of fs.readdirSync(bots).filter((f) => f.endsWith(".webp"))) {
+// App 里还有领域专家的精灵图，官网只用六个基础角色
+const siteChars = new Set<string>(CHAR_KEYS);
+for (const f of fs.readdirSync(bots).filter((f) => f.endsWith(".webp") && siteChars.has(path.parse(f).name))) {
   fs.copyFileSync(path.join(bots, f), path.join(site, "public/bots", f));
 }
 fs.copyFileSync(path.join(app, "THIRD_PARTY_NOTICES.md"), path.join(site, "src/data/third-party.md"));

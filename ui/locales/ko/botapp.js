@@ -16,6 +16,8 @@ export default {
     conversation: "전체 대화",
     info: "정보",
     uiFailed: "화면에 문제가 생겨 대화로 전환했습니다.",
+    openUrlTitle: "이 페이지를 열까요?",
+    openUrlConfirm: "열기",
     removed: "이 봇은 카탈로그에서 내려갔습니다. 데이터는 남아 있습니다.",
     removedSecurity: "이 봇은 보안 문제로 내려갔고 스킬은 비활성화되었습니다. 데이터는 남아 있습니다.",
   },

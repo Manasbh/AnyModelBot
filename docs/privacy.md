@@ -74,6 +74,7 @@
 - 飞书渠道：与飞书开放平台保持长连接。
 - Telegram、Slack、Discord 渠道：接入后与 `api.telegram.org`、`slack.com`、`discord.com` 及其文件地址通信，用来收发消息和你发来的文件。
 - Windows 上开启代理模式且系统里没有可用的 PowerShell 7 时，从微软官方发布地址下载 PowerShell 7（可用 `AMB_PWSH_AUTO_INSTALL=0` 关闭，详见[开发文档](./development.md)）。
+- 发现页的 Bot 目录：启动时和之后每 6 小时从 `anymodel.bot/catalog/` 读取列表，打开或使用某个 Bot 时下载它的包。这些请求只下载，不上传你的数据，下载的内容都要验证签名和哈希（可用 `AMB_CATALOG=off` 关闭）。
 
 ## 电脑操作与截图
 

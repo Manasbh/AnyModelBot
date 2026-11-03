@@ -74,6 +74,7 @@ Besides model requests, the app goes online to:
 - Feishu channel: keep a long connection to the Feishu Open Platform.
 - Telegram, Slack and Discord channels: once connected, talk to `api.telegram.org`, `slack.com`, `discord.com` and their file hosts to send and receive messages and the files you send.
 - On Windows, with agent mode on and no working PowerShell 7 on the system, download PowerShell 7 from Microsoft's official release location (turn this off with `AMB_PWSH_AUTO_INSTALL=0`; see the [development guide](./development_en.md)).
+- The bot catalog in Discover: at startup and every 6 hours, the app reads the list from `anymodel.bot/catalog/`, and it downloads a bot's package when you open or use it. These requests only download; your data isn't uploaded, and everything downloaded is checked against a signature and hashes (set `AMB_CATALOG=off` to turn this off).
 
 ## Computer use and screenshots
 

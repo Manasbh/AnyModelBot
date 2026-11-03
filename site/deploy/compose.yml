@@ -29,5 +29,6 @@ services:
     volumes:
       - site:/srv/site:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${CATALOG_DIR:-./catalog}:/srv/catalog:ro
 volumes:
   site:

@@ -1,6 +1,7 @@
 // 侧栏 280（参考 Grok Bot，宽度可以拖右边的分隔条调整）：顶部只有新建按钮，常驻搜索框，
 // 机器人行（头像 + 名称 + 时间 + 一行预览；悬停出现"更多"，和右键是同一份菜单），左下角账户（点头像看余额，点齿轮打开设置）。
-// 新建在主区的新建页（screens/new-bot.js）；新建页打开时列表顶部有一行占位的"新机器人"。
+// 新建在主区的新建页（screens/new-bot.js）；新建页打开时，机器人列表末尾（建好后它就在这）有一行占位，跟着显示头像和名字。
+// 机器人和群聊的增删：新行淡入并定位到它（新机器人的头像打个招呼），删掉的行淡出（design/motion.js 的 useListPresence）。
 // 群聊排在机器人后面（screens/group.js）；有两个以上机器人时，新建按钮是一个菜单（机器人 / 群聊）。
 // 有事在等你时，机器人列表上方多一行「需要你 N」（没事时没有这一行）；机器人行的第二行换成最早那件事。
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -9,6 +10,9 @@ import { BotAvatar } from "../components/avatar.js";
 import { GuidePill } from "../components/guide.js";
 import { api } from "../lib/api.js";
 import { confirmSheet, failed, toast, useStore } from "../lib/store.js";
+import { deleteBot } from "../lib/bots.js";
+import { useListPresence } from "../design/motion.js";
+import { newBotDraft } from "./new-bot.js";
 import { prefs, setPrefs } from "../lib/prefs.js";
 import { fmtAgo } from "../lib/format.js";
 import { MF_TOPUP, usd } from "../lib/links.js";
@@ -16,6 +20,16 @@ import { t, useLang } from "../lib/i18n.js";
 import { NeedsRow } from "./needs-you.js";
 import { catalogFold, catalogSeen, latestOf, setCatalogFold, tr } from "../lib/catalog.js";
 import { GroupAvatars } from "./group.js";
+
+/** 余额：一个数字 + 说明。低于提醒线时数字不变色（红字像欠费），只多一行小字 */
+export function Balance({ account, note }) {
+  return html`<div class="bal">
+    <div class="bal-label">${t("sidebar.balance")}</div>
+    <div class="bal-amount">${usd(account.balanceUsd)}</div>
+    ${account.lowBalance && html`<div class="bal-note"><span class="dot warn"></span>${t("sidebar.belowLine", { amount: usd(account.alerts?.lowBalanceUsd) })}</div>`}
+    ${note && html`<div class="bal-note">${note}</div>`}
+  </div>`;
+}
 
 /**
  * 左下角账户：头像字母 + 名称（登录后是 Modelflare 账户名），旁边是设置齿轮。
@@ -34,23 +48,23 @@ export function AccountButton({ username, account, settingsOn, onSettings, onMod
       <span class="who">${me}</span>
     </button>
     <${IconButton} icon="gear" iconSize="md" label=${t("sidebar.settingsTitle")} on=${settingsOn} onClick=${onSettings} />
-    ${open && bal && html`<${Popover} anchor=${ref.current} prefer="up" width=${240} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
+    ${open && bal && html`<${Popover} anchor=${ref.current} prefer="up" width=${260} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
       <div class="account-pop">
         <div class="account-pop-name">${me}</div>
         <div class="account-pop-bal">
-          <div><div class="account-pop-label">${t("sidebar.balance")}</div><div class=${`balance${account.lowBalance ? " low" : ""}`}>${bal}</div></div>
-          <a class="btn sm" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("sidebar.topUp")}</a>
+          <${Balance} account=${account} />
+          <a class=${`btn sm${account.lowBalance ? " primary" : ""}`} href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("sidebar.topUp")}</a>
         </div>
       </div>
       <div class="foot"><button type="button" onClick=${() => { setOpen(false); onModelflare(); }}>${t("sidebar.accountDetails")}</button></div>
     <//>`}`;
 }
 
-/** 余额低于提醒线时，侧栏底部常驻一条提示 */
+/** 余额低于提醒线时，侧栏底部一行安静的提示：不写金额，金额在账户浮层里 */
 function LowBalance({ account }) {
   if (!account || !account.lowBalance) return null;
-  return html`<a class="low-balance" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer" role="status">
-    ${t("sidebar.lowBalance", { amount: usd(account.balanceUsd) })}
+  return html`<a class="side-note" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer" role="status">
+    <span class="side-note-main"><span class="dot warn"></span><span class="v">${t("sidebar.lowBalance")}</span><span class="go">${t("sidebar.topUp")}</span></span>
   </a>`;
 }
 
@@ -58,13 +72,14 @@ function LowBalance({ account }) {
 function UpdateNotice({ update }) {
   const { updateDismissed } = useStore(prefs);
   if (!update || !update.available || updateDismissed === update.latest) return null;
-  return html`<div class="side-update" role="status">
-    <a href=${update.downloadUrl} target="_blank" rel="noopener noreferrer">${t("sidebar.update", { version: update.latest })}</a>
+  const text = t("sidebar.update", { version: update.latest });
+  return html`<div class="side-note" role="status">
+    <a class="side-note-main" href=${update.downloadUrl} target="_blank" rel="noopener noreferrer" title=${text}><span class="dot new"></span><span class="v">${text}</span></a>
     <${IconButton} icon="close" size="xs" iconSize="xs" label=${t("sidebar.updateDismiss")} onClick=${() => setPrefs({ updateDismissed: update.latest })} />
   </div>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog }) {
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupsLoaded = true, groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog }) {
   const lang = useLang();
   const seen = useStore(catalogSeen);
   const fold = useStore(catalogFold);
@@ -96,16 +111,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     }
   };
   const del = async (bot) => {
-    // 目录 Bot 移除时问一句是否保留数据：保留的话再次使用能接上
-    const fromCatalog = bot.origin === "catalog";
-    if (!(await confirmSheet(fromCatalog ? { title: t("botapp.remove.title", { name: bot.name }), body: t("botapp.remove.body"), confirmLabel: t("botapp.remove.confirm"), danger: true } : { title: t("sidebar.delete.title", { name: bot.name }), body: t("sidebar.delete.body"), confirmLabel: t("sidebar.delete.confirm"), danger: true }))) return;
-    const keep = fromCatalog && (await confirmSheet({ title: t("botapp.remove.keepTitle"), body: t("botapp.remove.keepBody"), confirmLabel: t("botapp.remove.keep"), cancelLabel: t("botapp.remove.discard") }));
-    try {
-      await api(`/bots/${bot.id}${keep ? "?keepData=1" : ""}`, { method: "DELETE" });
-      onDeleted(bot.id);
-    } catch (e) {
-      failed(e);
-    }
+    if (await deleteBot(bot)) onDeleted(bot.id);
   };
 
   const delGroup = async (g) => {
@@ -119,9 +125,17 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
   };
   const groupBots = (g) => g.members.map((id) => (bots || []).find((b) => b.id === id)).filter(Boolean);
 
+  const draft = useStore(newBotDraft);
+  const botRows = useListPresence(bots);
+  const groupRows = useListPresence(groupsLoaded ? groups : null);
   const needle = q.trim().toLowerCase();
-  const list = (bots || []).filter((b) => !needle || b.name.toLowerCase().includes(needle) || (previews[b.id]?.text || "").toLowerCase().includes(needle));
-  const shownGroups = groups.filter((g) => !needle || g.name.toLowerCase().includes(needle));
+  const list = botRows.filter(({ item: b }) => !needle || b.name.toLowerCase().includes(needle) || (previews[b.id]?.text || "").toLowerCase().includes(needle));
+  const shownGroups = groupRows.filter(({ item: g }) => !needle || g.name.toLowerCase().includes(needle));
+  // 新行可能在列表下面看不见的地方：滚过去
+  const entered = [...botRows, ...groupRows].filter((r) => r.state === "enter").map((r) => r.item.id).join();
+  useEffect(() => {
+    if (entered || view === "new") root.current?.querySelector(".thread-item.anim-fade-in, .thread.draft")?.scrollIntoView({ block: "nearest" });
+  }, [entered, view === "new"]);
   const canGroup = !!bots && bots.length >= 2;
 
   return html`<aside class="side" ref=${root} aria-label=${t("sidebar.bots")}>
@@ -142,13 +156,11 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
         <span class="body"><span class="line"><span class="title">${t("botapp.sidebar.discover")}</span>${hasNew && html`<span class="thread-new-dot" title=${t("botapp.sidebar.new")}></span>`}</span></span>
       </button>
       <div class="side-group"><span class="text t-label">${t("botapp.sidebar.mine")}</span></div>`}
-      ${view === "new" && html`<div class="thread sel" aria-current="page"><${BotAvatar} neutral size=${38} />
-        <span class="body"><span class="line"><span class="title">${t("sidebar.newBot")}</span></span><span class="line"><span class="snip">${t("sidebar.creating")}</span></span></span></div>`}
       ${botsError && html`<div class="side-empty"><span>${t("sidebar.loadFailed")}</span><button type="button" class="btn" onClick=${reloadBots}>${t("common.retry")}</button></div>`}
       ${!bots && !botsError && [0, 1, 2].map((k) => html`<div class="thread" key=${k}><${Skeleton} w="38px" circle /><span class="thread-skel"><${Skeleton} w="50%" /><${Skeleton} w="75%" /></span></div>`)}
       ${bots && !bots.length && view !== "new" && html`<div class="side-empty"><span>${t("sidebar.empty")}</span><button type="button" class="btn primary" onClick=${onNew}>${t("sidebar.create")}</button></div>`}
       ${bots && needle && !list.length && !shownGroups.length && html`<p class="hint">${t("sidebar.noMatch")}</p>`}
-      ${list.map((b) => {
+      ${list.map(({ item: b, state: rowState }) => {
         const sel = (view === "chat" || view === "bot-settings" || view === "app") && b.id === selectedId;
         // 等你的：「需要你」里这个机器人的件数和最早那件（没有时退回待审批数）
         const nd = needs.bots[b.id];
@@ -160,10 +172,11 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
               onKeyDown=${(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) e.target.blur(); if (e.key === "Escape") { e.stopPropagation(); setRenaming(""); } }} /></div>`;
         const pv = previews[b.id];
         const menuOpen = !!(ctx && ctx.el && ctx.bot.id === b.id);
-        return html`<div class="thread-item" key=${b.id}>
-          <button type="button" class=${`thread bot-hover${sel ? " sel" : ""}`} aria-current=${sel ? "page" : undefined}
+        const rowFx = rowState === "enter" ? " anim-fade-in" : rowState === "leave" ? " anim-fade-out" : "";
+        return html`<div class=${`thread-item${rowFx}`} key=${b.id} inert=${rowState === "leave" || undefined}>
+          <button type="button" class=${`thread bot-hover${sel && rowState !== "leave" ? " sel" : ""}`} aria-current=${sel ? "page" : undefined}
             onClick=${() => onSelect(b.id)} onContextMenu=${(e) => { e.preventDefault(); setCtx({ bot: b, x: e.clientX, y: e.clientY }); }}>
-            <span class="avatar-wrap"><${BotAvatar} bot=${b} size=${38} state=${n > 0 ? "waiting" : working[b.id] ? "working" : "idle"} />${working[b.id] && html`<span class="working-dot" title=${t("sidebar.working")}></span>`}</span>
+            <span class="avatar-wrap"><${BotAvatar} bot=${b} size=${38} greet=${rowState === "enter"} state=${n > 0 ? "waiting" : working[b.id] ? "working" : "idle"} />${working[b.id] && html`<span class="working-dot" title=${t("sidebar.working")}></span>`}</span>
             <span class="body">
               <span class="line"><span class="title">${b.name}</span>${pv?.at && html`<span class="when num">${fmtAgo(pv.at)}</span>`}</span>
               <span class="line"><span class="snip">${nd?.line || (working[b.id] ? t("sidebar.workingNow") : pv?.text || t("sidebar.noChats"))}</span>${n > 0 && html`<span class="badge count" title=${t("sidebar.needs", { count: n })}>${n}</span>`}</span>
@@ -173,12 +186,15 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
             onClick=${(e) => { const el = e.currentTarget; setCtx((c) => (c && c.el && c.bot.id === b.id ? null : { bot: b, el })); }} />
         </div>`;
       })}
-      ${bots && shownGroups.map((g) => {
-        const sel = view === "group" && g.id === groupId;
+      ${view === "new" && html`<div class="thread sel draft anim-fade-in" aria-current="page"><${BotAvatar} char=${draft?.avatar} neutral size=${38} />
+        <span class="body"><span class="line"><span class="title">${draft?.name || t("sidebar.newBot")}</span></span><span class="line"><span class="snip">${t("sidebar.creating")}</span></span></span></div>`}
+      ${bots && shownGroups.map(({ item: g, state: rowState }) => {
+        const sel = view === "group" && g.id === groupId && rowState !== "leave";
         const who = g.last?.botId ? (bots.find((b) => b.id === g.last.botId)?.name ?? "") : "";
         const line = g.running && g.current ? t("group.working", { name: bots.find((b) => b.id === g.current)?.name ?? "" }) : g.last ? `${who ? `${who}: ` : ""}${g.last.text.replace(/^⚠️\s*/, "").replace(/\s+/g, " ")}` : t("group.noMessages");
         const menuOpen = !!(groupCtx && groupCtx.el && groupCtx.group.id === g.id);
-        return html`<div class="thread-item" key=${"g" + g.id}>
+        const rowFx = rowState === "enter" ? " anim-fade-in" : rowState === "leave" ? " anim-fade-out" : "";
+        return html`<div class=${`thread-item${rowFx}`} key=${"g" + g.id} inert=${rowState === "leave" || undefined}>
           <button type="button" class=${`thread${sel ? " sel" : ""}`} aria-current=${sel ? "page" : undefined}
             onClick=${() => onSelectGroup(g.id)} onContextMenu=${(e) => { e.preventDefault(); setGroupCtx({ group: g, x: e.clientX, y: e.clientY }); }}>
             <span class="avatar-wrap"><${GroupAvatars} bots=${groupBots(g)} size=${38} pile />${g.running && html`<span class="working-dot" title=${t("sidebar.working")}></span>`}</span>

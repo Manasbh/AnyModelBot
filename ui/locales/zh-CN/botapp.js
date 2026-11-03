@@ -34,10 +34,8 @@ export default {
     title: "移除 {name}？",
     body: "它会从侧边栏消失，之后还能在发现页找到。",
     confirm: "移除",
-    keepTitle: "保留它的数据吗？",
-    keepBody: "保留的话，以后再用能接着上次的内容。不保留会删掉它的文件夹。",
-    keep: "保留",
-    discard: "不保留",
+    keep: "保留它的数据，以后再用能接着上次的内容",
+    done: "已移除 {name}，之后还能在发现页找到",
   },
   errors: {
     catalog_not_found: "找不到这个 Bot。",

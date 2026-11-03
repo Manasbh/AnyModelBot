@@ -9,7 +9,7 @@ import { PausedLine, TaskChip, TaskGroup, TaskRow } from "../components/tasks.js
 import { Markdown } from "../components/markdown.js";
 import { useStore, toast, saved, failed, confirmSheet } from "../lib/store.js";
 import { themeMode, setThemeMode } from "../lib/theme.js";
-import "../lib/prefs.js"; // 外观偏好（字体大小、动画、毛玻璃…）在样例页里也生效
+import "../lib/prefs.js"; // 外观偏好（字体大小、动画…）在样例页里也生效
 import { usePresence } from "./motion.js";
 
 const Compare = createContext(false);
@@ -213,19 +213,19 @@ function AvatarPickerDemo() {
   return html`<${AvatarPicker} value=${v} fallback=${MAIN_CHAR} onChange=${setV} />`;
 }
 
-// —— 材质：环境光上叠几层玻璃，底下放有颜色的内容，才看得出透光和模糊 ——
+// —— 材质：窗口底色上叠几层玻璃，底下放有颜色的内容，才看得出透光和模糊 ——
 const MATERIALS = [
-  ["--glass-side", "侧栏", "只盖在环境光上，不模糊"],
+  ["--glass-side", "侧栏", "只盖在窗口底色上，不模糊"],
   ["--glass-chrome", "顶栏", "--glass-filter"],
   ["--glass-float", "输入框 · 回到底部", "--glass-filter"],
   ["--glass-panel", "信息面板", "停靠时不模糊"],
   ["--glass-pop", "菜单 · 命令面板 · 提示", "--glass-filter-lg"],
-  ["--glass-sheet", "对话框 · 引导卡片", "--glass-filter-lg"],
+  ["--glass-sheet", "对话框", "--glass-filter-lg"],
 ];
 function GlassStage() {
-  return html`<div class="gal-stage aura-bg" style="--aura-hue: 225">
+  return html`<div class="gal-stage window-bg">
     <div class="gal-stage-under" aria-hidden="true">
-      ${["--accent-solid", "--green", "--red", "--amber", "--primary", "--accent-solid", "--green", "--red", "--amber", "--primary"].map((c, i) => html`<div class="cluster">
+      ${["--brand", "--green", "--red", "--amber", "--primary", "--brand", "--green", "--red", "--amber", "--primary"].map((c, i) => html`<div class="cluster">
         <i class="gal-stage-swatch" style=${{ "--sw": `var(${c})` }}></i>
         <span>${["今日结论：周五前上线新版引导页", "客服话术改用新模板", "设计稿定稿（小林，周三）", "联调支付回调（阿杰，周四）", "价格以控制台为准"][i % 5]}</span></div>`)}
     </div>
@@ -330,7 +330,7 @@ const STATE_ROWS = [
     ["聚焦", () => html`<label class="side-search is-focus" style="width: 200px; margin: 0"><${Icon} name="search" size="sm" /><input value="日报" tabindex="-1" /></label>`],
     ["账户 · 悬停", () => html`<button type="button" class="account is-hover" style="width: 200px"><span class="me">R</span><span class="who">root</span></button>`],
     ["账户 · 打开", () => html`<button type="button" class="account on" style="width: 200px"><span class="me">R</span><span class="who">root</span></button>`]] },
-  { name: "余额不足提示", note: ".low-balance · 一层淡红 + 红点，字用 --fg；悬停、按下淡红加深", ctx: "side", cells: basic((c) => html`<a class=${`low-balance ${c}`} href="#states" style="width: 220px; margin: 0">余额只剩 $0.42，去充值 ↗</a>`) },
+  { name: "侧栏提示", note: ".side-note · 一行淡灰 + 小点；悬停、按下深一级，不铺红、不铺品牌色", ctx: "side", cells: basic((c) => html`<a class=${`side-note ${c}`} href="#states" style="width: 220px; margin: 0"><span class="side-note-main"><span class="dot warn"></span><span class="v">余额不多了</span><span class="go">充值 ↗</span></span></a>`) },
   { name: "选角色", note: ".avatar-opt · 选中比悬停深一级、名字变实，不描边", cells: [
     ...basic((c) => html`<button type="button" class=${`avatar-opt ${c}`}><${BotAvatar} char="green" size=${36} /><span class="avatar-name">${BOT_CHARS.green.name}</span></button>`),
     ["选中", () => html`<button type="button" class="avatar-opt on" aria-checked="true" role="radio"><${BotAvatar} char="blue" size=${36} /><span class="avatar-name">${BOT_CHARS.blue.name}</span></button>`]] },
@@ -338,12 +338,12 @@ const STATE_ROWS = [
     ["空", () => html`<button type="button" class="send" disabled aria-label="发送"><${Icon} name="up" size="md" strong /></button>`],
     ...basic((c) => html`<button type="button" class=${`send ${c}`} aria-label="发送"><${Icon} name="up" size="md" strong /></button>`),
     ["停止", () => html`<button type="button" class="send stop" aria-label="停止"><${Icon} name="stop" size="md" /></button>`]] },
-  { name: "对话输入框", note: ".composer · 输入中描边更实、投影更大；拖入文件时 accent 描边 + 一层黄绿", cells: [["默认", () => composer("")], ["悬停", () => composer("is-hover")], ["输入中", () => composer("is-focus")], ["拖入文件", () => composer("drag")]] },
+  { name: "对话输入框", note: ".composer · 输入中描边更实、投影更大；拖入文件时 accent 描边 + 一层淡灰", cells: [["默认", () => composer("")], ["悬停", () => composer("is-hover")], ["输入中", () => composer("is-focus")], ["拖入文件", () => composer("drag")]] },
   { name: "输入框工具", note: ".composer .model-chip / .plus · 打开时箭头翻转、加号转成叉", cells: [
     ...basic((c) => html`<div class="composer gal-bare"><button type="button" class=${`model-chip ${c}`}><span class="v">claude-sonnet-5-5</span><${Icon} name="chevDown" /></button></div>`),
     ["打开", () => html`<div class="composer gal-bare"><button type="button" class="model-chip" aria-expanded="true"><span class="v">claude-sonnet-5-5</span><${Icon} name="chevDown" /></button></div>`],
     ["加号 · 打开", () => html`<div class="composer gal-bare"><button type="button" class="plus" aria-expanded="true" aria-label="更多"><${Icon} name="plus" size="md" /></button></div>`]] },
-  { name: "模板卡", note: ".tpl · 一块 --well；悬停底色深一级，选中是一层黄绿 + 黄绿图标，不描边", cells: [
+  { name: "模板卡", note: ".tpl · 一块 --well；悬停底色深一级，选中是底色深一级 + 主操作色的图标片，不描边", cells: [
     ...basic((c) => html`<button type="button" class=${`tpl ${c}`} style="width: 190px"><span class="tpl-ic"><${Icon} name="chat" size="lg" /></span><span class="tpl-name">群聊日报</span><span class="tpl-desc">每天整理群消息</span></button>`),
     ["选中", () => html`<button type="button" class="tpl on" style="width: 190px"><span class="tpl-ic"><${Icon} name="chat" size="lg" /></span><span class="tpl-name">群聊日报</span><span class="tpl-desc">每天整理群消息</span></button>`]] },
   { name: "建议胶囊", note: ".chip", cells: basic((c) => html`<button type="button" class=${`chip ${c}`}>你能帮我做什么？</button>`) },
@@ -357,7 +357,7 @@ const STATE_ROWS = [
 function StateRow({ name, note, ctx = "surface", cells }) {
   return html`<figure class="gal-specimen gal-state">
     <figcaption><b>${name}</b>${note && html`<span class="t-meta">${note}</span>`}</figcaption>
-    ${["light", "dark"].map((t) => html`<div class=${`gal-strip aura-bg ctx-${ctx}`} data-theme=${t} style=${{ "--aura-hue": ctx === "side" ? "155" : "225" }}>
+    ${["light", "dark"].map((t) => html`<div class=${`gal-strip window-bg ctx-${ctx}`} data-theme=${t}>
       <div class="gal-strip-in">${cells.map(([label, el]) => html`<div class="gal-cell"><div class="gal-cell-stage">${el()}</div><span class="t-meta">${label}</span></div>`)}</div>
     </div>`)}
   </figure>`;
@@ -402,7 +402,7 @@ function WinApp({ screen = "chat", open: initial = false }) {
       <div class="onboard-hero"><${BotAvatar} char=${MAIN_CHAR} size=${56} /><h1>任意模型，一个助手</h1></div>
     </div><${GalCaption} /></main>`;
   const settings = screen === "settings";
-  return html`<div class=${`app${open ? " with-panel" : ""}`} style=${{ "--aura-hue": "225" }}>
+  return html`<div class=${`app${open ? " with-panel" : ""}`}>
     <aside class="side">
       ${settings
         ? html`<div class="side-top start"><button type="button" class="side-back"><${Icon} name="arrowLeft" size="md" />返回应用</button></div>`
@@ -521,9 +521,9 @@ function Gallery() {
           <${ColorRows} tokens=${[...group(prim, "品牌"), ...group(prim, "状态色"), ...group(prim, "黑白")]} />`}
       <//>
 
-      <${Section} id="material" title="材质" lead="窗口最底层是环境光（--bg + 左上的品牌黄绿光 + 跟着当前机器人变的色相光）。侧栏直接盖在环境光上；主区和信息面板是浮起的面板；顶栏、输入框、菜单、对话框是盖在内容上的毛玻璃——半透明底 + 背景模糊 + 磨砂颗粒 + 顶边高光与细描边。系统开了「降低透明度」时，材质换成接近实色。">
+      <${Section} id="material" title="材质" lead="窗口最底层是一层纯色 --bg，侧栏就是它。主区和信息面板是面板，只有一道细线；顶栏、输入框、菜单、对话框盖在内容上，几乎不透。系统开了「降低透明度」时，材质换成接近实色。">
         <${Demo} flush title="六种材质" note="底下是会滚过去的内容：顶栏、输入框、菜单、对话框会把它模糊掉" code=${`<div class="glass" style="--glass-bg: var(--glass-pop); --glass-blur: var(--glass-filter-lg); --glass-shadow: var(--shadow-pop)">…</div>
-.pop { background: var(--grain), var(--glass-pop); backdrop-filter: var(--glass-filter-lg); box-shadow: var(--shadow-pop); }   /* 组件自己就是玻璃时直接写三行 */`}>
+.pop { background: var(--glass-pop); backdrop-filter: var(--glass-filter-lg); box-shadow: var(--shadow-pop); }   /* 组件自己就是玻璃时直接写三行 */`}>
           ${() => html`<${GlassStage} />`}
         <//>
       <//>
@@ -547,9 +547,9 @@ function Gallery() {
           <h3 class="t-label">控件高度</h3><${ScaleRows} tokens=${group(prim, "控件高度")} sample=${(t) => html`<div class="gal-height" style=${{ "--h": `var(${t.name})` }}></div>`} />`}
       <//>
 
-      <${Section} id="elevation" title="投影与层级" lead="投影是主题 token（深色下更重）；层级只用 --z-*，同一窗格内的浮动件用 calc(var(--z-float) ± 1)。">
+      <${Section} id="elevation" title="投影与层级" lead="投影只给浮在内容上的东西，很淡，分三档；面板只有一道细线。层级只用 --z-*，同一窗格内的浮动件用 calc(var(--z-float) ± 1)。">
         <${Demo} title="投影">
-          ${() => html`${["--shadow-xs", "--shadow-sm", "--shadow-md", "--shadow-lg", "--shadow-pane", "--shadow-tile", "--shadow-float", "--shadow-pop", "--primary-edge"].map((s) => html`<div class="gal-elev" style=${{ "--sh": `var(${s})` }}><code class="t-meta">${s}</code></div>`)}`}
+          ${() => html`${["--shadow-pane", "--shadow-float", "--shadow-pop", "--shadow-modal"].map((s) => html`<div class="gal-elev" style=${{ "--sh": `var(${s})` }}><code class="t-meta">${s}</code></div>`)}`}
         <//>
         ${prim && html`<${ScaleRows} tokens=${group(prim, "层级")} sample=${() => ""} />`}
       <//>
@@ -560,16 +560,16 @@ function Gallery() {
         </div>
         <div style=${reduced ? { "--motion": "0" } : {}}>
           <h3 class="t-label">时长</h3>
-          <div class="gal-rows">${motion.filter((t) => /^--dur-(fast|base|moderate|slow|slower)$/.test(t.name)).map((t) => html`<div class="gal-row scale" key=${t.name}>
+          <div class="gal-rows">${motion.filter((t) => /^--dur-(fast|base|moderate|slow)$/.test(t.name)).map((t) => html`<div class="gal-row scale" key=${t.name}>
             <${TokenName} t=${t} /><code class="t-meta">${t.src}</code><${Runner} d=${t.name} /></div>`)}</div>
           <h3 class="t-label">缓动</h3>
           <div class="gal-rows">${motion.filter((t) => t.name.startsWith("--ease-")).map((t) => html`<div class="gal-row scale" key=${t.name}>
-            <${TokenName} t=${t} /><svg class="gal-curve" viewBox="0 0 56 56"><rect width="56" height="56" /><path d=${bezierPath(t.src)} /></svg><${Runner} d="--dur-slower" e=${t.name} /></div>`)}</div>
+            <${TokenName} t=${t} /><svg class="gal-curve" viewBox="0 0 56 56"><rect width="56" height="56" /><path d=${bezierPath(t.src)} /></svg><${Runner} d="--dur-slow" e=${t.name} /></div>`)}</div>
           <h3 class="t-label">关键帧库</h3>
-          <${Demo} code=${`<div class="anim-rise-in">…</div>        /* 可用 --anim-dur / --anim-ease / --anim-delay 微调 */
-.toast { --rise: 6px; animation: rise-in var(--dur-base) var(--ease-out); }   /* 组件里直接用关键帧 + token */
+          <${Demo} code=${`<div class="anim-fade-in">…</div>        /* 可用 --anim-dur / --anim-ease / --anim-delay 微调 */
+.toast { animation: fade-in var(--dur-base) var(--ease-out); }   /* 组件里直接用关键帧 + token */
 const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场动画播完再卸载 */`}>
-            ${() => html`${[["anim-fade-in", "fade-in"], ["anim-rise-in", "rise-in"], ["anim-slide-in", "slide-in"], ["anim-pop-in", "pop-in"], ["anim-scale-in", "scale-in"], ["anim-sink-out", "sink-out"], ["anim-pop-out", "pop-out"], ["anim-bump", "bump"], ["anim-flash", "flash"]].map(([c, l]) => html`<${Replay} cls=${c} label=${l} />`)}
+            ${() => html`${[["anim-fade-in", "fade-in"], ["anim-slide-in", "slide-in"], ["anim-fade-out", "fade-out"], ["anim-slide-out", "slide-out"], ["anim-flash", "flash"]].map(([c, l]) => html`<${Replay} cls=${c} label=${l} />`)}
               <div class="gal-anim"><${Spinner} /><span class="t-meta">spin</span></div>
               <div class="gal-anim"><span class="typing"><i></i><i></i><i></i></span><span class="t-meta">breathe（stagger）</span></div>
               <div class="gal-anim"><span><span class="caret"></span></span><span class="t-meta">blink</span></div>
@@ -614,7 +614,7 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
 
       <${Section} id="menus" title="菜单与分段">
         <${Demo} title="Seg" note="两个以上的选项；中性 thumb 按值滑动">${() => html`<${SegDemo} />`}<//>
-        <${Demo} title="Switch" note="只有开 / 关两态；打开 = 主操作色（浅色墨、深色黄绿）" code=${`<${"${Switch}"} label="长期记忆" value=\${on} onChange=\${setOn} />`}>${() => html`<${SwitchDemo} />`}<//>
+        <${Demo} title="Switch" note="只有开 / 关两态；打开 = 主操作色（浅色墨、深色近白）" code=${`<${"${Switch}"} label="长期记忆" value=\${on} onChange=\${setOn} />`}>${() => html`<${SwitchDemo} />`}<//>
         <${Demo} title="Stops" note="几档离散的值（模型选择器的性价比、模型智能）；← → 一档，Home / End 两头；value = -1 时不在任何一档上" code=${`<${"${Stops}"} label="性价比" count={3} value=\${i} onChange=\${setI} />`}>${() => html`<${StopsDemo} />`}<//>
         <${Demo} title="MenuButton · Menu" note="↑↓ 选择，Enter 执行，Esc 关闭">${() => html`<${MenuButtonDemo} /><${MenuDemo} />`}<//>
       <//>
@@ -719,7 +719,7 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
 
       <${Section} id="needs" title="需要你" lead="所有机器人里在等你的事：提问和审批在前，再是失败、没送到、登录，问要不要改为执行的最后。侧栏那一行和托盘角标只在有事时出现；一件一块，操作在行里，点标题行展开任务详情。">
         <${Demo} title="侧栏" note="NeedsRow：件数为 0 时不画">
-          ${() => html`<div class="gal-strip-in" style="width: 264px; padding: var(--space-2); border-radius: var(--r-pane); background: var(--grain), var(--glass-side)">
+          ${() => html`<div class="gal-strip-in" style="width: 264px; padding: var(--space-2); border-radius: var(--r-pane); background: var(--glass-side)">
             <${NeedsRow} count=${3} onClick=${() => {}} /><${NeedsRow} count=${2} on onClick=${() => {}} /><${NeedsRow} count=${0} />
           </div>`}
         <//>
@@ -730,17 +730,17 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
 
       <${Section} id="rules" title="规则" lead="信息面板「任务」组里一条规则一行：时间表 · 标题，下面一句状态和下次运行（「观察中，明天 08:00 再运行」）。观察够了要不要改为执行，在「需要你」里问（从不推送）。点开是同一块里的详情和运行记录，记录一次一行、不画分隔线，再点开一行看报告。">
         <${Demo} title="行" note="RuleRow：观察中 / 执行中 / 暂停 / 提醒">
-          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--grain), var(--glass-panel)">
+          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--glass-panel)">
             <div class="list">${RULES.map((r) => html`<${RuleRow} rule=${r} open=${false} onToggle=${() => {}} />`)}</div>
           </div>`}
         <//>
         <${Demo} title="暂停" note="PausedLine：后台工作暂停时信息面板最上面这一行，没暂停时不画">
-          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--grain), var(--glass-panel)">
+          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--glass-panel)">
             <${PausedLine} onResume=${async () => {}} />
           </div>`}
         <//>
         <${Demo} title="详情与运行记录" note="RuleDetail：原话、模式、立即运行、运行记录（本会发送 / 保持安静 / 失败 / 跳过）">
-          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--grain), var(--glass-panel)">
+          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--glass-panel)">
             <div class="list"><div class="row-edit rule-edit"><${RuleDetail} rule=${RULES[0]} runs=${RULE_RUNS} /></div></div>
           </div>`}
         <//>
@@ -748,12 +748,12 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
 
       <${Section} id="tasks" title="任务" lead="信息面板的「任务」组就是一个机器人的全部任务和规则：进行中、等你的在前，规则其次，结束了的收在最后一行里，点开才列出来（留 30 天）。一个任务一行，第二行是一句话（「已进行 12 分钟，花了约 $0.08」「15:33 完成」），点开是同一块里的详情：来自、最新进展、预算（可以改）、文件夹（大小、打开）、要清理时的日期和保留、每次运行折叠的处理过程。什么都没有时整组不画。">
         <${Demo} title="「任务」组" note="TaskGroup：进行中 / 进行中，有个问题等你回答（问了个有默认回答的问题，接着在做）/ 等你回答 / 规则 / 已结束 1（点开列出结束了的，那个文件夹 3 天后清理）">
-          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--grain), var(--glass-panel)">
+          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--glass-panel)">
             <${TaskGroup} botId="b" tasks=${TASKS} rules=${[RULES[0]]} ended=${ENDED} details=${{ t1: TASK_DETAIL, t4: ASKING_DETAIL, t2: ASK_DETAIL, t3: ENDED_DETAIL }} />
           </div>`}
         <//>
         <${Demo} title="问了还在做" note="TaskRow 展开：问题（下面一句不回复就按中文做）· 最新进展 · 预算 · 运行中；对话里的胶囊点开是同一份详情">
-          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--grain), var(--glass-panel)">
+          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--glass-panel)">
             <div class="list"><${TaskRow} task=${ASKING} open data=${ASKING_DETAIL} onToggle=${() => {}} onOpenConv=${() => {}} /></div>
           </div>`}
         <//>
@@ -762,7 +762,7 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
             <div class="msg-row assistant"><${TaskChip} task=${ASKING} data=${ASKING_DETAIL} /></div></div>`}
         <//>
         <${Demo} title="详情" note="TaskRow 展开：来自 · 最新进展 · 预算 约 $0.08 / $1.00（改） · 文件夹 2.3 MB（打开） · 第 1 次运行，已进行 12 分钟 · 停止 / 导出">
-          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--grain), var(--glass-panel)">
+          ${() => html`<div class="panel-body" style="width: 340px; flex: none; padding: var(--space-2); border-radius: var(--r-pane); background: var(--glass-panel)">
             <div class="list"><${TaskRow} task=${TASKS[0]} open data=${TASK_DETAIL} onToggle=${() => {}} onOpenConv=${() => {}} /></div>
           </div>`}
         <//>
@@ -773,7 +773,7 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
         <${WinCase} name="信息面板开着" note="信息面板贴住右上角，主区照旧浮着" open />
         <${WinCase} name="窗口窄：信息面板是抽屉" note="1000 宽；抽屉贴住右上角，主区在它底下不动" w=${1000} open />
         <${WinCase} name="设置" note="内容滚到窗口上沿，从按钮底下过" screen="settings" />
-        <${WinCase} name="引导页" note="没有面板，按钮直接在环境光上" w=${1000} screen="onboard" />
+        <${WinCase} name="引导页" note="没有面板，按钮直接在窗口底色上" w=${1000} screen="onboard" />
       <//>
 
       <${Section} id="custom" title="定制" lead="不改组件源码：在上下文里覆盖组件变量；需要一块不同主题的区域时，加 data-theme。">

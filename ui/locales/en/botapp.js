@@ -34,10 +34,8 @@ export default {
     title: "Remove {name}?",
     body: "It leaves the sidebar. You can still find it in Discover.",
     confirm: "Remove",
-    keepTitle: "Keep its data?",
-    keepBody: "If you keep it, you can pick up where you left off next time. Otherwise its folder is deleted.",
-    keep: "Keep",
-    discard: "Don't keep",
+    keep: "Keep its data so you can pick up where you left off",
+    done: "Removed {name}. You can find it again in Discover",
   },
   errors: {
     catalog_not_found: "This bot wasn't found.",

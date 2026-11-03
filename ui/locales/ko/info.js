@@ -30,7 +30,6 @@ export default {
     "disconnect": "연결 해제",
     "disconnectTitle": "Feishu 연결을 해제할까요?",
     "disconnectBody": "봇의 Feishu App ID와 App Secret이 삭제됩니다.",
-    "setupHint": "Feishu Open Platform에서 봇 기능을 켜고 이벤트 구독을 ‘Receive events through long connection’으로 설정한 뒤 {event}를 구독하세요. 필요한 권한: {p1}, {p2}, {p3}, {p4}."
   },
   "messenger": {
     "bindHint": "본인의 계정에서 봇에게 메시지를 보내 연결을 완료하세요.",
@@ -42,18 +41,15 @@ export default {
     "telegram": {
       "sub": "롱 폴링으로 메시지를 수신합니다",
       "token": "봇 토큰",
-      "setupHint": "Telegram에서 {bot}에게 {cmd}를 보내 봇을 만든 다음 발급된 토큰을 붙여 넣으세요. 현재는 개인 메시지만 지원합니다. 앱이 닫혀 있는 동안 보낸 메시지는 최대 24시간 이내에 수신할 수 있습니다."
     },
     "slack": {
       "sub": "Socket Mode로 메시지를 수신합니다",
       "botToken": "봇 토큰",
       "appToken": "앱 수준 토큰",
-      "setupHint": "api.slack.com/apps에서 앱을 만들고 Socket Mode를 켠 뒤 {conn} 권한으로 앱 수준 토큰을 생성하세요. 봇 권한 {s1}, {s2}, {s3}, {s4}를 추가하고 {event}를 구독한 다음 App Home에서 메시지를 허용하고 워크스페이스에 설치하세요. 현재는 개인 메시지만 지원합니다. 앱이 닫혀 있는 동안의 메시지는 수신되지 않습니다."
     },
     "discord": {
       "sub": "Gateway로 메시지를 수신합니다",
       "token": "봇 토큰",
-      "setupHint": "Discord Developer Portal에서 애플리케이션과 봇을 만들고 토큰을 복사하세요. OAuth2 → URL Generator에서 bot을 선택해 참여 중인 서버에 추가한 뒤 개인 메시지를 보내세요. 현재는 개인 메시지만 지원합니다. 앱이 닫혀 있는 동안의 메시지는 수신되지 않습니다."
     }
   },
   "weixin": {

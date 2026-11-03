@@ -1,7 +1,7 @@
 /* 对话页。布局与顶栏参考 Grok Bot，对话流与输入框参考 Codex：
    顶栏 52（头像 + 名称 | 新对话 · 信息面板），760 阅读列；用户消息是浅灰气泡，机器人回复是整列正文；
    底部是两行输入框（文字区 + 工具栏：更多 | 模型 · 发送）。
-   顶栏和输入框都是盖在对话流上的毛玻璃：消息从它们底下滚过，透出来是模糊的。 */
+   顶栏和输入框盖在对话流上：几乎不透，消息从底下滚过去只隐约看得到。 */
 @layer app {
 /* 对话列和输入框同宽、同一个居中列（两侧至少 --page-gutter）。输入框浮在主区底部，
    对话列的下边距和"回到底部"的位置都从它的高度算出来，改输入框的内边距时这里跟着变。 */
@@ -17,18 +17,18 @@
   position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;
 }
 
-/* —— 顶栏：对话页里浮在滚动内容上；内容滚到它底下时（.scrolled）才出现细线和投影 —— */
+/* —— 顶栏：对话页里盖在滚动内容上；内容滚到它底下时（.scrolled）才出现一条细线，不加投影 —— */
 .chat-head {
   flex: none; display: flex; align-items: center; gap: var(--bar-gap); height: var(--head-h); padding: 0 var(--head-px);
   -webkit-app-region: drag;
 }
 .chat > .chat-head {
   position: absolute; z-index: var(--z-float); top: 0; left: 0; right: 0;
-  background: var(--grain), var(--glass-chrome); backdrop-filter: var(--glass-filter);
-  box-shadow: 0 .5px 0 transparent;
+  background: var(--glass-chrome); backdrop-filter: var(--glass-filter);
+  box-shadow: 0 var(--hairline) 0 transparent;
   transition: box-shadow var(--t-base);
 }
-.chat.scrolled > .chat-head { box-shadow: 0 .5px 0 var(--glass-edge), var(--shadow-xs); }
+.chat.scrolled > .chat-head { box-shadow: 0 var(--hairline) 0 var(--glass-edge); }
 .chat-head > * { -webkit-app-region: no-drag; }
 .chat-head .grow { -webkit-app-region: drag; align-self: stretch; }
 .chat-head .icon-btn { --ib-size: var(--ctl-md); }   /* 16 的图标四周各 6：最右的图标外沿落在 --head-px + 6 = 16，和左边的头像对称 */
@@ -73,15 +73,8 @@ button.head-bot:active { background: var(--pill-press); }
 .msg-row.assistant .msg { color: var(--fg); line-height: var(--lh-prose); }
 .msg-row.pending .msg { opacity: .85; }
 
-/* —— 对话流的动效：一句话"发出 → 思考 → 输出 → 收尾"，每一步只动一样东西，幅度小、不循环抢眼 ——
-   发出：气泡从输入框的方向浮上来。透明度先到位（base），位移和一点点缩放用弹性曲线慢一拍收尾（slow），
-   缩放的原点在右下角，像是从发送钮那边送出去的 */
-.msg-row.user.enter {
-  --pop-dy: 12px; --pop-scale: .96; transform-origin: 100% 100%;
-  animation: fade-in var(--dur-base) var(--ease-out), pop-in var(--dur-slow) var(--ease-spring);
-}
-/* 流里新插进来的提问 / 审批卡、文件、出错提示：轻轻浮起 */
-.msg-row.assistant.enter { --rise: 6px; animation: rise-in var(--dur-moderate) var(--ease-out); }
+/* —— 对话流的动效：一句话"发出 → 思考 → 输出 → 收尾"，每一步只动一样东西，只淡入淡出，不位移、不缩放 —— */
+.msg-row.user.enter, .msg-row.assistant.enter { animation: fade-in var(--dur-base) var(--ease-out); }
 /* 思考：工作状态行比你的气泡晚一拍（--stagger）淡入，先看到"发出去了"，再看到"在想" */
 .msg-row.live > .work { animation: fade-in var(--dur-moderate) var(--ease-out) var(--stagger) backwards; }
 /* 输出：新出现的段落、列表项淡入，已经在的不重播；只在输出中，回复结束后不再有动画 */
@@ -246,8 +239,8 @@ button.act-head:active { background: var(--pill-hover); }
 .msg-files { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); }
 .msg-row .msg + .msg-files { margin-top: var(--space-3); }
 .msg-row :is(.msg, .msg-files) + .notice { margin-top: var(--space-3); }
-/* 回合中交付的：轻轻浮起（已经在的不重播） */
-.msg-row.live .msg-files > * { --rise: 6px; animation: rise-in var(--dur-moderate) var(--ease-out); }
+/* 回合中交付的：淡入（已经在的不重播） */
+.msg-row.live .msg-files > * { animation: fade-in var(--dur-moderate) var(--ease-out); }
 .file-card {
   display: flex; align-items: center; gap: var(--space-3); width: min(360px, 100%); padding: var(--space-2-5) var(--space-3-5) var(--space-2-5) var(--space-2-5);
   background: var(--well); border-radius: var(--r-well); color: var(--fg); text-align: left; transition: background var(--t-fast);
@@ -263,61 +256,58 @@ a.file-card:active, .file-card:has(> .file-open:active) { background: var(--well
 .file-card .fsub { margin-top: var(--space-0-5); font-size: var(--fs-xs); color: var(--muted); }
 .file-card.off .fname { color: var(--muted); }
 /* 图片直接显示：缩略图保持比例，限宽限高（读出来之前先占一小块 --well）；点开看大图 */
-.msg-img { display: block; max-width: 100%; overflow: hidden; border-radius: var(--r-well); background: var(--well); cursor: zoom-in; transition: transform var(--t-fast); }
-.msg-img:active { transform: scale(var(--press)); }
+.msg-img { display: block; max-width: 100%; overflow: hidden; border-radius: var(--r-well); background: var(--well); cursor: zoom-in; }
 .msg-img img { display: block; width: auto; height: auto; min-width: 48px; min-height: 48px; max-width: min(320px, 100%); max-height: 240px; }
 .msg-row .notice { max-width: min(var(--bubble-w), 100%); }
 
 .chat-empty { margin: auto; padding-top: 16vh; display: grid; justify-items: center; gap: var(--space-2-5); text-align: center; color: var(--muted); }
 /* 头像和标题之间多留一点：大头像会呼吸、会动，贴太近显得挤 */
 .chat-empty h2 { margin-top: var(--space-2); font-size: var(--fs-2xl); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); line-height: var(--lh-tight); color: var(--fg); }
-.chat-empty > p { max-width: 440px; margin: 0; font-size: var(--fs-md); line-height: var(--lh-normal); }
+.chat-empty > p { max-width: 440px; margin: 0; font-size: var(--fs-lg); line-height: var(--lh-normal); }
 .chips { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; margin-top: var(--space-2-5); }
 /* 建议：和次级按钮一样是一层静默填充，不描边、不浮起 */
 .chip {
   height: var(--ctl-md); padding: 0 var(--space-3-5); border-radius: var(--r-full); background: var(--pill);
-  font-size: var(--fs-sm); color: var(--fg-2); transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  font-size: var(--fs-sm); color: var(--fg-2); transition: background var(--t-fast), color var(--t-fast);
 }
 .chip:hover { background: var(--pill-hover); color: var(--fg); }
-.chip:active { background: var(--pill-press); transform: scale(var(--press)); }
+.chip:active { background: var(--pill-press); }
 
 /* —— 回到底部：玻璃小圆钮 —— */
 .to-bottom {
   position: absolute; z-index: var(--z-float); left: 50%; bottom: calc(var(--dock-pb) + var(--composer-h) + var(--space-6)); translate: -50% 0;
   width: var(--ctl-lg); height: var(--ctl-lg); border-radius: 50%; display: grid; place-items: center;
-  background: var(--grain), var(--glass-float); backdrop-filter: var(--glass-filter-sm); color: var(--fg-2); box-shadow: var(--shadow-float);
-  --rise: 6px; animation: rise-in var(--dur-base) var(--ease-out);
-  transition: color var(--t-fast), scale var(--t-fast);
+  background: var(--glass-float); backdrop-filter: var(--glass-filter-sm); color: var(--fg-2); box-shadow: var(--shadow-float);
+  animation: fade-in var(--dur-base) var(--ease-out);
+  transition: color var(--t-fast);
 }
-.to-bottom.leaving { animation: sink-out var(--dur-base) var(--ease-in) forwards; pointer-events: none; }
+.to-bottom.leaving { animation: fade-out var(--dur-base) var(--ease-in) forwards; pointer-events: none; }
 .to-bottom:hover { color: var(--fg); }
-.to-bottom:active { scale: var(--press-strong); }
-.to-bottom .new { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-solid); box-shadow: 0 0 0 2px var(--surface-solid), 0 0 0 2.5px var(--accent-line); }   /* 描边：圆点外的缺口和墨色细边，黄绿点才压得住白底 */
-.to-bottom .new { --scale-from: 0; animation: scale-in var(--dur-slow) var(--ease-back); }
+.to-bottom .new { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 0 2px var(--surface-solid); }   /* 描边：压在圆钮上的缺口（和底同色），不是边框 */
+.to-bottom .new { animation: fade-in var(--dur-base) var(--ease-out); }
 
-/* —— 输入框：文字区 + 工具栏两行，一块浮在对话流上的玻璃（和菜单、提示同一种材质：细边 + 投影，不额外描边）。
-   认得出它靠的是：浮起的投影、常显的占位文字（3:1）、工具栏和发送钮，以及固定在底部的位置。
-   状态：输入时浮得更高（投影更大）；拖入文件时 accent 描边 + 光晕 + 一层黄绿 —— */
-/* 底座是透明的、不接收指针；上边留得够高，输入框聚焦时的投影不会被 overflow 裁掉 */
+/* —— 输入框：文字区 + 工具栏两行，盖在对话流上的一块面（参考 Codex、Grok）：一道细边 + 很淡的投影。
+   聚焦时只是边深一级，投影不变大；拖入文件时 accent 描边 + 一层淡灰 —— */
+/* 底座是透明的、不接收指针 */
 .composer-dock {
   position: absolute; z-index: var(--z-float); left: 0; right: 0; bottom: 0; padding: var(--space-12) 0 var(--dock-pb); pointer-events: none;
   overflow: hidden; scrollbar-gutter: stable;
 }
 .composer {
-  --composer-edge: var(--glass-edge);
-  --composer-edge-w: .5px;
-  --composer-shadow: var(--shadow-md);
+  --composer-edge: var(--line);
+  --composer-edge-w: 1px;
+  --composer-shadow: var(--drop-float);
   --composer-tint: transparent;
   pointer-events: auto; position: relative;
   width: var(--col, auto); margin: 0 auto;
   display: flex; flex-direction: column;
-  background: var(--grain), linear-gradient(var(--composer-tint), var(--composer-tint)), var(--glass-float);
+  background: linear-gradient(var(--composer-tint), var(--composer-tint)), var(--glass-float);
   backdrop-filter: var(--glass-filter); border-radius: var(--r-3xl);
-  box-shadow: inset 0 1px 0 var(--glass-hi), 0 0 0 var(--composer-edge-w) var(--composer-edge), var(--composer-shadow);   /* 描边：浮层玻璃的细边；拖入文件时换成 accent */
-  transition: box-shadow var(--t-moderate);   /* 聚焦时浮高一点：投影慢慢长出来，不是一下变大 */
+  box-shadow: 0 0 0 var(--composer-edge-w) var(--composer-edge), var(--composer-shadow);   /* 描边：输入框的边；聚焦时深一级，拖入文件时换成 accent */
+  transition: box-shadow var(--t-fast);
 }
-.composer:focus-within { --composer-shadow: var(--shadow-lg); }
-.composer.drag { --composer-edge: var(--accent); --composer-edge-w: 1.5px; --composer-shadow: var(--ring), var(--shadow-md); --composer-tint: var(--accent-wash); }
+.composer:focus-within { --composer-edge: var(--line-strong); }
+.composer.drag { --composer-edge: var(--accent); --composer-edge-w: 1.5px; --composer-shadow: var(--ring); --composer-tint: var(--pill); }
 .composer textarea {
   display: block; width: 100%; min-width: 0; border: 0; outline: none; background: transparent; resize: none;
   font-size: var(--fs-xl); line-height: var(--composer-line); padding: var(--space-3-5) var(--space-4) var(--space-1);
@@ -330,17 +320,17 @@ a.file-card:active, .file-card:has(> .file-open:active) { background: var(--well
 /* 加号钮和发送钮一样是 32 的圆：加号落在 --composer-pad + 8 = 16，和上面文字的起点对齐；模型胶囊矮一档（28），不和两端的圆钮抢 */
 .composer :is(.plus, .model-chip) {
   flex: none; height: var(--ctl-md); display: inline-flex; align-items: center; justify-content: center; color: var(--ctl-fg);
-  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast);
 }
 .composer :is(.plus, .model-chip):hover { background: var(--pill); color: var(--fg); }
 .composer :is(.plus, .model-chip)[aria-expanded="true"] { background: var(--pill-hover); color: var(--fg); }
-.composer :is(.plus, .model-chip):active { background: var(--pill-press); transform: scale(var(--press)); }
+.composer :is(.plus, .model-chip):active { background: var(--pill-press); }
 .composer .plus { width: var(--ctl-lg); height: var(--ctl-lg); border-radius: 50%; }
-.composer .plus .ic { transition: transform var(--t-moderate); }
+.composer .plus .ic { transition: transform var(--t-fast); }
 .composer .plus[aria-expanded="true"] .ic { transform: rotate(45deg); }
 .composer .model-chip { max-width: 240px; padding: 0 var(--space-2) 0 var(--space-2-5); border-radius: var(--r-full); gap: var(--space-1); font-size: var(--fs-sm); }
 .composer .model-chip .v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.composer .model-chip .ic { --ic-size: var(--ic-xs); transition: transform var(--t-base); }
+.composer .model-chip .ic { --ic-size: var(--ic-xs); transition: transform var(--t-fast); }
 .composer .model-chip[aria-expanded="true"] .ic:last-child { transform: rotate(180deg); }
 .composer .model-chip .ic.lead { --ic-size: var(--ic-sm); }
 .composer .model-chip.perm { max-width: 160px; }
@@ -350,22 +340,17 @@ a.file-card:active, .file-card:has(> .file-open:active) { background: var(--well
 .composer .model-chip.perm.full:hover { background: linear-gradient(var(--pill), var(--pill)), var(--red-wash); }
 .composer .model-chip.perm.full[aria-expanded="true"] { background: linear-gradient(var(--pill-hover), var(--pill-hover)), var(--red-wash); }
 .composer .model-chip.perm.full:active { background: linear-gradient(var(--pill-press), var(--pill-press)), var(--red-wash); }
-/* 发送：空的时候是中性的灰钮（不用半透明的墨色或黄绿，会发浑），箭头也小一号；能发了才亮起品牌色，
-   箭头带一点回弹放大到位（"可以发了"）；悬停时箭头往上提一点。
-   发出后换成停止方块，方块从小弹到位；回复结束，箭头从下面升回来（.back：发过一次之后才有，打开页面时不动） */
+/* 发送：空的时候是中性的灰钮（不用半透明的主操作色，会发浑）；能发了才变成主操作色。
+   发出后换成停止方块，回复结束换回箭头，都只是淡入 */
 .send {
   width: var(--ctl-lg); height: var(--ctl-lg); border-radius: 50%; flex: none; display: grid; place-items: center;
-  background: var(--send-bg); color: var(--send-fg); box-shadow: var(--primary-edge);
-  transition: background var(--t-base), color var(--t-base), box-shadow var(--t-base), transform var(--t-fast);
+  background: var(--send-bg); color: var(--send-fg);
+  transition: background var(--t-fast), color var(--t-fast);
 }
-.send .ic { transition: transform var(--t-base), scale var(--dur-base) var(--ease-back); }
-.send:disabled .ic { scale: .86; }
-.send.stop .ic { --scale-from: .4; animation: scale-in var(--dur-slow) var(--ease-spring); }
-.send.back .ic { --rise: 4px; animation: rise-in var(--dur-moderate) var(--ease-out); }
+.send.stop .ic, .send.back .ic { animation: fade-in var(--dur-base) var(--ease-out); }
 .send:hover:not(:disabled) { background: var(--primary-hover); }
-.send:hover:not(:disabled):not(.stop) .ic { transform: translateY(-1px); }
-.send:active:not(:disabled) { background: var(--primary-press); transform: scale(var(--press-strong)); }
-.send:disabled:not([aria-busy="true"]) { background: var(--pill); color: var(--faint); box-shadow: none; }
+.send:active:not(:disabled) { background: var(--primary-press); }
+.send:disabled:not([aria-busy="true"]) { background: var(--pill); color: var(--faint); }
 /* 正在停止：保持本色转圈，只是不可点（同 Button 的 loading） */
 .send[aria-busy="true"] { cursor: progress; }
 .send .spinner { width: 12px; height: 12px; }
@@ -377,10 +362,10 @@ a.file-card:active, .file-card:has(> .file-open:active) { background: var(--well
 .task-pill {
   display: inline-flex; align-items: center; gap: var(--space-1-5); max-width: 100%; height: var(--ctl-md); padding: 0 var(--space-2-5) 0 var(--space-3);
   border-radius: var(--r-full); background: var(--pill); font-size: var(--fs-sm); color: var(--fg-2);
-  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast);
 }
 .task-pill:hover { background: var(--pill-hover); color: var(--fg); }
-.task-pill:active { background: var(--pill-press); transform: scale(var(--press)); }
+.task-pill:active { background: var(--pill-press); }
 .task-pill .l { display: flex; min-width: 0; white-space: nowrap; }
 .task-pill .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--fg); font-weight: var(--fw-medium); }
 .task-pill .chev { flex: none; color: var(--muted); transition: transform var(--t-fast); }

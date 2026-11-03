@@ -33,13 +33,13 @@ export function DiscoverScreen({ catalog, onOpen }) {
   const rest = needle ? hits : hits.filter((e) => !e.featured);
   return html`<section class="discover" data-screen="discover">
     <header class="discover-head">
-      <h1 class="t-title">${t("botapp.discover.title")}</h1>
-      <p class="t-meta">${t("botapp.discover.lead")}</p>
+      <h1 class="t-page">${t("botapp.discover.title")}</h1>
+      <p>${t("botapp.discover.lead")}</p>
       ${list.length >= SEARCH_MIN && html`<label class="side-search discover-search"><${Icon} name="search" size="sm" />
         <input type="search" placeholder=${t("common.search")} aria-label=${t("common.search")} value=${q} onInput=${(e) => setQ(e.target.value)} /></label>`}
     </header>
-    ${featured.length > 0 && html`<h2 class="t-label">${t("botapp.discover.featured")}</h2><div class="discover-grid">${featured.map((e) => html`<${Card} key=${e.id} entry=${e} lang=${lang} onOpen=${onOpen} />`)}</div>`}
-    ${rest.length > 0 && html`<h2 class="t-label">${t("botapp.discover.latest")}</h2><div class="discover-grid">${rest.map((e) => html`<${Card} key=${e.id} entry=${e} lang=${lang} onOpen=${onOpen} />`)}</div>`}
+    ${featured.length > 0 && html`<h2 class="discover-part">${t("botapp.discover.featured")}</h2><div class="discover-grid">${featured.map((e) => html`<${Card} key=${e.id} entry=${e} lang=${lang} onOpen=${onOpen} />`)}</div>`}
+    ${rest.length > 0 && html`<h2 class="discover-part">${t("botapp.discover.latest")}</h2><div class="discover-grid">${rest.map((e) => html`<${Card} key=${e.id} entry=${e} lang=${lang} onOpen=${onOpen} />`)}</div>`}
     ${!hits.length && html`<p class="hint">${t("botapp.discover.empty")}</p>`}
   </section>`;
 }

@@ -75,41 +75,12 @@ export default {
     "title": "파트너 프로그램에 참여하세요,",
     "lead": "기본 정보와 연락처를 남겨 주세요. 연락드려 협력 방식과 수수료를 정합니다.",
     "mailLabel": "메일로 바로 문의할 수도 있습니다",
-    "optional": "선택",
-    "type": "어디에 해당하나요",
-    "types": {
-      "training": "교육 기관과 강사",
-      "creator": "콘텐츠 크리에이터와 커뮤니티",
-      "sales": "기업 서비스 업체와 채널 파트너",
-      "other": "기타"
-    },
-    "name": "이름",
-    "company": "회사 또는 기관",
-    "contact": "연락처",
-    "contactHint": "이메일, 전화번호 또는 Telegram",
-    "audience": "고객 또는 독자",
-    "audienceHint": "예: 기업 교육, 연간 수강생 약 500명",
-    "message": "협력하고 싶은 방식",
-    "messageHint": "간단히 적어 주셔도 됩니다",
-    "submit": "신청하기",
-    "sending": "제출 중…",
-    "consent": "이 정보는 연락과 협력 검토에만 사용합니다.",
-    "privacy": "개인정보 안내",
-    "errors": {
-      "type": "하나를 선택해 주세요",
-      "name": "이름을 입력해 주세요",
-      "contact": "연락처를 입력해 주세요"
-    },
-    "failed": "제출하지 못했습니다. 다시 시도하거나 {email}로 메일을 보내 주세요.",
-    "done": {
-      "title": "신청이 접수되었습니다",
-      "body": "남겨 주신 연락처로 연락드리겠습니다."
+    "panel": {
+      "title": "Modelflare 계정으로 신청",
+      "body": "신청은 Modelflare 콘솔에서 합니다. 로그인하면 바로 제출할 수 있습니다. 승인 후에는 전용 쿠폰과 수수료 내역도 콘솔에서 확인할 수 있습니다.",
+      "action": "신청서 작성하기"
     },
     "mail": {
-      "title": "한 단계만 더",
-      "body": "아래 내용을 {email}로 보내 주세요. 받는 대로 연락드리겠습니다.",
-      "open": "메일 앱 열기",
-      "back": "돌아가서 수정",
       "subject": "AnyModelBot 파트너 신청"
     },
     "dim": "일대일로 함께합니다.",

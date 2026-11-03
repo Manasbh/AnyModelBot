@@ -77,11 +77,6 @@ export default {
     delete: "Delete bot",
     deleteSub: "Permanently delete this bot and all its conversations",
   },
-  delete: {
-    title: "Delete “{name}”?",
-    body: "This permanently deletes the bot and all its conversations. This can't be undone.",
-    confirm: "Delete permanently",
-  },
   access: {
     head: "Who can use it",
     policy: "Only the owner and people you allow",

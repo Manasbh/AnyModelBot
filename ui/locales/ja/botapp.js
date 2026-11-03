@@ -34,10 +34,8 @@ export default {
     title: "{name} を削除しますか？",
     body: "サイドバーから消えますが、発見ページからまた見つけられます。",
     confirm: "削除",
-    keepTitle: "データを残しますか？",
-    keepBody: "残すと、次回は前回の続きから使えます。残さない場合はフォルダーを削除します。",
-    keep: "残す",
-    discard: "残さない",
+    keep: "データを残して、次回は続きから使えるようにする",
+    done: "{name} を削除しました。発見ページからまた見つけられます",
   },
   errors: {
     catalog_not_found: "この Bot は見つかりません。",

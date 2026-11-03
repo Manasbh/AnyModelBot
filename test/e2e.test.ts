@@ -234,7 +234,7 @@ describe("Web 界面 / API", () => {
     expect(f.status).toBe(200);
     const g = await api(`/channel-accounts/${id}/channels`);
     expect(JSON.stringify(g.json)).not.toContain("very-secret-value");
-    expect(g.json.feishu.account).toEqual({ appId: "cli_x", saved: { appSecret: "****alue" } });
+    expect(g.json.feishu.account).toEqual({ appId: "cli_x", brand: "feishu", saved: { appSecret: "****alue" } });
     expect(JSON.stringify((await api("/channel-accounts")).json)).not.toContain("very-secret-value");
     const chat = await api(`/bots/${id}/chat`, { method: "POST", body: { text: "hi" } });
     expect(chat.json.reply).toBe("[mock-b] 你说：hi");

@@ -6,11 +6,16 @@ export default {
   "accountDetails": "계정 및 사용량",
   "balance": "잔액",
   "topUp": "충전 ↗",
-  "lowBalance": "잔액 {amount} — 충전 ↗",
+  "lowBalance": "잔액이 얼마 남지 않았습니다",
+  "belowLine": "알림 기준 {amount} 미만",
   "update": "{version} 버전을 사용할 수 있습니다 — 다운로드 ↗",
   "updateDismiss": "이 버전 알림 숨기기",
   "renamed": "이름이 변경되었습니다",
   "delete": {
+    "done": "‘{name}’ 삭제됨",
+    "handover": "{channels}에는 앞으로 ‘{bot}’ 봇이 답합니다.",
+    "handoverNone": "마지막 봇입니다. 새 봇을 만들 때까지 {channels} 메시지에는 답이 없습니다.",
+    "listSep": ", ",
     "title": "“{name}”을(를) 삭제할까요?",
     "body": "봇과 모든 대화가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
     "confirm": "영구 삭제"

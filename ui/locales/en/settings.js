@@ -14,24 +14,19 @@ export default {
   },
   connections: {
     feishu: "Feishu messages",
-    channelSub: "Shared by all bots, and you can add several accounts. Send /bot and a name once in a chat to talk to a different bot",
+    channelSub: "Message your bots from these apps. All bots share the accounts, and sending /bot and a name in a chat switches to another bot.",
     channelKeys: "{channel} channel chat connection account bot /bot",
-    addAccount: "Add account",
     manage: "Manage",
     defaultIs: "{bot} replies by default",
     requests: "{count} access requests",
-    addChannelTitle: "Add a {channel} account",
     defaultBot: "Default bot",
     defaultBotHint: "It answers new chats. Send /bot in a chat to see the bots, and /bot and a name once to switch; that chat stays with the new bot.",
     removeAccount: "Remove this account",
     removeChannelBody: "No bot will be able to send or receive through this account, and its allow list is cleared. Chat history is kept.",
-    notionSub: "Shared by all bots, and you can add several accounts. Read-only bots can only read, and no bot can delete pages",
-    feishuSub: "Shared by all bots, and you can add several accounts. Reads your chats and messages as you, read-only",
+    notionSub: "Pages and databases. Read-only bots can only read, and no bot can delete pages",
+    feishuSub: "Reads your chats and messages as you, read-only",
     notionKeys: "notion notes docs database connection account authorize",
     feishuKeys: "feishu lark messages chats connection account authorize",
-    oneClick: "Authorize",
-    notionOther: "Use a token",
-    feishuOther: "Use my own app",
     viaToken: "Token",
     viaOAuth: "Authorized",
     needsReauth: "Authorization expired. Authorize again",
@@ -41,7 +36,6 @@ export default {
     removeTitle: "Remove {name}?",
     removeBody: "No bot will be able to use this account. You can add it again later.",
     notionOAuthTitle: "Authorize Notion",
-    notionOAuthBody: "Notion's authorization page is open in your browser. Approve it, then come back here.",
     oauthFailed: "Couldn't open the authorization page. Try again later",
     openAgain: "Didn't open? Click here",
     waiting: "Waiting for your approval…",
@@ -53,15 +47,96 @@ export default {
     feishuTitle: "Add a Feishu account",
     feishuAppHint: "The app needs user permissions for reading messages. You'll scan a code to authorize next.",
     next: "Next",
-    feishuChatStep: "Scan with Feishu to create your bot app. Then send it a message in Feishu to start chatting.",
-    feishuStepCreate: "Step 1: scan with Feishu to create your personal app",
-    feishuStepAuthorize: "Step 2: scan with Feishu to let it read your chats and messages",
     qrAlt: "Feishu authorization QR code",
     openInBrowser: "Open in browser ↗",
     retry: "Try again",
     renameHint: "You can use this name when you talk to a bot, like \"check my work Feishu\".",
     nameLabel: "Name",
     save: "Save",
+    dataSub: "Bots can read these accounts for you. All bots share them and you can add several, so you can say \"check my work Feishu messages\".",
+    connect: "Connect",
+    addOne: "Add another",
+    addAnother: "Add another account",
+    addAnotherSub: "One app can have several accounts",
+    how: {
+      weixin: "Scan a QR code with WeChat on your phone",
+      feishu: "Scan with Feishu on your phone. The app is created for you",
+      telegram: "Create a bot with @BotFather and paste its token",
+      slack: "Create a Slack app and paste two tokens",
+      discord: "Create a Discord app and paste its bot token"
+    },
+    connectTitle: "Connect {channel}",
+    connectedTitle: "{channel} connected",
+    connectingTitle: "Connecting {channel}…",
+    failedTitle: "{channel} didn't connect",
+    waitingScan: "Waiting for you to scan…",
+    waitingOwner: "Send the first message to finish linking",
+    useToken: "Use a token instead",
+    useOneClick: "Use one-click authorization",
+    useApp: "Use my own app",
+    useScan: "Scan a code instead",
+    feishuPortal: "Feishu Open Platform ↗",
+    oauthTimedOut: "This took too long and the authorization page has expired. Start again.",
+    steps: {
+      weixin: [
+        "Scan the code below with “Scan” in WeChat on your phone",
+        "Confirm on your phone"
+      ],
+      feishu: [
+        "Scan the code below with Feishu on your phone",
+        "Follow the prompts to create your bot app"
+      ],
+      feishuApp: [
+        "On {link}, turn on “Bot”, choose “Receive events through a persistent connection” under event subscriptions, and subscribe to {event}",
+        "Turn on these permissions: {p1}, {p2}, {p3}, {p4}",
+        "Enter the App ID and App Secret below"
+      ],
+      telegram: [
+        "Find {bot} in Telegram and send {cmd} to create a bot",
+        "Enter the token it gives you below"
+      ],
+      slack: [
+        "On {link}, create an app, turn on Socket Mode, and generate an App-Level Token with {conn}",
+        "Give the Bot Token {s1}, {s2}, {s3} and {s4}, and subscribe to the {event} event",
+        "Allow messages in App Home, then install the app to your workspace",
+        "Enter both tokens below"
+      ],
+      discord: [
+        "In the {link}, create an app, add a Bot, and copy its token",
+        "Use the OAuth2 URL Generator with bot checked to add it to a server you're in",
+        "Enter the token below, then send it a direct message in Discord"
+      ],
+      notion: [
+        "On the browser page that just opened, choose what to share and approve",
+        "Come back here. The account appears on its own"
+      ],
+      feishuData: [
+        "Scan with Feishu on your phone to create your personal app",
+        "Scan again to let it read your chats and messages"
+      ],
+      feishuDataApp: [
+        "Scan with Feishu on your phone to let it read your chats and messages"
+      ]
+    },
+    tryIt: "Send it a message in {channel}",
+    switchBot: "To talk to a different bot, send /bot and its name",
+    ownerWaiting: "Waiting for your first message. Whoever messages first becomes the owner, and everyone else needs the owner's approval.",
+    ownerBound: "{who} is the owner. You can start chatting.",
+    ownerLogin: "Your {channel} account is the owner. You can start chatting.",
+    openChat: "Open {channel} ↗",
+    done: "Done",
+    fix: "Change connection details",
+    limit: {
+      weixin: "WeChat's rule: for each message you send, it can reply up to 10 times within 24 hours.",
+      telegram: "Only direct chats are handled for now. Messages sent while the app is closed are picked up within 24 hours.",
+      slack: "Only direct chats are handled for now. Messages sent while the app is closed aren't received.",
+      discord: "Only direct chats are handled for now. Messages sent while the app is closed aren't received."
+    },
+    connection: "Connection",
+    viaScan: "WeChat QR code",
+    changeApp: "Change app",
+    changeToken: "Change token",
+    removed: "Removed {name}"
   },
   gateway: {
     running: "Running",
@@ -82,10 +157,22 @@ export default {
     search: "Search settings",
     nav: "Settings sections",
   },
+  groups: {
+    theme: "Theme",
+    text: "Text",
+    layout: "Layout",
+    effects: "Effects",
+    desktop: "Desktop app",
+    account: "Account",
+    models: "Models",
+    line: "Connection",
+    channels: "Chat channels",
+    data: "Data accounts",
+  },
   searchResults: "Search results",
   noMatch: "No matching settings",
   preview: {
-    ask: "Rewrite this request using async / await",
+    label: "Preview",
     reply: "Sure, and error handling gets clearer too. With {b} on, the line below wraps:",
   },
   logout: {
@@ -184,11 +271,6 @@ export default {
       sub: "When off, transitions, pop-ups and bot avatars stay still. System follows your Reduce motion setting",
       keys: "animation motion transition reduce motion",
     },
-    glass: {
-      name: "Frosted glass",
-      sub: "When off, the sidebar, menus and dialogs use solid colors for clearer text and longer battery life. System follows your Reduce transparency setting",
-      keys: "glass frosted blur transparency reduce transparency battery performance lag",
-    },
     resetAppearance: {
       name: "Reset appearance",
       subDesktop: "Restore theme, fonts, zoom and all the settings above to their defaults",
@@ -285,6 +367,8 @@ export default {
     },
     cuStatus: {
       name: "Computer use backend",
+      ready: "Available",
+      notReady: "Unavailable",
       keys: "computer use cua accessibility screen recording",
     },
     cuNotice: {

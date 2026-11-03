@@ -77,11 +77,6 @@ export default {
     delete: "删除机器人",
     deleteSub: "永久删除这个机器人及其全部会话",
   },
-  delete: {
-    title: "删除「{name}」？",
-    body: "会永久删除这个机器人及其全部会话，无法恢复。",
-    confirm: "永久删除",
-  },
   access: {
     head: "谁能使用",
     policy: "只有主人和你允许的人",

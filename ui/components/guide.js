@@ -52,19 +52,19 @@ export function GuideChecklist({ bot, onSend }) {
         const done = g.done.includes(s.id);
         const style = { "--anim-delay": `calc(var(--stagger) * ${i} / 3)` };
         if (done) {
-          return html`<li key=${s.id} class="guide-step done anim-rise-in" style=${style}>
+          return html`<li key=${s.id} class="guide-step done anim-fade-in" style=${style}>
             <span class="n"><${Icon} name="check" size="xs" strong /></span><span class="title">${txt(s, "title")}</span>
           </li>`;
         }
         if (s.id !== shown) {
-          return html`<li key=${s.id} class="anim-rise-in" style=${style}>
+          return html`<li key=${s.id} class="anim-fade-in" style=${style}>
             <button type="button" class="guide-step" onClick=${() => setOpen(s.id)}>
               <span class="n num">${i + 1}</span><span class="title">${txt(s, "title")}</span><${Icon} name="chevRight" size="sm" />
             </button>
           </li>`;
         }
         const sample = txt(s, "try");
-        return html`<li key=${s.id} class="guide-step open anim-rise-in" style=${style}>
+        return html`<li key=${s.id} class="guide-step open anim-fade-in" style=${style}>
           <span class="n num">${i + 1}</span>
           <div class="body">
             <div class="title">${txt(s, "title")}</div>
@@ -106,7 +106,7 @@ export function GuidePill({ onGo }) {
   const finished = n === steps.length;
   if (finished && !(last && last.all)) return null;
   const cur = currentStep(g);
-  return html`<button type="button" ref=${ref} class=${`guide-pill${last && !finished ? " bumped" : ""}`} key=${last ? last.at : 0}
+  return html`<button type="button" ref=${ref} class="guide-pill"
       aria-haspopup="menu" aria-expanded=${open} title=${t("guide.title")} onClick=${() => setOpen((v) => !v)}>
       <${Progress} steps=${steps} done=${g.done} />
       <span class="v">${finished ? t("guide.allDone") : t("guide.title")}</span>
@@ -126,8 +126,8 @@ export function GuidePill({ onGo }) {
       ]} />`}`;
 }
 
-/** 全部完成：撒一把彩带（颜色是六个机器人的眼睛色和品牌黄绿） */
-const CONFETTI = ["--accent-solid", "--bot-blue-eye", "--bot-yellow-glow", "--bot-green-glow", "--bot-red-eye", "--bot-purple-eye", "--bot-orange-eye"];
+/** 全部完成：撒一把彩带（颜色是六个机器人的眼睛色和光色） */
+const CONFETTI = ["--bot-blue-eye", "--bot-yellow-glow", "--bot-green-glow", "--bot-red-eye", "--bot-purple-eye", "--bot-orange-eye"];
 function confetti() {
   if (reducedMotion()) return;
   const layer = document.createElement("div");
@@ -309,7 +309,7 @@ export function MediaDemo({ onLoad }) {
   }, [big]);
   return html`<div class="guide-demo">
     <${ActivityLine} label=${done ? t("guide.demo.label") : t("guide.demo.generating")} phase=${done ? "done" : "gen"} live=${!done} />
-    ${done && html`<div class="msg-files anim-rise-in">
+    ${done && html`<div class="msg-files anim-fade-in">
         <button type="button" class=${`msg-img${big ? " big" : ""}`} aria-expanded=${big} title=${big ? t("guide.demo.zoomOut") : t("guide.demo.zoomIn")} onClick=${() => setBig((v) => !v)}>
           <img src="/amb/static/assets/guide-demo.svg" alt=${t("guide.demo.alt")} onLoad=${onLoad} />
         </button>

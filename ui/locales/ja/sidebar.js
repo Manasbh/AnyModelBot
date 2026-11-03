@@ -7,11 +7,16 @@ export default {
   "accountDetails": "アカウントと利用状況",
   "balance": "残高",
   "topUp": "チャージ ↗",
-  "lowBalance": "残高 {amount} — チャージ ↗",
+  "lowBalance": "残高が少なくなっています",
+  "belowLine": "通知ライン {amount} を下回っています",
   "update": "バージョン {version} を利用できます — ダウンロード ↗",
   "updateDismiss": "このバージョンの通知を表示しない",
   "renamed": "名前を変更しました",
   "delete": {
+    "done": "「{name}」を削除しました",
+    "handover": "{channels} には今後「{bot}」が返信します。",
+    "handoverNone": "これが最後のボットです。新しいボットを作るまで、{channels} のメッセージには返信されません。",
+    "listSep": "、",
     "title": "「{name}」を削除しますか？",
     "body": "ボットとすべての会話を完全に削除します。この操作は取り消せません。",
     "confirm": "完全に削除"

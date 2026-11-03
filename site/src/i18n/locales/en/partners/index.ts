@@ -75,41 +75,12 @@ export default {
     "title": "Join the partner program,",
     "lead": "Share some basics and how to reach you. We'll get in touch to settle the partnership and commission.",
     "mailLabel": "Or email us directly",
-    "optional": "Optional",
-    "type": "Which describes you best",
-    "types": {
-      "training": "Training provider or instructor",
-      "creator": "Content creator or community",
-      "sales": "Service provider or channel partner",
-      "other": "Other"
-    },
-    "name": "Your name",
-    "company": "Company or organization",
-    "contact": "How to reach you",
-    "contactHint": "Email, phone or Telegram",
-    "audience": "Your clients or audience",
-    "audienceHint": "For example: corporate training, about 500 learners a year",
-    "message": "How you'd like to work together",
-    "messageHint": "A sentence or two is fine",
-    "submit": "Submit application",
-    "sending": "Submitting…",
-    "consent": "We only use this to contact you and assess the partnership.",
-    "privacy": "Privacy notice",
-    "errors": {
-      "type": "Please choose one",
-      "name": "Please enter your name",
-      "contact": "Please tell us how to reach you"
-    },
-    "failed": "That didn't go through. Try again, or email us at {email}.",
-    "done": {
-      "title": "Application received",
-      "body": "We'll get in touch using the contact details you left."
+    "panel": {
+      "title": "Apply with your Modelflare account",
+      "body": "The application is in the Modelflare console: sign in and submit it there. Once you're approved, your personal coupon and commission figures are there too.",
+      "action": "Fill in the application"
     },
     "mail": {
-      "title": "One more step",
-      "body": "Please send the text below to {email}. We'll get in touch once we receive it.",
-      "open": "Open email app",
-      "back": "Go back and edit",
       "subject": "AnyModelBot partner application"
     },
     "dim": "we'll work with you one-on-one.",

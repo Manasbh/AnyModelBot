@@ -39,7 +39,6 @@ export function UsageSheet({ onClose }) {
         ${d.models.slice(0, 12).map((m) => html`<div><span class="v">${m.model}</span><span class="n">${usd(m.usd)} · ${t("account.usage.requests", { count: m.requests })}</span></div>`)}
         ${!d.models.length && html`<p class="hint">${t("account.usage.empty")}</p>`}
       </div>`}
-    <div class="actions"><button type="button" class="btn" data-autofocus onClick=${onClose}>${t("common.close")}</button></div>
   <//>`;
 }
 
@@ -59,6 +58,5 @@ export function NotificationsSheet({ onClose }) {
         <time>${fmtTime(n.created_at * 1000)}</time>
         ${notifLink(n.link) && html`<a class="text" href=${notifLink(n.link)} target="_blank" rel="noopener noreferrer">${t("account.notifications.details")}</a>`}
       </div>`)}
-    <div class="actions"><button type="button" class="btn" data-autofocus onClick=${onClose}>${t("common.close")}</button></div>
   <//>`;
 }

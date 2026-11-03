@@ -87,7 +87,7 @@ export function NeedItem({ item, multiBot, onAct, onOpenChat, onRelogin, onOpenB
       ${item.kind === "budget" && html`<${Button} onClick=${() => onOpenBotSettings?.(item.botId, "budget")}>${t("needs.raiseBudget")}<//>`}
       ${item.kind === "delivery" && item.actions.includes("retry") && html`<${Button} loading=${busy === "retry"} disabled=${!!busy} onClick=${() => act("retry")}>${t("common.retry")}<//>`}
       ${item.kind === "delivery" && item.actions.includes("dismiss") && html`<button type="button" class="text" disabled=${!!busy} onClick=${() => act("dismiss")}>${t("needs.dismiss")}</button>`}
-      ${item.kind === "login" && html`<${Button} onClick=${() => onRelogin?.(item.botId)}>${t("needs.relogin")}<//>`}
+      ${item.kind === "login" && html`<${Button} onClick=${() => onRelogin?.(item.id)}>${t("needs.relogin")}<//>`}
       ${item.kind === "suggest" && html`<${Button} loading=${busy === "act"} disabled=${!!busy} onClick=${async () => (await act("act")) && toast(t("rules.nowActs", { title: item.ruleTitle }))}>${t("needs.toAct")}<//>
         <button type="button" class="text" disabled=${!!busy} onClick=${() => act("dismiss")}>${t("needs.keepObserving")}</button>`}
     </div>

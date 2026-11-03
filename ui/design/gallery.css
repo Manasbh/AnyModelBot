@@ -3,7 +3,7 @@
 .gal { display: grid; grid-template-columns: 196px minmax(0, 1fr); height: 100vh; background: var(--bg); }
 .gal-nav {
   display: grid; align-content: start; gap: var(--space-0-5); overflow-y: auto;
-  padding: var(--space-5) var(--space-3); background: var(--grain), var(--glass-side); border-right: var(--hairline) solid var(--line-2);
+  padding: var(--space-5) var(--space-3); background: var(--glass-side); border-right: var(--hairline) solid var(--line-2);
 }
 .gal-nav .brand { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2) var(--space-4); font-weight: var(--fw-semibold); }
 .gal-nav .t-label { padding: var(--space-3) var(--space-2-5) var(--space-1); }
@@ -63,7 +63,7 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 12%, transparent);   /* 描边：色块样例，白色、透明色也要看得出边界 */
 }
 .gal-chip code { font-size: var(--fs-2xs); color: var(--muted); overflow-wrap: anywhere; }
-.gal-bar { height: 10px; width: var(--w); border-radius: 2px; background: var(--accent-solid); box-shadow: inset 0 0 0 1px var(--accent-line); }   /* 描边：黄绿样例条要一道墨色细边 */
+.gal-bar { height: 10px; width: var(--w); border-radius: 2px; background: var(--primary); }
 .gal-radius { width: 64px; height: 40px; border-radius: var(--r); background: var(--pill); box-shadow: inset 0 0 0 1px var(--line); }   /* 描边：圆角样例，画出轮廓才看得出圆角 */
 .gal-height { height: var(--h); width: 120px; border-radius: var(--r-sm); background: var(--pill); box-shadow: inset 0 0 0 1px var(--line); }   /* 描边：高度样例 */
 .gal-elev { display: grid; place-items: end start; width: 150px; height: 84px; padding: var(--space-2-5); border-radius: var(--r-xl); background: var(--card); box-shadow: var(--sh); }
@@ -80,14 +80,14 @@
 .gal-curve path { fill: none; stroke: var(--accent); stroke-width: 2; }
 .gal-icon { display: grid; justify-items: center; align-content: center; gap: var(--space-1-5); min-width: 76px; min-height: 52px; color: var(--fg-2); }
 .gal-anim { display: grid; justify-items: center; gap: var(--space-2); width: 120px; }
-.gal-anim-box { width: 72px; height: 48px; border-radius: var(--r-lg); background: var(--accent-solid); box-shadow: inset 0 0 0 1px var(--accent-line); }   /* 描边：黄绿样例块要一道墨色细边 */
+.gal-anim-box { width: 72px; height: 48px; border-radius: var(--r-lg); background: var(--primary); }
 
 /* —— 页面模式 —— */
 .gal-chat { display: flex; flex-direction: column; width: 100%; }
 .gal-chat > .msg-row:first-child { margin-top: 0; }
 .gal-demo .composer { width: 100%; }
 
-/* —— 材质：环境光 + 底下的彩色内容 + 六块玻璃 —— */
+/* —— 材质：窗口底色 + 底下的彩色内容 + 六块玻璃 —— */
 .gal-stage { position: relative; height: 300px; overflow: hidden; width: 100%; }
 .gal-stage-under {
   position: absolute; inset: 0; padding: var(--space-4) var(--space-5); display: grid; align-content: start; gap: var(--space-2-5);
@@ -105,7 +105,7 @@
 .gal-state > .gal-strip + .gal-strip { border-top: var(--hairline) solid var(--line); }
 .gal-strip-in { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-4) var(--space-5); padding: var(--space-4) var(--space-5) var(--space-3-5); }
 .ctx-surface > .gal-strip-in { background: var(--surface); }
-.ctx-side > .gal-strip-in { background: var(--grain), var(--glass-side); }
+.ctx-side > .gal-strip-in { background: var(--glass-side); }
 .gal-cell { display: grid; justify-items: start; gap: var(--space-2); }
 .gal-cell-stage { min-height: var(--ctl-lg); display: flex; align-items: center; }
 .gal-cell > .t-meta { font-size: var(--fs-2xs); }
@@ -128,7 +128,7 @@
 .gal-split {
   --gal-col: clamp(var(--gal-split-w-min), var(--gal-split-w-user, var(--gal-split-w)), var(--gal-split-w-max));
   position: relative; display: grid; grid-template-columns: var(--gal-col) minmax(0, 1fr); height: 160px;
-  background: var(--grain), var(--glass-side);
+  background: var(--glass-side);
 }
 .gal-split-a { display: grid; place-items: center; }
 .gal-split-b { display: grid; place-items: center; margin: var(--pane-gap) var(--pane-gap) var(--pane-gap) 0; border-radius: var(--r-pane); background: var(--surface); box-shadow: var(--shadow-pane); }   /* 描边：和主区同一种面板 */

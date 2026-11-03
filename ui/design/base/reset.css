@@ -19,7 +19,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 input, textarea { font: inherit; color: inherit; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
-/* 荧光笔：选中文字用品牌黄绿 */
+/* 选中文字：一层中性灰 */
 ::selection { background: var(--mark); color: var(--on-mark); }
 code, .mono { font-family: var(--code); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 /* 键盘焦点：2px accent 描边，外移 2px（描边跟着圆角走）。
@@ -27,5 +27,5 @@ code, .mono { font-family: var(--code); font-size: var(--fs-xs); font-variant-nu
 button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid var(--accent); outline-offset: var(--focus-offset, 2px);
 }
-/* 滚动条：细、半透明，盖在玻璃和环境光上都不突兀（macOS 的浮动滚动条不受影响） */
+/* 滚动条：细、半透明，盖在玻璃和窗口底色上都不突兀（macOS 的浮动滚动条不受影响） */
 * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }

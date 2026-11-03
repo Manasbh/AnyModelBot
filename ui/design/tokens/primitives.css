@@ -95,16 +95,16 @@
   --space-12: 48px;
   --space-16: 64px;
 
-  /* —— 字号：9 级。桌面应用的密度，小号保留半像素；都乘以 --fs-scale（设置 › 外观 › 字体大小，见 semantic.css「用户偏好」） —— */
+  /* —— 字号：9 级。不用半像素（Windows 上发虚）；控件和界面正文都是 13，都乘以 --fs-scale（设置 › 外观 › 字体大小） —— */
   --fs-2xs: calc(11px * var(--fs-scale));    /* 分组标题、徽标、快捷键 */
-  --fs-xs: calc(11.5px * var(--fs-scale));   /* 次要说明、元信息、等宽值 */
-  --fs-sm: calc(12.5px * var(--fs-scale));   /* 控件：按钮、菜单项、分段、输入框 */
+  --fs-xs: calc(12px * var(--fs-scale));   /* 次要说明、元信息、等宽值 */
+  --fs-sm: calc(13px * var(--fs-scale));   /* 控件：按钮、菜单项、分段、输入框 */
   --fs-md: calc(13px * var(--fs-scale));     /* 界面正文 */
   --fs-lg: calc(14px * var(--fs-scale));     /* 列表标题、面板标题 */
   --fs-xl: calc(15px * var(--fs-scale));     /* 对话正文、对话框标题 */
-  --fs-2xl: calc(17px * var(--fs-scale));    /* 空状态标题 */
+  --fs-2xl: calc(18px * var(--fs-scale));    /* 空状态标题 */
   --fs-3xl: calc(20px * var(--fs-scale));    /* 引导页标题 */
-  --fs-4xl: calc(22px * var(--fs-scale));    /* 页面大标题（设置、机器人设置、新建页）：比引导页标题大一档就够，不压过内容 */
+  --fs-4xl: calc(24px * var(--fs-scale));    /* 页面大标题（设置、机器人设置、新建页）：比引导页标题大一档就够，不压过内容 */
 
   /* —— 字重、行高、字距 —— */
   --fw-regular: 400;
@@ -148,13 +148,13 @@
   --ic-stroke: 1.25;          /* 常规线宽 */
   --ic-stroke-strong: 1.6;    /* 实心面上的图标：发送钮的箭头、完成圆点里的勾 */
 
-  /* —— 层级：同一窗格内的浮动件 < 抽屉 < 弹出层 < 模态 < 命令面板 < 提示 —— */
+  /* —— 层级：同一窗格内的浮动件 < 抽屉 < 模态 < 命令面板 < 弹出层 < 提示。弹出层挂在 <body> 下，对话框里的下拉也要盖在遮罩上 —— */
   --z-raised: 1;
   --z-float: 5;
   --z-drawer: 30;
-  --z-popover: 40;
   --z-modal: 50;
   --z-palette: 56;
+  --z-popover: 58;
   --z-toast: 60;
 
   /* —— 细线：一个物理像素。高分屏 .5px，普通屏 1px（.5px 在 1x 屏上会被抗锯齿成半透明的虚影甚至消失） —— */
@@ -188,7 +188,7 @@
   --col-w-wide: 960px;     /* 设置 › 外观 › 对话宽度「宽」 */
   --bubble-w-wide: 760px;  /* 对话列加宽（宽 / 铺满）时用户气泡的最大宽度 */
   --head-h: 52px;      /* 对话顶栏、信息面板顶栏 */
-  --page-w: 680px;     /* 设置页、机器人设置的内容列 */
+  --page-w: 720px;     /* 设置页、机器人设置的内容列 */
   --titlebar-inset: 84px;   /* macOS 桌面版：侧栏顶部给红绿灯让出的宽度 */
   --caption-w-fallback: 138px;   /* Windows 桌面版：右上角最小化 / 最大化 / 关闭（3 × 46）的宽度，拿不到 env(titlebar-area-*) 时用 */
   --brand-mark: 20px;       /* Windows 桌面版：侧栏左上角的应用图标 */

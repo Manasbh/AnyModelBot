@@ -1,7 +1,7 @@
 @layer tokens, base, components, app, utilities;
-/* Hero 的背景：取色（.hero-scene）+ 顶光 → 天空 → 光晕 → 地平线。首页 Hero（sections/Hero.astro）和下载页页头（views/DownloadView.astro）共用；
-   外框和磨砂颗粒各自写（首页 .hero__bg，下载页 .dl-top），各层的用意见 home.css 的"1 Hero"。
-   动画也写在这里（文件末尾），两处一样：背景动画的例外只给这两处（README"动效的硬规矩"；下载页是用户 2026-11-03 要求的）。 */
+/* Hero 的背景：取色（.hero-scene）+ 顶光 → 天空 → 光晕 → 地平线。首页 Hero（sections/Hero.astro）、下载页和合作伙伴页的首屏共用；
+   外框和磨砂颗粒首页写在 .hero__bg，附属页共用下面的 .scene-top，各层的用意见 home.css 的"1 Hero"。
+   动画也写在这里（文件末尾），三处一样：背景动画的例外只给这三处（README"动效的硬规矩"；下载页、合作伙伴页是用户 2026-11-03 要求和首页统一的）。 */
 @layer app {
   .hero-scene {
     --hero-top: clamp(40px, 7vw, 104px);
@@ -13,6 +13,8 @@
     --hero-rim: rgba(255, 255, 255, .6);
     --hero-glow-a: 14%;
     --hero-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.05'/%3E%3C/svg%3E");
+    --hero-em-glow: color-mix(in srgb, var(--lime) 22%, transparent);
+    --hero-cta-glow: color-mix(in srgb, var(--lime) 45%, transparent);
     --hero-panel-bg: linear-gradient(var(--hero-panel-top), var(--bg-feature) 46%);
   }
   [data-theme="light"] .hero-scene {
@@ -22,6 +24,8 @@
     --hero-rim: #ffffff;
     --hero-glow-a: 4%;
     --hero-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.035'/%3E%3C/svg%3E");
+    --hero-em-glow: oklch(.8 .12 var(--hero-hue) / .35);
+    --hero-cta-glow: rgba(17, 24, 39, .16);
     /* 浅色·蓝天：顶上是一片清透的浅天蓝（不是灰），往下越来越淡，到说明文字附近已经回到卡片的白；
        用 px 定位而不是百分比，Hero 高矮不同时蓝天的厚度不变。白云和闪光都靠这层蓝才立得住 */
     --hero-panel-bg: linear-gradient(
@@ -116,6 +120,25 @@
     -webkit-mask-image: radial-gradient(min(680px, 28%) 140px at 50% 0, #000, transparent); mask-image: radial-gradient(min(680px, 28%) 140px at 50% 0, #000, transparent);
   }
   [data-theme="light"] .hero__horizon::before { box-shadow: inset 0 1px 0 var(--hero-rim), inset 0 4px 12px -4px color-mix(in srgb, var(--hz-glow) 14%, transparent); }
+
+  /* 附属页的首屏（下载、合作伙伴）：一块四周留 8px 的圆角大卡片，顶边压到导航下面；页头在上，舞台（平台卡、佣金通知）在下。
+     地平线放在 .scene-stage 里，位置跟着舞台走，不用算页头有多高：--stage-h 取 100%，上面 .hero__glow、.hero__horizon 的 top 就只剩 --hz-y（顶沿比舞台顶边高多少）。
+     叠放次序：背景各层 → 磨砂颗粒（z 1）→ 页头、舞台内容（z 2）。 */
+  .scene-top {
+    --scene-inset: 8px; --stage-h: 100%; --hz-y: -24px; --hz-w: max(2600px, 190%);
+    position: relative; isolation: isolate; overflow: clip;
+    margin: calc(var(--scene-inset) - var(--nav-h)) var(--scene-inset) 0;
+    padding: calc(var(--nav-h) - var(--scene-inset) + var(--hero-top)) 0 var(--stack-head);
+    border-radius: var(--r-feature); background: var(--hero-panel-bg); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .scene-top::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: var(--hero-grain); }
+  /* 大卡片比页面窄一圈，内容宽度补回来，和下面几节的左右边对齐 */
+  .scene-top > .container { width: min(var(--container), 100% + 2 * var(--scene-inset) - 2 * var(--gutter)); }
+  .scene-stage { position: relative; }
+  .scene-top > .container > :not(.scene-stage), .scene-stage > :not(.hero__glow, .hero__horizon) { position: relative; z-index: 2; }
+  @media (max-width: 767px) {
+    .scene-top { --scene-inset: 6px; --hz-w: 1500px; border-radius: var(--r-card); }
+  }
 
   /* 动画：入场时地平线从下面升起、光晕亮起来，之后静止不循环；天空的说明见上面 .hero__sky。"减少动态效果"时都不放 */
   @media (prefers-reduced-motion: no-preference) {

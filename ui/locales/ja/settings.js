@@ -13,24 +13,19 @@ export default {
   },
   "connections": {
     "feishu": "Feishu メッセージ",
-    "channelSub": "すべてのボットで共有し、複数のアカウントを追加できます。チャットで /bot と名前を一度送ると、話す相手のボットを切り替えられます",
+    "channelSub": "これらのアプリからボットにメッセージを送れます。アカウントはすべてのボットで共有され、チャットで /bot と名前を送ると別のボットに切り替わります。",
     "channelKeys": "{channel} チャネル チャット 接続 アカウント ボット /bot",
-    "addAccount": "アカウントを追加",
     "manage": "管理",
     "defaultIs": "既定では {bot} が返信します",
     "requests": "アクセス申請 {count} 件",
-    "addChannelTitle": "{channel} アカウントを追加",
     "defaultBot": "既定のボット",
     "defaultBotHint": "新しいチャットに返信するボットです。/bot で一覧を表示し、/bot と名前を一度送ると切り替わります。そのチャットでは以後、選んだボットが返信します。",
     "removeAccount": "このアカウントを削除",
     "removeChannelBody": "どのボットもこのアカウントで送受信できなくなり、許可リストも消去されます。チャット履歴は保持されます。",
-    "notionSub": "すべてのボットで共有し、複数のアカウントを追加できます。読み取り専用のボットは閲覧のみ可能で、どのボットもページは削除できません",
-    "feishuSub": "すべてのボットで共有し、複数のアカウントを追加できます。あなたの権限でチャットやメッセージを読み取ります。書き込みは行いません",
+    "notionSub": "ページとデータベース。読み取り専用のボットは読むだけで、どのボットもページを削除できません",
+    "feishuSub": "あなたの権限でチャットとメッセージを読み取ります（読み取り専用）",
     "notionKeys": "Notion ノート 文書 データベース 接続 アカウント 認可",
     "feishuKeys": "Feishu Lark メッセージ チャット 接続 アカウント 認可",
-    "oneClick": "アクセスを許可",
-    "notionOther": "トークンを使う",
-    "feishuOther": "自分のアプリを使う",
     "viaToken": "トークン",
     "viaOAuth": "認可済み",
     "needsReauth": "認可の有効期限が切れました。再認可してください",
@@ -40,7 +35,6 @@ export default {
     "removeTitle": "{name} を削除しますか？",
     "removeBody": "どのボットもこのアカウントを利用できなくなります。後から再追加できます。",
     "notionOAuthTitle": "Notion へのアクセスを許可",
-    "notionOAuthBody": "ブラウザーで Notion の認可ページを開きました。許可した後、この画面に戻ってください。",
     "oauthFailed": "認可ページを開けませんでした。時間をおいて再試行してください",
     "openAgain": "開かない場合はこちら",
     "waiting": "許可を待っています…",
@@ -52,15 +46,96 @@ export default {
     "feishuTitle": "Feishu アカウントを追加",
     "feishuAppHint": "アプリにはメッセージを読み取るユーザー権限が必要です。次にコードを読み取って認可します。",
     "next": "次へ",
-    "feishuChatStep": "Feishu でコードを読み取り、ボットアプリを作成します。その後 Feishu でメッセージを送ると、会話を始められます。",
-    "feishuStepCreate": "手順 1：Feishu でコードを読み取り、個人用アプリを作成",
-    "feishuStepAuthorize": "手順 2：Feishu でコードを読み取り、チャットとメッセージへのアクセスを許可",
     "qrAlt": "Feishu 認可用 QR コード",
     "openInBrowser": "ブラウザーで開く ↗",
     "retry": "再試行",
     "renameHint": "「仕事用の Feishu を確認して」のように、ボットに話しかける際にこの名前を使えます。",
     "nameLabel": "名前",
-    "save": "保存"
+    "save": "保存",
+    "dataSub": "ボットがあなたに代わってこれらのアカウントを読み取れます。すべてのボットで共有され、複数追加できます。「仕事の Feishu のメッセージを見て」のように頼めます。",
+    "connect": "接続",
+    "addOne": "もう1つ追加",
+    "addAnother": "アカウントをもう1つ追加",
+    "addAnotherSub": "同じアプリに複数のアカウントを接続できます",
+    "how": {
+      "weixin": "スマートフォンの WeChat で QR コードをスキャン",
+      "feishu": "スマートフォンの Feishu でスキャン（アプリは自動で作成）",
+      "telegram": "@BotFather でボットを作成し、トークンを入力",
+      "slack": "Slack アプリを作成し、トークンを2つ入力",
+      "discord": "Discord アプリを作成し、ボットトークンを入力"
+    },
+    "connectTitle": "{channel} に接続",
+    "connectedTitle": "{channel} に接続しました",
+    "connectingTitle": "{channel} に接続中…",
+    "failedTitle": "{channel} に接続できませんでした",
+    "waitingScan": "スキャンを待っています…",
+    "waitingOwner": "最初のメッセージを送ると紐付けが完了します",
+    "useToken": "トークンを使う",
+    "useOneClick": "ワンクリック認証を使う",
+    "useApp": "自分のアプリを使う",
+    "useScan": "スキャンで接続する",
+    "feishuPortal": "Feishu オープンプラットフォーム ↗",
+    "oauthTimedOut": "時間がかかりすぎたため、認証ページの期限が切れました。もう一度やり直してください。",
+    "steps": {
+      "weixin": [
+        "スマートフォンの WeChat の「スキャン」で下の QR コードを読み取る",
+        "スマートフォンで確認する"
+      ],
+      "feishu": [
+        "スマートフォンの Feishu で下の QR コードを読み取る",
+        "案内に従ってボットアプリを作成する"
+      ],
+      "feishuApp": [
+        "{link} で「ボット」を有効にし、イベント購読で「長時間接続でイベントを受信」を選んで {event} を購読する",
+        "権限を有効にする：{p1}、{p2}、{p3}、{p4}",
+        "App ID と App Secret を下に入力する"
+      ],
+      "telegram": [
+        "Telegram で {bot} を探し、{cmd} を送ってボットを作成する",
+        "受け取ったトークンを下に入力する"
+      ],
+      "slack": [
+        "{link} でアプリを作成し、Socket Mode を有効にして {conn} 付きの App-Level Token を生成する",
+        "Bot Token に {s1}、{s2}、{s3}、{s4} を追加し、イベント {event} を購読する",
+        "App Home でメッセージを許可し、ワークスペースにインストールする",
+        "2つのトークンを下に入力する"
+      ],
+      "discord": [
+        "{link} でアプリを作成して Bot を追加し、トークンをコピーする",
+        "OAuth2 の URL Generator で bot を選び、参加しているサーバーに追加する",
+        "トークンを下に入力し、Discord でボットに DM を送る"
+      ],
+      "notion": [
+        "開いたブラウザーのページで内容を選び、同意する",
+        "ここに戻ると、アカウントが自動で表示されます"
+      ],
+      "feishuData": [
+        "スマートフォンの Feishu でスキャンして個人アプリを作成する",
+        "もう一度スキャンして、チャットとメッセージの読み取りを許可する"
+      ],
+      "feishuDataApp": [
+        "スマートフォンの Feishu でスキャンして、チャットとメッセージの読み取りを許可する"
+      ]
+    },
+    "tryIt": "{channel} でメッセージを送ってみる",
+    "switchBot": "別のボットと話すには /bot と名前を送る",
+    "ownerWaiting": "最初のメッセージを待っています。最初にメッセージを送った人が所有者になり、他の人は所有者の許可が必要です。",
+    "ownerBound": "「{who}」が所有者です。チャットを始められます。",
+    "ownerLogin": "あなたの {channel} が所有者です。チャットを始められます。",
+    "openChat": "{channel} を開く ↗",
+    "done": "完了",
+    "fix": "接続情報を変更",
+    "limit": {
+      "weixin": "WeChat の規定：メッセージ1件につき、24時間以内に最大10件まで返信できます。",
+      "telegram": "現在は1対1のチャットのみ対応しています。アプリを閉じている間のメッセージは、24時間以内なら後から受信できます。",
+      "slack": "現在は1対1のチャットのみ対応しています。アプリを閉じている間のメッセージは受信できません。",
+      "discord": "現在は1対1のチャットのみ対応しています。アプリを閉じている間のメッセージは受信できません。"
+    },
+    "connection": "接続方法",
+    "viaScan": "WeChat の QR コード",
+    "changeApp": "アプリを変更",
+    "changeToken": "トークンを変更",
+    "removed": "{name} を削除しました"
   },
   "gateway": {
     "running": "稼働中",
@@ -97,10 +172,22 @@ export default {
     "search": "設定を検索",
     "nav": "設定カテゴリ"
   },
+  "groups": {
+    "theme": "テーマ",
+    "text": "文字",
+    "layout": "レイアウト",
+    "effects": "効果",
+    "desktop": "デスクトップアプリ",
+    "account": "アカウント",
+    "models": "モデル",
+    "line": "接続",
+    "channels": "チャットチャネル",
+    "data": "データアカウント",
+  },
   "searchResults": "検索結果",
   "noMatch": "一致する設定がありません",
   "preview": {
-    "ask": "このリクエストを async / await を使って書き直して",
+    "label": "プレビュー",
     "reply": "エラー処理も読みやすくなります。{b} を有効にすると、下の行が折り返されます。"
   },
   "logout": {
@@ -198,11 +285,6 @@ export default {
       "name": "アニメーション",
       "sub": "オフにすると、画面切り替え、ポップアップ、ボットのアバターが動かなくなります。「システム」は「視差効果を減らす」設定に従います",
       "keys": "アニメーション 動き 切り替え 視差効果を減らす"
-    },
-    "glass": {
-      "name": "すりガラス効果",
-      "sub": "オフにすると、サイドバー、メニュー、ダイアログを不透明にし、文字を読みやすくして消費電力を抑えます。「システム」は「透明度を下げる」設定に従います",
-      "keys": "ガラス ぼかし 透明 透明度 バッテリー 性能 遅い"
     },
     "resetAppearance": {
       "name": "外観をリセット",
@@ -306,6 +388,8 @@ export default {
     },
     "cuStatus": {
       "name": "コンピューター操作のバックエンド",
+      "ready": "利用可能",
+      "notReady": "利用不可",
       "keys": "コンピューター操作 CUA アクセシビリティ 画面収録"
     },
     "cuNotice": {

@@ -71,10 +71,12 @@ describe("一个账号，所有机器人共用", () => {
     expect(await account(key)).toBeUndefined();
     expect((await api(`/channel-accounts/${key}/telegram`, { method: "PUT", body: { token: "1:SECRET-TOKEN-VALUE" } })).status).toBe(200);
     const a = await account(key);
-    expect(a).toMatchObject({ channel: "telegram", number: 1, defaultBot: "default", enabled: true });
+    expect(a).toMatchObject({ channel: "telegram", number: 1, defaultBot: "default", enabled: true, hasOwner: false });
     expect(JSON.stringify((await api("/channel-accounts")).json)).not.toContain("SECRET-TOKEN-VALUE");
     await say(key, "boss", "你好");
     expect(shown(key, "boss")).toBe("[mock-a] 你说：你好");
+    // 第一个发消息的人成为主人：连接页不再提示"等第一条消息"
+    expect((await account(key)).hasOwner).toBe(true);
   });
 
   it("/bot 列出所有机器人，标出现在是哪个，不碰模型", async () => {
@@ -239,7 +241,7 @@ describe("升级：老数据变成全局账号", () => {
     expect(app.channels.get(bot.id)!.weixin).toBeUndefined();
     // 已经有账号叫 WORK：Telegram 的默认名字让开
     expect(app.store.getChannelAccount(bot.id, "telegram")!.label).toBe("WORK 2");
-    expect((await api(`/channel-accounts/${bot.id}/channels`)).json.feishu.account).toEqual({ appId: "cli_old", saved: { appSecret: "****cret" } });
+    expect((await api(`/channel-accounts/${bot.id}/channels`)).json.feishu.account).toEqual({ appId: "cli_old", brand: "feishu", saved: { appSecret: "****cret" } });
     await api(`/channel-accounts/${bot.id}/feishu`, { method: "DELETE" });
     await app.restartBot(bot.id);
     expect(app.store.getChannelAccount(bot.id, "feishu")).toBeUndefined();

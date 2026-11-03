@@ -14,8 +14,6 @@ export const SECURITY_EMAIL = env("SECURITY_EMAIL");
 const optional = (k: string) => (import.meta.env[k] as string | undefined) || process.env[k] || "";
 export const ANALYTICS_SCRIPT_URL = optional("ANALYTICS_SCRIPT_URL");
 export const ANALYTICS_SITE_ID = optional("ANALYTICS_SITE_ID");
-/** 合作申请的提交地址：没配置时，表单让申请人把内容发到 PARTNERS_EMAIL，不会假装提交成功 */
-export const PARTNER_APPLY_URL = optional("PARTNER_APPLY_URL");
 export const PARTNERS_EMAIL = "support@anymodel.bot";
 export const ORIGIN = `https://${SITE_DOMAIN}`;
 /** GitHub 星数的初始值：构建时取（scripts/fetch-github-stars.ts）；页面打开后由 scripts/stars.ts 换成站内 /stars.json 的值 */
@@ -29,6 +27,8 @@ export const MF = {
   home: mf("https://modelflare.dev/"),
   pricing: mf("https://modelflare.dev/pricing"),
   docs: mf("https://docs.modelflare.dev/"),
+  /** 合作伙伴申请：Modelflare 控制台里的 AnyModelBot 合作页，没登录时先去登录 */
+  partnerApply: mf("https://modelflare.dev/affiliate-program?tab=anymodelbot"),
 };
 
 const Bin = z.object({ url: z.string().min(1), sha256: z.string().min(1), sizeMB: z.number().nonnegative() });

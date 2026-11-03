@@ -70,8 +70,6 @@
     --hz-y: 210px;            /* 地平线顶沿在舞台里的高度 */
     --hz-w: max(2600px, 190%);
     --hero-aura: oklch(.6 .08 var(--hero-hue) / .07);
-    --hero-em-glow: color-mix(in srgb, var(--lime) 22%, transparent);
-    --hero-cta-glow: color-mix(in srgb, var(--lime) 45%, transparent);
     position: relative; margin-top: calc(-1 * var(--nav-h));
     padding-top: calc(var(--nav-h) + var(--hero-top)); overflow: clip;
     transition: --hz-glow 1.4s var(--ease-inout), --hero-hue 1.4s var(--ease-inout);
@@ -81,8 +79,6 @@
   /* 浅色：顶光就是卡片本身的白，机器人色再压一半；完全不用黄绿 */
   [data-theme="light"] .hero {
     --hero-aura: oklch(.95 .012 var(--hero-hue) / .45);   /* 换幕时只有一点点冷暖，底色仍是白 / 灰 */
-    --hero-em-glow: oklch(.8 .12 var(--hero-hue) / .35);
-    --hero-cta-glow: rgba(17, 24, 39, .16);
   }
   .hero__bg {
     position: absolute; inset: 8px 8px 0; overflow: hidden; pointer-events: none; border-radius: var(--r-feature); isolation: isolate;

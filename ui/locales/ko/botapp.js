@@ -34,10 +34,8 @@ export default {
     title: "{name}을(를) 제거할까요?",
     body: "사이드바에서 사라지지만 둘러보기에서 다시 찾을 수 있습니다.",
     confirm: "제거",
-    keepTitle: "데이터를 보관할까요?",
-    keepBody: "보관하면 다음에 이어서 쓸 수 있습니다. 보관하지 않으면 폴더가 삭제됩니다.",
-    keep: "보관",
-    discard: "보관 안 함",
+    keep: "데이터를 보관해 다음에 이어서 쓰기",
+    done: "{name}을(를) 제거했습니다. 둘러보기에서 다시 찾을 수 있습니다",
   },
   errors: {
     catalog_not_found: "이 봇을 찾을 수 없습니다.",

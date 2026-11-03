@@ -212,7 +212,7 @@ Each bot can turn computer use on or off, choose a backend and an approval mode 
 
 ## Feishu app setup
 
-The easiest way: Settings › Connections → Feishu → Add account, scan with Feishu to create the bot app, then send it a message in Feishu.
+The easiest way: Settings › Connections → Feishu → Connect, scan with Feishu to create the bot app, then send it a message in Feishu.
 
 To use a custom enterprise app you already have, choose "Use my own app" and set it up like this:
 
@@ -222,7 +222,7 @@ To use a custom enterprise app you already have, choose "Use my own app" and set
    - `im:message:send_as_bot` (send messages as the app)
    - `cardkit:card:write` (create and update cards, used for streaming replies)
    - `im:message.history:readonly` (read chat history: the long connection doesn't re-push messages sent while the app was offline, so on start and after a reconnect the app catches up from history on chats active in the last 7 days, taking messages from the last 24 hours, at most 20 per chat. Without it everything else works, but nothing is caught up, and the app says so once)
-3. First enter the App ID / App Secret in this app under Settings › Connections → Feishu → Add account → Use my own app, and save (the long connection must be online before the next step can be saved).
+3. First enter the App ID / App Secret in this app under Settings › Connections → Feishu → Connect → Use my own app, and save (the long connection must be online before the next step can be saved).
 4. Events & callbacks → subscription mode: "**Receive events through persistent connection**", and add the event `im.message.receive_v1`.
 5. Publish a version, add yourself to the availability scope, then send the bot one line from your own Feishu: the first person to message it after it is connected becomes its Feishu owner (see "Who can use a bot").
 
@@ -230,7 +230,7 @@ Note: only one-to-one (p2p) chats are handled for now; group messages are ignore
 
 ## WeChat (iLink)
 
-- Settings › Connections → WeChat → Add account → "Scan to log in", scan the QR code with WeChat and confirm; or run `npm run weixin:login` (the QR code is shown in the terminal and saved as a PNG in the data directory).
+- Settings › Connections → WeChat → Connect, scan the QR code with WeChat and confirm; or run `npm run weixin:login` (the QR code is shown in the terminal and saved as a PNG in the data directory).
 - Sign-in state, sync cursor and context_token are kept in the data directory and resume after a restart.
 - Platform limits: after each user message, at most 10 replies can be sent within 24 hours; replies are sent in one go once generation finishes and are split above 4000 characters; "typing…" is shown while generating.
 - Images, files, videos: whatever the user sends (or quotes) is downloaded from the WeChat CDN and decrypted (up to 50 MB each). In agent mode it is saved in the bot workspace's `inbox/` and the message names the path, so the agent can read it, process it or use it as a reference image for generation. Vision-capable models (Claude, GPT-5/6, Gemini, Grok 4, Kimi K3, Muse Spark and others) also receive the image itself; other models only get the path. On Linux the agent does not receive images directly yet (sharp crashes under Electron) and only gets the path. Files the bot delivers (present) go back to WeChat as images or files.

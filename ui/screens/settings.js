@@ -1,10 +1,11 @@
-// 设置页（参考 Codex）：侧栏换成设置导航（返回应用 + 查找 + 分页），主区是大标题 + 白色圆角 list，一行一项；改动即保存。
+// 设置页（参考 Codex）：侧栏换成设置导航（返回应用 + 查找 + 分页），主区是大标题 + 按用途分段的 list，一行一项；改动即保存。
+// 外观的主题是三张缩略图，Modelflare 顶部是账户和余额；搜索时它们退回普通的行（searchOnly）。
 // 入口只有左下角账户按钮、⌘/Ctrl+, 和命令面板。
-// 外观（主题、字体、动画、毛玻璃…）和对话习惯（发送键、通知）是本机界面偏好，存在浏览器里（lib/theme.js、lib/prefs.js）；
+// 外观（主题、字体、动画…）和对话习惯（发送键、通知）是本机界面偏好，存在浏览器里（lib/theme.js、lib/prefs.js）；
 // 其余设置走服务端 /settings。
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { html, Icon, Seg, Switch, Sheet, CopyButton, Skeleton, MenuButton } from "../components/ui.js";
-import { AccountButton } from "./sidebar.js";
+import { html, Icon, IconButton, Seg, Switch, Sheet, CopyButton, Skeleton, MenuButton } from "../components/ui.js";
+import { AccountButton, Balance } from "./sidebar.js";
 import { PickModel, effortOptions, setEffort, shortModel, showsStrategy, strategyOptions, useEffort } from "../components/model-picker.js";
 import { DomainConnection } from "../components/domain-connection.js";
 import { NotificationsSheet, UsageSheet } from "./account.js";
@@ -126,13 +127,40 @@ function SaveInput({ id, value = "", secret, label, placeholder, onSave }) {
     onKeyDown=${(e) => e.key === "Enter" && !e.isComposing && e.keyCode !== 229 && (e.preventDefault(), e.currentTarget.blur())} />`;
 }
 
-/** 外观分页顶部的预览：一问一答 + 一行代码，跟着字体大小、字体、代码字体和代码换行实时变 */
-function AppearancePreview() {
-  return html`<div class="ap-preview" aria-hidden="true">
-    <div class="ap-bubble">${t("settings.preview.ask")}</div>
-    <div class="ap-reply">${t("settings.preview.reply", { b: html`<b>${t("settings.rows.codeWrap.name")}</b>` })}</div>
-    <pre class="ap-code">const res = await fetch(\`\${base}/v1/chat/completions\`, { method: "POST", headers, body: JSON.stringify({ model, messages }) });</pre>
+/** 主题的缩略图：一扇小窗口，局部 data-theme 让它用那个主题的真实颜色 */
+const ThemeSketch = ({ theme }) => html`<span class="tsk" data-theme=${theme}><i class="tsk-side"></i><span class="tsk-main"><i class="tsk-bubble"></i><i class="tsk-line"></i><i class="tsk-line short"></i><i class="tsk-box"></i></span></span>`;
+
+/** 外观分页顶部：三张主题缩略图。跟随系统那张左半浅、右半深 */
+function ThemeCards({ value, flash, onChange }) {
+  return html`<div class=${`theme-cards${flash ? " flash" : ""}`} id="set-theme" role="group" aria-label=${t("settings.rows.theme.name")}>
+    ${THEMES().map(([v, label]) => html`<button type="button" key=${v} class=${`theme-card${value === v ? " on" : ""}`} aria-pressed=${value === v} onClick=${() => onChange(v)}>
+      <span class=${`theme-thumb${v === "system" ? " split" : ""}`} aria-hidden="true">
+        ${v === "system" ? html`<${ThemeSketch} theme="light" /><${ThemeSketch} theme="dark" />` : html`<${ThemeSketch} theme=${v} />`}
+      </span>
+      <span class="theme-name">${label}</span>
+    </button>`)}
   </div>`;
+}
+
+/** 文字预览：排在「文字」这组的最后，跟着字体大小、字体、代码字体和代码换行实时变 */
+function TextPreview() {
+  return html`<div class="text-sample" aria-hidden="true">
+    <span class="t-label">${t("settings.preview.label")}</span>
+    <p>${t("settings.preview.reply", { b: html`<b>${t("settings.rows.codeWrap.name")}</b>` })}</p>
+    <pre>const res = await fetch(\`\${base}/v1/chat/completions\`, { method: "POST", headers, body: JSON.stringify({ model, messages }) });</pre>
+  </div>`;
+}
+
+/** 按 group 分段：相邻同组的行排在一块 .list 里，第一段可以没有标题 */
+function groupRows(list) {
+  const out = [];
+  for (const r of list) {
+    const key = r.group || "";
+    const last = out[out.length - 1];
+    if (last && last.key === key) last.rows.push(r);
+    else out.push({ key, label: key ? t(`settings.groups.${key}`) : "", note: r.groupNote, rows: [r] });
+  }
+  return out;
 }
 
 function NoticesSheet({ onClose }) {
@@ -146,7 +174,6 @@ function NoticesSheet({ onClose }) {
   }, [lang]);
   return html`<${Sheet} title=${t("settings.rows.licenses.name")} wide onClose=${onClose}>
     <pre class="doc">${d ? `${d.license}\n\n${d.notices}` : t("common.loading")}</pre>
-    <div class="actions"><button type="button" class="btn" data-autofocus onClick=${onClose}>${t("common.close")}</button></div>
   <//>`;
 }
 
@@ -271,7 +298,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       })
       .catch(failed);
   const putSearch = (patch) => put({ webSearch: patch }, { webSearch: { ...s.webSearch, ...(patch.provider ? { provider: patch.provider } : {}) } });
-  const conn = useConnections();
+  const conn = useConnections(tab === "connections" ? focusRow : "");
   const desktop = !!(s && s.desktop);
   const pickFont = (v) => {
     setPrefs({ font: v });
@@ -313,87 +340,86 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
         ctl: html`<${Seg} label=${t("settings.rows.sendKey.name")} value=${p.sendKey} onChange=${(v) => { setPrefs({ sendKey: v }); saved(); }} options=${[["enter", "Enter"], ["mod", MOD_ENTER]]} />` },
       canNotify && { tab: "general", id: "notify", name: t("settings.rows.notify.name"), sub: t("settings.rows.notify.sub"), keys: t("settings.rows.notify.keys"),
         ctl: html`<${Switch} label=${t("settings.rows.notify.name")} value=${p.notify} onChange=${toggleNotify} />` },
-      desktop && { tab: "general", id: "close", name: t("settings.rows.close.name"), sub: t("settings.rows.close.sub"), keys: t("settings.rows.close.keys"),
-        ctl: html`<${Seg} label=${t("settings.rows.close.name")} value=${s.closeToTray} onChange=${(v) => put({ closeToTray: v }, { closeToTray: v })} options=${[[true, t("settings.rows.close.tray")], [false, t("settings.rows.close.quit")]]} />` },
-      desktop && s.autostart.supported && { tab: "general", id: "autostart", name: t("settings.rows.autostart.name"), sub: t("settings.rows.autostart.sub"), keys: t("settings.rows.autostart.keys"),
-        ctl: html`<${Switch} label=${t("settings.rows.autostart.name")} value=${s.autostart.on} onChange=${(v) => put({ autostart: v }, { autostart: { ...s.autostart, on: v } })} />` },
-      desktop && { tab: "general", id: "browser", name: t("settings.rows.browser.name"), sub: t("settings.rows.browser.sub"), keys: t("settings.rows.browser.keys"),
-        ctl: html`<button type="button" class="text" onClick=${() => api("/desktop/open-in-browser", { method: "POST", body: {} }).catch(failed)}>${t("common.open")}</button>` },
       g.loaded && { tab: "general", id: "guide", name: t("settings.rows.guide.name"),
         sub: g.hidden ? t("settings.rows.guide.hidden") : t("settings.rows.guide.progress", { done: guideSteps.filter((x) => g.done.includes(x.id)).length, total: guideSteps.length }),
         keys: t("settings.rows.guide.keys"),
         ctl: html`<button type="button" class="text" onClick=${() => resetGuide().then(() => toast(t("settings.rows.guide.restarted"))).catch(failed)}>${t("settings.rows.guide.restart")}</button>` },
+      desktop && { tab: "general", group: "desktop", id: "close", name: t("settings.rows.close.name"), sub: t("settings.rows.close.sub"), keys: t("settings.rows.close.keys"),
+        ctl: html`<${Seg} label=${t("settings.rows.close.name")} value=${s.closeToTray} onChange=${(v) => put({ closeToTray: v }, { closeToTray: v })} options=${[[true, t("settings.rows.close.tray")], [false, t("settings.rows.close.quit")]]} />` },
+      desktop && s.autostart.supported && { tab: "general", group: "desktop", id: "autostart", name: t("settings.rows.autostart.name"), sub: t("settings.rows.autostart.sub"), keys: t("settings.rows.autostart.keys"),
+        ctl: html`<${Switch} label=${t("settings.rows.autostart.name")} value=${s.autostart.on} onChange=${(v) => put({ autostart: v }, { autostart: { ...s.autostart, on: v } })} />` },
+      desktop && { tab: "general", group: "desktop", id: "browser", name: t("settings.rows.browser.name"), sub: t("settings.rows.browser.sub"), keys: t("settings.rows.browser.keys"),
+        ctl: html`<button type="button" class="text" onClick=${() => api("/desktop/open-in-browser", { method: "POST", body: {} }).catch(failed)}>${t("common.open")}</button>` },
 
-      { tab: "appearance", id: "theme", name: t("settings.rows.theme.name"), sub: t("settings.rows.theme.sub"), keys: t("settings.rows.theme.keys"),
+      { tab: "appearance", searchOnly: true, id: "theme", name: t("settings.rows.theme.name"), sub: t("settings.rows.theme.sub"), keys: t("settings.rows.theme.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.theme.name")} value=${mode} onChange=${(m) => { setThemeMode(m); saved(); }} options=${THEMES()} />` },
-      { tab: "appearance", id: "text-size", name: t("settings.rows.textSize.name"), sub: desktop ? t("settings.rows.textSize.subDesktop") : t("settings.rows.textSize.sub"), keys: t("settings.rows.textSize.keys"),
+      { tab: "appearance", group: "text", id: "text-size", name: t("settings.rows.textSize.name"), sub: desktop ? t("settings.rows.textSize.subDesktop") : t("settings.rows.textSize.sub"), keys: t("settings.rows.textSize.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.textSize.name")} value=${p.text} onChange=${(v) => { setPrefs({ text: v }); saved(); }} options=${TEXT_SIZES()} />` },
-      { tab: "appearance", id: "font", name: t("settings.rows.font.name"), sub: t("settings.rows.font.sub"), keys: t("settings.rows.font.keys"),
+      { tab: "appearance", group: "text", id: "font", name: t("settings.rows.font.name"), sub: t("settings.rows.font.sub"), keys: t("settings.rows.font.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.font.name")} value=${p.font} onChange=${pickFont} options=${FONTS()} />` },
-      p.font === "custom" && { tab: "appearance", id: "font-name", name: t("settings.rows.fontName.name"), sub: p.fontName ? t("settings.rows.fontName.subSet") : t("settings.rows.fontName.subEmpty"), keys: t("settings.rows.fontName.keys"),
+      p.font === "custom" && { tab: "appearance", group: "text", id: "font-name", name: t("settings.rows.fontName.name"), sub: p.fontName ? t("settings.rows.fontName.subSet") : t("settings.rows.fontName.subEmpty"), keys: t("settings.rows.fontName.keys"),
         ctl: html`<${FontInput} id="font-ui" label=${t("settings.rows.fontName.name")} value=${p.fontName} placeholder=${t("settings.rows.fontName.placeholder")} suggest=${SUGGEST_UI} fallback="var(--font-system)"
           onChange=${(v) => setPrefs({ fontName: v })} />` },
-      { tab: "appearance", id: "code-font", name: t("settings.rows.codeFont.name"), sub: t("settings.rows.codeFont.sub"), keys: t("settings.rows.codeFont.keys"),
+      { tab: "appearance", group: "text", id: "code-font", name: t("settings.rows.codeFont.name"), sub: t("settings.rows.codeFont.sub"), keys: t("settings.rows.codeFont.keys"),
         ctl: html`<${FontInput} id="font-code" label=${t("settings.rows.codeFont.name")} value=${p.codeFont} placeholder=${t("settings.rows.codeFont.placeholder")} suggest=${SUGGEST_CODE} fallback="var(--code-system)"
           onChange=${(v) => setPrefs({ codeFont: v })} />` },
-      desktop && { tab: "appearance", id: "zoom", name: t("settings.rows.zoom.name"), sub: t("settings.rows.zoom.sub"), keys: t("settings.rows.zoom.keys"),
-        ctl: html`<${Seg} label=${t("settings.rows.zoom.name")} value=${s.zoom} onChange=${(z) => put({ zoom: z }, { zoom: z })} options=${ZOOMS} />` },
-      { tab: "appearance", id: "chat-width", name: t("settings.rows.chatWidth.name"), sub: t("settings.rows.chatWidth.sub"), keys: t("settings.rows.chatWidth.keys"),
-        ctl: html`<${Seg} label=${t("settings.rows.chatWidth.name")} value=${p.width} onChange=${(v) => { setPrefs({ width: v }); saved(); }} options=${WIDTHS()} />` },
-      { tab: "appearance", id: "code-wrap", name: t("settings.rows.codeWrap.name"), sub: t("settings.rows.codeWrap.sub"), keys: t("settings.rows.codeWrap.keys"),
+      { tab: "appearance", group: "text", id: "code-wrap", name: t("settings.rows.codeWrap.name"), sub: t("settings.rows.codeWrap.sub"), keys: t("settings.rows.codeWrap.keys"),
         ctl: html`<${Switch} label=${t("settings.rows.codeWrap.name")} value=${p.codeWrap} onChange=${(v) => { setPrefs({ codeWrap: v }); saved(); }} />` },
-      { tab: "appearance", id: "motion", name: t("settings.rows.motion.name"), sub: t("settings.rows.motion.sub"), keys: t("settings.rows.motion.keys"),
+      { tab: "appearance", group: "text", id: "text-preview", custom: html`<${TextPreview} key="text-preview" />` },
+      desktop && { tab: "appearance", group: "layout", id: "zoom", name: t("settings.rows.zoom.name"), sub: t("settings.rows.zoom.sub"), keys: t("settings.rows.zoom.keys"),
+        ctl: html`<${Seg} label=${t("settings.rows.zoom.name")} value=${s.zoom} onChange=${(z) => put({ zoom: z }, { zoom: z })} options=${ZOOMS} />` },
+      { tab: "appearance", group: "layout", id: "chat-width", name: t("settings.rows.chatWidth.name"), sub: t("settings.rows.chatWidth.sub"), keys: t("settings.rows.chatWidth.keys"),
+        ctl: html`<${Seg} label=${t("settings.rows.chatWidth.name")} value=${p.width} onChange=${(v) => { setPrefs({ width: v }); saved(); }} options=${WIDTHS()} />` },
+      { tab: "appearance", group: "effects", id: "motion", name: t("settings.rows.motion.name"), sub: t("settings.rows.motion.sub"), keys: t("settings.rows.motion.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.motion.name")} value=${p.motion} onChange=${(v) => { setPrefs({ motion: v }); saved(); }} options=${AUTO_ON_OFF()} />` },
-      { tab: "appearance", id: "glass", name: t("settings.rows.glass.name"), sub: t("settings.rows.glass.sub"), keys: t("settings.rows.glass.keys"),
-        ctl: html`<${Seg} label=${t("settings.rows.glass.name")} value=${p.glass} onChange=${(v) => { setPrefs({ glass: v }); saved(); }} options=${AUTO_ON_OFF()} />` },
       { tab: "appearance", id: "reset-appearance", name: t("settings.rows.resetAppearance.name"), sub: desktop ? t("settings.rows.resetAppearance.subDesktop") : t("settings.rows.resetAppearance.sub"), keys: t("settings.rows.resetAppearance.keys"),
         ctl: html`<button type="button" class="text" disabled=${!customized} onClick=${resetLook}>${t("settings.rows.resetAppearance.button")}</button>` },
 
-      managed && acct && { tab: "modelflare", id: "account", name: t("settings.rows.account.name"),
+      managed && acct && { tab: "modelflare", searchOnly: true, id: "account", name: t("settings.rows.account.name"),
         sub: signedIn ? (acct.billedToEnterprise ? t("settings.rows.account.enterprise", { name: acctName }) : acctName) : acct.state === "unavailable" ? acct.error : t("settings.rows.account.signedOut"), keys: t("settings.rows.account.keys"),
         ctl: signedIn ? html`<button type="button" class="text danger" onClick=${logout}>${t("settings.rows.account.logout")}</button>` : null },
       !managed && { tab: "modelflare", id: "connection", name: t("settings.rows.connection.name"), sub: t("settings.rows.connection.subExternal"), keys: "",
         ctl: html`<span class="val" title=${mf && mf.baseUrl}>${mf && mf.baseUrl}</span>` },
-      managed && acct && mf.connected && { tab: "modelflare", id: "balance", name: t("settings.rows.balance.name"),
+      managed && acct && mf.connected && { tab: "modelflare", searchOnly: true, id: "balance", name: t("settings.rows.balance.name"),
         sub: acct.error ? t("settings.rows.balance.error", { error: acct.error }) : acct.updatedAt ? t("settings.rows.balance.updated", { time: fmtTimeOfDay(acct.updatedAt) }) : t("common.reading"), keys: t("settings.rows.balance.keys"),
-        ctl: html`<span class=${`balance${acct.lowBalance ? " low" : ""}`}>${usd(acct.balanceUsd)}</span>
+        ctl: html`${acct.lowBalance && html`<span class="dot warn"></span>`}<span class="balance">${usd(acct.balanceUsd)}</span>
           <button type="button" class="icon-btn" title=${t("common.refresh")} aria-label=${t("settings.rows.balance.refresh")} onClick=${refreshBalance}><${Icon} name="refresh" size="sm" /></button>
           <a class="btn" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("settings.rows.balance.topUp")}</a>` },
-      managed && acct && mf.connected && { tab: "modelflare", id: "low-balance", name: t("settings.rows.lowBalance.name"), sub: t("settings.rows.lowBalance.sub"), keys: t("settings.rows.lowBalance.keys"),
+      managed && acct && mf.connected && { tab: "modelflare", group: "account", id: "low-balance", name: t("settings.rows.lowBalance.name"), sub: t("settings.rows.lowBalance.sub"), keys: t("settings.rows.lowBalance.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.lowBalance.name")} value=${acct.alerts.lowBalanceUsd} onChange=${(v) => putAlerts({ lowBalanceUsd: v })}
           options=${alertLines.some(([v]) => v === acct.alerts.lowBalanceUsd) ? alertLines : [...alertLines, [acct.alerts.lowBalanceUsd, usd(acct.alerts.lowBalanceUsd)]]} />` },
-      managed && acct && mf.connected && acct.alerts.lowBalanceUsd > 0 && { tab: "modelflare", id: "low-balance-push", name: t("settings.rows.lowBalancePush.name"), sub: t("settings.rows.lowBalancePush.sub"), keys: t("settings.rows.lowBalancePush.keys"),
+      managed && acct && mf.connected && acct.alerts.lowBalanceUsd > 0 && { tab: "modelflare", group: "account", id: "low-balance-push", name: t("settings.rows.lowBalancePush.name"), sub: t("settings.rows.lowBalancePush.sub"), keys: t("settings.rows.lowBalancePush.keys"),
         ctl: html`<${Switch} label=${t("settings.rows.lowBalancePush.name")} value=${acct.alerts.push} onChange=${(v) => putAlerts({ lowBalancePush: v })} />` },
-      signedIn && { tab: "modelflare", id: "usage", name: t("settings.rows.usage.name"), sub: t("settings.rows.usage.sub"), keys: t("settings.rows.usage.keys"),
+      signedIn && { tab: "modelflare", group: "account", id: "usage", name: t("settings.rows.usage.name"), sub: t("settings.rows.usage.sub"), keys: t("settings.rows.usage.keys"),
         ctl: html`<button type="button" class="text" onClick=${() => setSheet("usage")}>${t("common.view")}</button>` },
-      signedIn && { tab: "modelflare", id: "notifications", name: t("settings.rows.notifications.name"), sub: unread ? t("settings.rows.notifications.unread", { count: unread }) : t("settings.rows.notifications.sub"), keys: t("settings.rows.notifications.keys"),
+      signedIn && { tab: "modelflare", group: "account", id: "notifications", name: t("settings.rows.notifications.name"), sub: unread ? t("settings.rows.notifications.unread", { count: unread }) : t("settings.rows.notifications.sub"), keys: t("settings.rows.notifications.keys"),
         ctl: html`<button type="button" class="text" onClick=${() => setSheet("notifications")}>${t("common.view")}</button>` },
-      signedIn && invite && { tab: "modelflare", id: "invite", name: t("settings.rows.invite.name"), sub: t("settings.rows.invite.sub"), keys: t("settings.rows.invite.keys"),
+      signedIn && invite && { tab: "modelflare", group: "account", id: "invite", name: t("settings.rows.invite.name"), sub: t("settings.rows.invite.sub"), keys: t("settings.rows.invite.keys"),
         ctl: html`<span class="val">${invite.code}</span><${CopyButton} text=${invite.url} label=${t("settings.rows.invite.copy")} />` },
-      showsStrategy(acct) && { tab: "modelflare", id: "key-quality", name: t("settings.rows.keyQuality.name"), sub: t("settings.rows.keyQuality.sub"), keys: t("settings.rows.keyQuality.keys"),
-        ctl: html`<${Seg} label=${t("settings.rows.keyQuality.name")} value=${acct.keyQuality.strategy} onChange=${putKeyQuality} options=${strategyOptions()} />` },
-      managed && mf.connected && { tab: "modelflare", id: "reasoning-effort", name: t("models.effort.name"), sub: t("settings.rows.effort.sub"), keys: t("settings.rows.effort.keys"),
-        ctl: html`<${Seg} label=${t("models.effort.name")} value=${effort} onChange=${(v) => setEffort(v).then((ok) => ok && saved())} options=${effortOptions()} />` },
-      managed && { tab: "modelflare", id: "line", name: t("settings.rows.line.name"), sub: t("settings.rows.line.sub"), keys: t("settings.rows.line.keys"),
-        ctl: html`<${DomainConnection} value=${mf.line} onChange=${setLine} />` },
-      { tab: "modelflare", id: "default-model", name: t("settings.rows.defaultModel.name"), sub: t("settings.rows.defaultModel.sub"), keys: t("settings.rows.defaultModel.keys"),
+      { tab: "modelflare", group: "account", id: "console", name: t("settings.rows.console.name"), sub: t("settings.rows.console.sub"), keys: t("settings.rows.console.keys"),
+        ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">${t("common.openExternal")}</a>` },
+      { tab: "modelflare", group: "models", id: "default-model", name: t("settings.rows.defaultModel.name"), sub: t("settings.rows.defaultModel.sub"), keys: t("settings.rows.defaultModel.keys"),
         ctl: html`<${PickModel} value=${s.defaultModel} models=${models} modelsError=${modelsError} reloadModels=${reloadModels} resetLabel=${t("settings.rows.defaultModel.auto")}
           onChange=${(m) => put({ defaultModel: m }, { defaultModel: m })} />` },
-      managed && mf.connected && { tab: "modelflare", id: "image-model", name: t("settings.rows.imageModel.name"), sub: t("settings.rows.imageModel.sub"), keys: t("settings.rows.imageModel.keys"),
+      managed && mf.connected && { tab: "modelflare", group: "models", id: "image-model", name: t("settings.rows.imageModel.name"), sub: t("settings.rows.imageModel.sub"), keys: t("settings.rows.imageModel.keys"),
         ctl: html`<${PickModel} value=${s.imageModel} models=${media ? media.image : null} modelsError=${media && media.error} reloadModels=${loadMedia}
           resetLabel=${media && media.recommended.image ? t("settings.rows.autoModel", { model: shortModel(media.recommended.image) }) : t("common.auto")} label=${t("settings.rows.imageModel.name")}
           onChange=${(m) => put({ imageModel: m }, { imageModel: m })} />` },
-      managed && mf.connected && { tab: "modelflare", id: "video-model", name: t("settings.rows.videoModel.name"), sub: t("settings.rows.videoModel.sub"), keys: t("settings.rows.videoModel.keys"),
+      managed && mf.connected && { tab: "modelflare", group: "models", id: "video-model", name: t("settings.rows.videoModel.name"), sub: t("settings.rows.videoModel.sub"), keys: t("settings.rows.videoModel.keys"),
         ctl: html`<${PickModel} value=${s.videoModel} models=${media ? media.video : null} modelsError=${media && media.error} reloadModels=${loadMedia}
           resetLabel=${media && media.recommended.video ? t("settings.rows.autoModel", { model: shortModel(media.recommended.video) }) : t("common.auto")} label=${t("settings.rows.videoModel.name")}
           onChange=${(m) => put({ videoModel: m }, { videoModel: m })} />` },
-      { tab: "modelflare", id: "models", name: t("settings.rows.models.name"), sub: modelsError ? t("settings.rows.models.error", { error: modelsError }) : t("settings.rows.models.sub"), keys: t("settings.rows.models.keys"),
+      { tab: "modelflare", group: "models", id: "models", name: t("settings.rows.models.name"), sub: modelsError ? t("settings.rows.models.error", { error: modelsError }) : t("settings.rows.models.sub"), keys: t("settings.rows.models.keys"),
         ctl: html`<span class="val num">${models ? t("settings.rows.models.count", { count: models.length }) : "…"}</span><button type="button" class="text" onClick=${() => reloadModels().then(() => saved())}>${t("common.refresh")}</button>` },
-      { tab: "modelflare", id: "console", name: t("settings.rows.console.name"), sub: t("settings.rows.console.sub"), keys: t("settings.rows.console.keys"),
-        ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">${t("common.openExternal")}</a>` },
+      managed && mf.connected && { tab: "modelflare", group: "models", id: "reasoning-effort", name: t("models.effort.name"), sub: t("settings.rows.effort.sub"), keys: t("settings.rows.effort.keys"),
+        ctl: html`<${Seg} label=${t("models.effort.name")} value=${effort} onChange=${(v) => setEffort(v).then((ok) => ok && saved())} options=${effortOptions()} />` },
+      showsStrategy(acct) && { tab: "modelflare", group: "models", id: "key-quality", name: t("settings.rows.keyQuality.name"), sub: t("settings.rows.keyQuality.sub"), keys: t("settings.rows.keyQuality.keys"),
+        ctl: html`<${Seg} label=${t("settings.rows.keyQuality.name")} value=${acct.keyQuality.strategy} onChange=${putKeyQuality} options=${strategyOptions()} />` },
+      managed && { tab: "modelflare", group: "line", id: "line", name: t("settings.rows.line.name"), sub: t("settings.rows.line.sub"), keys: t("settings.rows.line.keys"),
+        ctl: html`<${DomainConnection} value=${mf.line} onChange=${setLine} />` },
 
       { tab: "computer", id: "cu-status", name: t("settings.rows.cuStatus.name"), sub: cu ? cu.reason : t("common.reading"), keys: t("settings.rows.cuStatus.keys"),
-        ctl: html`<span class=${`dot ${cu ? (cu.available ? "ok" : "err") : ""}`}></span>` },
+        ctl: cu && html`<span class=${`badge ${cu.available ? "ok" : "err"}`}>${t(cu.available ? "settings.rows.cuStatus.ready" : "settings.rows.cuStatus.notReady")}</span>` },
       cu && cu.notice && { tab: "computer", id: "cu-notice", name: t("settings.rows.cuNotice.name"), sub: cu.notice, title: cu.notice, keys: t("settings.rows.cuNotice.keys"), ctl: null },
       { tab: "computer", id: "cu-per-bot", name: t("settings.rows.cuPerBot.name"), sub: t("settings.rows.cuPerBot.sub"), keys: t("settings.rows.cuPerBot.keys"),
         ctl: bots && bots[0] && html`<button type="button" class="text" onClick=${() => onOpenBotSettings(bots[0].id, "computer")}>${t("settings.rows.cuPerBot.open")}</button>` },
@@ -401,7 +427,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       { tab: "privacy", id: "key-storage", name: t("settings.rows.keyStorage.name"), sub: t("settings.rows.keyStorage.sub"), ctl: null, keys: t("settings.rows.keyStorage.keys") },
       { tab: "privacy", id: "account-storage", name: t("settings.rows.accountStorage.name"), sub: t("settings.rows.accountStorage.sub"), ctl: null, keys: t("settings.rows.accountStorage.keys") },
       { tab: "privacy", id: "token", name: t("settings.rows.token.name"), sub: s.listen.tokenRequired ? t("settings.rows.token.required") : t("settings.rows.token.local"), keys: t("settings.rows.token.keys"),
-        ctl: html`<span class=${`dot ${s.listen.tokenRequired ? "ok" : ""}`}></span>` },
+        ctl: html`<span class=${`badge ${s.listen.tokenRequired ? "ok" : "off"}`}>${t(s.listen.tokenRequired ? "common.on" : "common.off")}</span>` },
       { tab: "privacy", id: "sandbox", name: t("settings.rows.sandbox.name"), sub: t("settings.rows.sandbox.sub"), ctl: null, keys: t("settings.rows.sandbox.keys") },
       { tab: "privacy", id: "screens", name: t("settings.rows.screens.name"), sub: t("settings.rows.screens.sub"), ctl: null, keys: t("settings.rows.screens.keys") },
 
@@ -444,8 +470,11 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
   }, [s, mf, mode, p, models, modelsError, cu, status, update, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts, effort]);
 
   const needle = q.trim().toLowerCase();
-  const shown = needle ? rows.filter((r) => `${r.name} ${r.sub || ""} ${r.keys || ""}`.toLowerCase().includes(needle)) : rows.filter((r) => r.tab === tab);
-  const parts = needle ? TABS.map(([id, label]) => [tabLabel(label), shown.filter((r) => r.tab === id)]).filter(([, l]) => l.length) : [["", shown]];
+  const shown = needle ? rows.filter((r) => !r.custom && `${r.name} ${r.sub || ""} ${r.keys || ""}`.toLowerCase().includes(needle)) : rows.filter((r) => r.tab === tab && !r.searchOnly);
+  // 搜索时按分页分段，平时按 group 分段
+  const parts = needle ? TABS.map(([id, label]) => ({ label: tabLabel(label), rows: shown.filter((r) => r.tab === id) })).filter((x) => x.rows.length) : groupRows(shown);
+  const acctRow = rows.find((r) => r.id === "account");
+  const balRow = rows.find((r) => r.id === "balance");
 
   const title = needle ? t("settings.searchResults") : tabLabel((TABS.find(([id]) => id === tab) || TABS[0])[1]);
   return html`<section class="settings view" data-screen="settings" key=${needle ? "search" : tab}>
@@ -454,9 +483,17 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       ${!s && html`<div class="list"><div class="row"><${Skeleton} w="40%" /></div><div class="row"><${Skeleton} w="55%" /></div></div>`}
       ${s && !shown.length && html`<p class="set-none">${t("settings.noMatch")}</p>`}
       ${s && !needle && tab === "general" && html`<${PwshHint} />`}
-      ${s && !needle && tab === "appearance" && html`<${AppearancePreview} />`}
-      ${s && !needle && tab === "troubleshoot" ? html`<${TroubleshootPane} bots=${bots} desktop=${desktop} />` : parts.map(([label, list]) => html`${label && html`<div class="set-part">${label}</div>`}
-        <div class="list">${list.map((r) => html`<${Row} key=${r.id} id=${r.id} name=${r.name} sub=${r.sub} title=${r.title || r.sub} flash=${flash === r.id}>${r.ctl}<//>`)}</div>`)}
+      ${s && !needle && tab === "appearance" && html`<div class="set-part">${t("settings.groups.theme")}</div>
+        <${ThemeCards} value=${mode} flash=${flash === "theme"} onChange=${(m) => { setThemeMode(m); saved(); }} />`}
+      ${s && !needle && tab === "modelflare" && acctRow && html`<div class="list acct-card">
+        <${Row} id=${acctRow.id} name=${acctRow.name} sub=${acctRow.sub} title=${acctRow.sub} flash=${flash === acctRow.id}>${acctRow.ctl}<//>
+        ${balRow && html`<div class=${`acct-bal${flash === balRow.id ? " flash" : ""}`} id="set-balance">
+          <${Balance} account=${acct} note=${html`<span>${balRow.sub}</span><${IconButton} icon="refresh" size="xs" iconSize="xs" label=${t("settings.rows.balance.refresh")} onClick=${refreshBalance} />`} />
+          <a class=${`btn${acct.lowBalance ? " primary" : ""}`} href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("settings.rows.balance.topUp")}</a>
+        </div>`}
+      </div>`}
+      ${s && !needle && tab === "troubleshoot" ? html`<${TroubleshootPane} bots=${bots} desktop=${desktop} />` : parts.map(({ label, note, rows: list }) => html`${label && html`<div class="set-part">${label}</div>`}${note && html`<p class="set-note">${note}</p>`}
+        <div class="list">${list.map((r) => r.custom || html`<${Row} key=${r.id} id=${r.id} name=${r.name} sub=${r.sub} title=${r.title || r.sub} flash=${flash === r.id || conn.fresh === r.id}>${r.ctl}<//>`)}</div>`)}
     </div>
     ${notices && html`<${NoticesSheet} onClose=${() => setNotices(false)} />`}
     <${ConnectionSheets} conn=${conn} bots=${bots} />

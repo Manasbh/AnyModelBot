@@ -1073,6 +1073,8 @@ export class App {
         enabled: a.enabled,
         status: status[a.channel],
         requests: this.store.listAccess({ botId: a.key, channel: a.channel, status: "pending" }).length,
+        // 还没有主人：连上之后第一个发单聊消息的人成为主人，界面据此提示"等第一条消息"
+        hasOwner: !!this.access.owner(a.key, a.channel),
       };
     });
   }
@@ -1176,12 +1178,12 @@ export class App {
   channelStatus(key: string): { feishu: ChannelStatus; weixin: ChannelStatus & { login?: unknown; quota?: unknown } } & Record<MessengerId, ChannelStatus> {
     const ch = this.channels.get(key);
     const fsAccount = this.store.getChannelAccount(key, "feishu");
-    const feishu: ChannelStatus & { account?: { appId: string; saved: { appSecret: string } } } = !fsAccount?.credentials.appId
+    const feishu: ChannelStatus & { account?: { appId: string; brand: string; saved: { appSecret: string } } } = !fsAccount?.credentials.appId
       ? { state: "disabled", detail: t("channel.feishu_no_credentials"), since: 0 }
       : ch?.feishuError
         ? { state: "error", detail: ch.feishuError, since: Date.now() }
         : ch?.feishu?.status ?? { state: "disabled", since: 0 };
-    if (fsAccount?.credentials.appId) feishu.account = { appId: fsAccount.credentials.appId, saved: { appSecret: mask(fsAccount.credentials.appSecret) } };
+    if (fsAccount?.credentials.appId) feishu.account = { appId: fsAccount.credentials.appId, brand: fsAccount.credentials.brand === "lark" ? "lark" : "feishu", saved: { appSecret: mask(fsAccount.credentials.appSecret) } };
     const acct = this.store.getWeixinAccount(key);
     const wx = ch?.weixin?.status ?? (acct ? { state: "disabled" as const, since: 0 } : { state: "login_required" as const, detail: t("channel.wx_login_required"), since: 0 });
     const quota = ch?.weixin

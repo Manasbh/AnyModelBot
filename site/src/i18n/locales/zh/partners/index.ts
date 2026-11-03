@@ -75,41 +75,12 @@ export default {
     "title": "加入合作伙伴计划，",
     "lead": "留下基础信息和联系方式，我们会和你联系，确定合作方式和佣金。",
     "mailLabel": "也可以直接发邮件",
-    "optional": "选填",
-    "type": "你属于哪一类",
-    "types": {
-      "training": "培训机构和讲师",
-      "creator": "内容创作者和社群",
-      "sales": "企业服务商和渠道伙伴",
-      "other": "其他"
-    },
-    "name": "怎么称呼你",
-    "company": "公司或机构",
-    "contact": "联系方式",
-    "contactHint": "微信、手机号或邮箱",
-    "audience": "你的客户或受众",
-    "audienceHint": "比如：企业内训，每年约 500 名学员",
-    "message": "你打算怎么合作",
-    "messageHint": "简单说说就行",
-    "submit": "提交申请",
-    "sending": "提交中…",
-    "consent": "我们只用这些信息联系你和评估合作。",
-    "privacy": "隐私说明",
-    "errors": {
-      "type": "请选择一类",
-      "name": "请填写称呼",
-      "contact": "请留下联系方式"
-    },
-    "failed": "提交没成功。可以再试一次，或直接发邮件到 {email}。",
-    "done": {
-      "title": "申请已收到",
-      "body": "我们会通过你留下的联系方式和你沟通。"
+    "panel": {
+      "title": "用 Modelflare 账号申请",
+      "body": "申请在 Modelflare 控制台填写，登录后就能提交。通过后，你的专属优惠券和佣金数据也都在那里查看。",
+      "action": "去填写申请"
     },
     "mail": {
-      "title": "还差一步",
-      "body": "请把下面的内容发送到 {email}，我们收到后会联系你。",
-      "open": "打开邮件应用",
-      "back": "返回修改",
       "subject": "AnyModelBot 合作申请"
     },
     "dim": "我们一对一对接。",

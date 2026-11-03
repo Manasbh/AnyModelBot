@@ -4,6 +4,7 @@ import { html, Icon, Badge, Button, Sheet, Skeleton } from "../components/ui.js"
 import { ActivityLine, currentStep, useNow } from "../components/activity.js";
 import { PromptCard } from "./chat.js";
 import { api } from "../lib/api.js";
+import { accountName } from "../lib/access.js";
 import { confirmSheet, failed, toast } from "../lib/store.js";
 import { markDone } from "../lib/guide.js";
 import { fmtAgo, fmtClock, fmtDur, fmtTime } from "../lib/format.js";
@@ -104,7 +105,6 @@ function ConversationSheet({ conv, onClose }) {
       </div>`)}
       ${turn && html`<${LiveTurn} key=${turn.since} turn=${turn} convId=${conv.id} />`}
     </div>
-    <div class="actions"><button type="button" class="btn" data-autofocus onClick=${onClose}>${t("common.close")}</button></div>
   <//>`;
 }
 
@@ -133,11 +133,11 @@ export function InfoPanel({ bot, leaving, onClose, onOpenBotSettings, onOpenChat
       ${detail?.bot?.settings?.paused && html`<${PausedLine} onResume=${async () => (await api(`/bots/${bot.id}/settings`, { method: "PUT", body: { paused: false } }), reloadDetail())} />`}
       <div class="list-head">${t("info.channels")}</div>
       <div class="list">
-        ${mine.map((a) => html`<div key=${`${a.channel}-${a.key}`} class="row clickable" role="button" tabindex="0" onClick=${onOpenConnections} onKeyDown=${(e) => e.key === "Enter" && onOpenConnections()}>
-          <div class="who"><div class="name">${channelName(a.channel)} · ${a.label}</div><div class="sub">${a.status?.detail || t("info.channelsDefault")}</div></div>
+        ${mine.map((a) => html`<div key=${`${a.channel}-${a.key}`} class="row clickable" role="button" tabindex="0" onClick=${() => onOpenConnections(`channel-${a.channel}-${a.key}`)} onKeyDown=${(e) => e.key === "Enter" && onOpenConnections(`channel-${a.channel}-${a.key}`)}>
+          <div class="who"><div class="name">${accountName(a)}</div><div class="sub">${a.status?.detail || t("info.channelsDefault")}</div></div>
           <${Badge} s=${a.status?.state} />
         </div>`)}
-        <div class="row clickable" data-guide="weixin" role="button" tabindex="0" onClick=${onOpenConnections} onKeyDown=${(e) => e.key === "Enter" && onOpenConnections()}>
+        <div class="row clickable" data-guide="weixin" role="button" tabindex="0" onClick=${() => onOpenConnections()} onKeyDown=${(e) => e.key === "Enter" && onOpenConnections()}>
           <div class="who"><div class="name">${t("info.channelsManage")}</div><div class="sub">${t("info.channelsSub")}</div></div>
         </div>
       </div>

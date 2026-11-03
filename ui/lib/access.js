@@ -4,5 +4,11 @@ import { t, has } from "./i18n.js";
 
 export const channelName = (c) => (has(`access.channel.${c}`) ? t(`access.channel.${c}`) : c);
 
+/** 渠道账号显示的名字。默认别名就是渠道名（「微信」「微信 2」），不写两遍 */
+export const accountName = (a) => {
+  const name = channelName(a.channel);
+  return a.label.startsWith(name) ? a.label : `${name} · ${a.label}`;
+};
+
 /** 允许名单里每个人是怎么来的 */
 export const sourceLabel = (s) => (has(`access.source.${s}`) ? t(`access.source.${s}`) : s);

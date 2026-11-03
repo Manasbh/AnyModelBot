@@ -4,6 +4,22 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.21 - 2026-11-03
+
+### New
+
+- **Easier channel setup:** Connections in Settings have been rebuilt. Each app shows how to connect, so you just follow the steps to scan a code or enter a token. If it's still waiting for a first message to finish linking, it tells you. You can also add more accounts for the same app.
+
+### Improvements and fixes
+
+- **Clearer bot deletion:** The confirmation now says which bot will answer that bot's chat channels afterward. If it's your last bot, it warns you that those messages won't get a reply.
+- **Removing Discover bots:** A checkbox in the same confirmation lets you keep the bot's data.
+- **Cleaner look:** The window background no longer has a glow, actions use neutral colors, and font sizes no longer use half pixels, so text is sharper on Windows.
+- **Balance alert:** When your balance runs low, the sidebar just says so. Select your avatar to see the amount.
+- **Frosted glass follows your system:** The setting is gone, and the app now follows your system's reduce transparency setting.
+- While you create a bot, the sidebar shows its avatar and name as you type, and it no longer flashes to another bot when it's done.
+- Dropdown menus now follow the page as it scrolls, and the Discover layout has been refined.
+
 ## 0.1.20 - 2026-11-03
 
 ### New

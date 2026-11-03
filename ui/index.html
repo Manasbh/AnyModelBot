@@ -38,7 +38,7 @@
       root.setAttribute("data-width", /^(wide|full)$/.test(p.width) ? p.width : "normal");
       root.setAttribute("data-code-wrap", p.codeWrap === true ? "on" : "off");
       root.setAttribute("data-motion", p.motion === "off" ? "off" : p.motion === "on" ? "full" : mq("(prefers-reduced-motion: reduce)") ? "reduce" : "full");
-      root.setAttribute("data-glass", p.glass === "on" || p.glass === "off" ? p.glass : mq("(prefers-reduced-transparency: reduce)") ? "off" : "on");
+      root.setAttribute("data-glass", mq("(prefers-reduced-transparency: reduce)") ? "off" : "on");
       var px = function (v) { return typeof v === "number" && v >= 120 && v <= 1200 ? Math.round(v) + "px" : ""; };
       if (px(p.sideW)) root.style.setProperty("--side-w-user", px(p.sideW));
       if (px(p.panelW)) root.style.setProperty("--panel-w-user", px(p.panelW));

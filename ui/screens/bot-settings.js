@@ -4,7 +4,8 @@ import { html, Icon, Seg, Switch, MenuButton, Notice, Skeleton, autoGrow } from 
 import { BotAvatar, AvatarPicker, charOf } from "../components/avatar.js";
 import { ModelPicker, shortModel } from "../components/model-picker.js";
 import { api } from "../lib/api.js";
-import { confirmSheet, failed, saved } from "../lib/store.js";
+import { deleteBot } from "../lib/bots.js";
+import { failed, saved } from "../lib/store.js";
 import { usd } from "../lib/links.js";
 import { perms, fullWarning, confirmPermission } from "../lib/perms.js";
 import { t } from "../lib/i18n.js";
@@ -138,13 +139,7 @@ export function BotSettingsScreen({ bot, section, models, modelsError, reloadMod
     onBotUpdated();
   };
   const del = async () => {
-    if (!(await confirmSheet({ title: t("botSettings.delete.title", { name: bot.name }), body: t("botSettings.delete.body"), confirmLabel: t("botSettings.delete.confirm"), danger: true }))) return;
-    try {
-      await api(`/bots/${bot.id}`, { method: "DELETE" });
-      onDeleted();
-    } catch (e) {
-      failed(e);
-    }
+    if (await deleteBot(bot)) onDeleted();
   };
   const commitName = () => {
     const n = name.trim();

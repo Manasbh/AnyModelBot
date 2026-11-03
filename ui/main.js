@@ -13,7 +13,7 @@ import { NeedsYouScreen } from "./screens/needs-you.js";
 import { BotAppScreen } from "./screens/bot-app.js";
 import { DiscoverScreen } from "./screens/discover.js";
 import { GroupScreen, GroupSheet } from "./screens/group.js";
-import { BotAvatar, MAIN_CHAR, charOf } from "./components/avatar.js";
+import { BotAvatar, MAIN_CHAR } from "./components/avatar.js";
 import { Onboarding } from "./screens/onboarding.js";
 import { CoachMark } from "./components/guide.js";
 import { api } from "./lib/api.js";
@@ -130,8 +130,6 @@ function Palette({ commands, onClose }) {
     </div>`;
 }
 
-/** 环境光色相（OKLCH 色相角）：和头像角色的主色一致 */
-const AURA_HUE = { blue: 245, yellow: 95, green: 155, red: 25, purple: 305, orange: 55 };
 
 function App() {
   // 订阅界面语言：切换语言时整棵树跟着重渲染（子组件里的 t() 都在渲染时取）
@@ -148,7 +146,7 @@ function App() {
     if (settings) adoptServerLang(settings.lang);
   }, [settings && settings.lang]);
   const connected = !!(mf && (mf.mode === "external" || mf.connected));
-  const [botsData, botsErr, reloadBots] = useLoader(() => (connected ? api("/bots") : Promise.resolve(null)), [connected]);
+  const [botsData, botsErr, reloadBots, setBotsData] = useLoader(() => (connected ? api("/bots") : Promise.resolve(null)), [connected]);
   const [groupsData, , reloadGroups] = useLoader(() => (connected ? api("/groups") : Promise.resolve(null)), [connected]);
   const [groupSheet, setGroupSheet] = useState(null); // 建群 / 改群的弹窗：{ group? }
   const [modelsData, , loadModels] = useLoader(() => (connected ? api("/models") : Promise.resolve(null)), [connected]);
@@ -324,19 +322,37 @@ function App() {
     reloadGroups();
     if (route.view === "group" && route.groupId === id) go("/chat/");
   };
-  // 「需要你」里的重新扫码：去这个机器人的对话，打开信息面板（渠道在最上面）
-  const relogin = () => openSettings("connections");
+  // 「需要你」里的重新扫码（事项 id 是 login:<账号>:<渠道>）：直接打开这个账号的管理弹窗
+  const relogin = (id) => {
+    const [, key, channel] = id.split(":");
+    openSettings("connections", `channel-${channel}-${key}`);
+  };
   useEffect(() => {
     if (route.view !== "settings") setSettingsQ("");
   }, [route.view]);
   const openBotSettings = (id, section = "") => go(`/bot/${encodeURIComponent(id)}/settings${section ? "/" + section : ""}`);
   const onBotUpdated = () => reloadBots();
+  // 建好后等列表里有了它再切过去：先切的话，新机器人还不在列表里，会闪一下第一个机器人
+  const onCreated = async (b) => {
+    await reloadBots();
+    setLastBot(b.id);
+    location.hash = `/chat/${encodeURIComponent(b.id)}`;
+    setRoute(parseHash()); // 不等 hashchange：占位行和新行不同时出现
+  };
+  // 先从列表里拿掉：不留给对话页去请求已经删掉的机器人。正在看它时，换到列表里挨着它的那个，而不是跳回第一个
   const onDeleted = (id) => {
+    const list = bots || [];
+    const rest = list.filter((b) => b.id !== id);
+    const next = rest[Math.min(list.findIndex((b) => b.id === id), rest.length - 1)];
+    setBotsData((d) => d && { ...d, bots: rest });
     reloadBots();
-    if (bot && id === bot.id) {
-      setLastBot("");
-      go("/chat/");
-    }
+    reloadCatalog(); // 目录 Bot 移除后，发现页要变回没打开过
+    reloadGroups();
+    if (!bot || bot.id !== id) return;
+    setLastBot(next ? next.id : "");
+    if (route.view !== "chat" && route.view !== "app" && route.view !== "bot-settings") return;
+    if (next) openChat(next.id);
+    else go("/chat/");
   };
 
   // —— 全局快捷键 ——
@@ -415,17 +431,14 @@ function App() {
   const panelBot = view === "chat" && infoOpen && bot;
   const shownPanel = panelFx.mounted ? panelBot || lastPanel.current : null;
   const routedBot = view === "bot-settings" && bots ? bots.find((b) => b.id === route.botId) : null;
-  // 环境光的色相跟着当前机器人角色的主色（设置页和新建页用缺省的冷色）
-  const auraBot = view === "chat" || view === "app" ? bot : view === "bot-settings" ? routedBot : null;
-  const auraHue = (auraBot && AURA_HUE[charOf(auraBot)]) || 250;
-  return html`<div class=${`app${panelBot ? " with-panel" : ""}`} ref=${appRef} style=${{ "--aura-hue": String(auraHue) }}>
+  return html`<div class=${`app${panelBot ? " with-panel" : ""}`} ref=${appRef}>
     ${view === "settings"
       ? html`<${SettingsSide} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} onBack=${() => openChat()}
           username=${status && status.username} account=${managed ? account : null} />`
       : html`<${Sidebar} bots=${bots} botsError=${botsErr} reloadBots=${reloadBots} selectedId=${bot && bot.id} view=${view === "chat" && bots && !bots.length ? "new" : view}
           previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null} update=${update}
           onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
-          groups=${groups} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup}
+          groups=${groups} groupsLoaded=${!!groupsData} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup}
           catalog=${catalog} catalogId=${route.catalogId} onDiscover=${openDiscover} onOpenCatalog=${openCatalog} />`}
     <${Splitter} class="split-side" size="--side-w" label=${t("app.resizeSide")} value=${sideW} room=${room("--panel-track")} onCommit=${(v) => setPrefs({ sideW: v })} />
     <main class="main">
@@ -440,7 +453,7 @@ function App() {
       ${view === "group" && routedGroup && bots && html`<${GroupScreen} key=${routedGroup.id} group=${routedGroup} bots=${bots} onEdit=${() => setGroupSheet({ group: routedGroup })} onOpenSettings=${openSettings} onChanged=${reloadGroups} />`}
       ${view === "group" && groupsData && !routedGroup && html`<div class="empty-state"><b>${t("app.groupMissing")}</b><button type="button" class="text" onClick=${() => openChat()}>${t("app.backToChat")}</button></div>`}
       ${(view === "new" || (view === "chat" && bots && !bots.length)) && html`<${NewBotScreen} first=${!!bots && !bots.length}
-        onCreated=${(b) => { reloadBots(); openChat(b.id); }} onCancel=${bots && bots.length ? () => openChat() : null} />`}
+        onCreated=${onCreated} onCancel=${bots && bots.length ? () => openChat() : null} />`}
       ${view === "settings" && html`<${SettingsScreen} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} focusRow=${route.row}
         mf=${mf} onMfChanged=${reloadMf} onSettings=${setSettings} models=${models} modelsError=${modelsError} reloadModels=${reloadModels}
         status=${status} update=${update} bots=${bots} onOpenBotSettings=${openBotSettings} account=${managed ? account : null} onAccount=${setAccount} />`}
@@ -455,7 +468,7 @@ function App() {
       onCommit=${(v) => setPrefs({ panelW: v })} />`}
     ${shownPanel && html`<div class=${`panel-scrim${panelFx.leaving ? " leaving" : ""}`} onClick=${() => setInfoOpen(false)}></div>`}
     ${shownPanel && html`<${InfoPanel} key=${shownPanel.id} bot=${shownPanel} leaving=${panelFx.leaving} onClose=${() => setInfoOpen(false)}
-      onOpenBotSettings=${() => openBotSettings(shownPanel.id)} onOpenChat=${() => setInfoOpen(false)} onOpenConnections=${() => openSettings("connections")} />`}
+      onOpenBotSettings=${() => openBotSettings(shownPanel.id)} onOpenChat=${() => setInfoOpen(false)} onOpenConnections=${(row) => openSettings("connections", row || "")} />`}
     <${CoachMark} bot=${view === "chat" ? bot : null} view=${view} infoOpen=${!!panelBot} />
     ${palette && html`<${Palette} commands=${commands} onClose=${() => setPalette(false)} />`}
     ${groupSheet && bots && html`<${GroupSheet} group=${groupSheet.group} bots=${bots} onClose=${() => setGroupSheet(null)}

@@ -1,17 +1,20 @@
 /* 目录 Bot：发现页、专属界面容器（screens/discover.js、screens/bot-app.js）。 */
-.discover { height: 100%; overflow: auto; padding: var(--space-6); display: grid; gap: var(--space-4); align-content: start; }
-.discover-head { display: grid; gap: var(--space-1); }
+.discover { --discover-w: 960px; --page-px: max(var(--page-gutter), calc((100% - var(--discover-w)) / 2)); height: 100%; overflow: auto; padding: var(--page-top) var(--page-px) var(--page-bottom); display: grid; gap: var(--space-4); align-content: start; }
+.discover-head { display: grid; gap: var(--space-1); -webkit-app-region: drag; }
+.discover-head > * { -webkit-app-region: no-drag; }
 .discover-head h1, .discover-head p { margin: 0; }
-.discover-search { margin-top: var(--space-3); }
+.discover-head p { font-size: var(--fs-md); color: var(--muted); }
+.discover-part { margin: var(--space-4) 0 0; font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--fg-2); }
+.discover-search { margin: var(--space-3) 0 0; }
 .discover-grid { --discover-col: 260px; display: grid; gap: var(--space-5); grid-template-columns: repeat(auto-fill, minmax(min(var(--discover-col), 100%), 1fr)); }
 .discover-card { all: unset; cursor: pointer; display: grid; gap: var(--space-3); min-width: 0; }
 .discover-card:focus-visible .discover-thumb { outline: 2px solid var(--accent); }
-.discover-thumb { display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; background: var(--well); border-radius: var(--r-lg); transition: transform var(--dur-base) var(--ease-out); }
+.discover-thumb { display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; background: var(--well); border-radius: var(--r-lg); transition: opacity var(--t-fast); }
 .discover-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.discover-card:hover .discover-thumb { transform: translateY(-1px); /* 微调：悬停抬起 */ }
+.discover-card:hover .discover-thumb { opacity: .88; }
 .discover-meta { display: flex; gap: var(--space-2); align-items: center; min-width: 0; }
 .discover-text { display: grid; min-width: 0; }
-.discover-text .title { font-weight: var(--fw-medium); }
+.discover-text .title { font-size: var(--fs-lg); font-weight: var(--fw-medium); }
 
 .botapp { --botapp-side-w: var(--panel-w); height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .botapp.with-side { grid-template-columns: minmax(0, 1fr) var(--botapp-side-w); }
@@ -33,11 +36,10 @@
 
 .side-group { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--side-row-px) var(--space-1); }
 .side-group .text { color: var(--fg-2); }
-.thread-new-dot { width: var(--space-2); height: var(--space-2); border-radius: var(--r-full); background: var(--accent); flex: none; }
+.thread-new-dot { width: var(--space-2); height: var(--space-2); border-radius: var(--r-full); background: var(--signal); flex: none; }
 .thread-icon { display: grid; place-items: center; width: var(--space-8); }
 
 @media (max-width: 720px) {
   .botapp.with-side { grid-template-columns: minmax(0, 1fr); }
   .botapp.with-side .botapp-main { display: none; }
-  .discover { padding: var(--space-4); }
 }

@@ -1,6 +1,6 @@
 // 动效的 JS 一侧：读取 CSS 时长 token、尊重"减少 / 关闭动画"、让退场动画播完再卸载。
 // 时长只在 tokens/motion.css 里定义一次，JS 用 ms("--dur-base") 读，不要再写死毫秒数。
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -33,4 +33,36 @@ export function usePresence(open, exit = "--dur-base") {
     return () => clearTimeout(t);
   }, [open]);
   return { mounted: open || state !== "closed", leaving: !open && state !== "closed" };
+}
+
+/**
+ * 列表里的行增删：新出现的行 state 是 "enter"（at 是它出现的时刻），被删的行留在原位 state 是 "leave"，淡出 exit 时长后才真的消失。
+ * 第一次拿到列表不算新增。传完整的列表，不要传搜索过滤后的，否则搜索也会算成增删。
+ *   const rows = useListPresence(bots); // [{ item, state, at }]
+ */
+export function useListPresence(items, exit = "--dur-base") {
+  const prev = useRef(null);
+  const timers = useRef(new Set());
+  const [fx, setFx] = useState({ enter: {}, leave: [] });
+  useLayoutEffect(() => {
+    const before = prev.current;
+    if (items) prev.current = items;
+    if (!before || !items) return;
+    const now = new Set(items.map((x) => x.id));
+    const had = new Set(before.map((x) => x.id));
+    const entered = items.filter((x) => !had.has(x.id)).map((x) => x.id);
+    const left = before.flatMap((item, index) => (now.has(item.id) ? [] : [{ item, index }]));
+    if (!entered.length && !left.length) return;
+    const at = Date.now();
+    setFx((f) => ({ enter: { ...f.enter, ...Object.fromEntries(entered.map((id) => [id, at])) }, leave: [...f.leave, ...left] }));
+    const timer = setTimeout(() => {
+      timers.current.delete(timer);
+      setFx((f) => ({ enter: Object.fromEntries(Object.entries(f.enter).filter(([id]) => !entered.includes(id))), leave: f.leave.filter((l) => !left.includes(l)) }));
+    }, ms(exit, 180));
+    timers.current.add(timer);
+  }, [items]);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  const rows = (items || []).map((item) => ({ item, state: fx.enter[item.id] ? "enter" : "", at: fx.enter[item.id] }));
+  for (const { item, index } of fx.leave) if (!rows.some((r) => r.item.id === item.id)) rows.splice(Math.min(index, rows.length), 0, { item, state: "leave" });
+  return rows;
 }

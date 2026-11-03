@@ -15,7 +15,6 @@ export const PREF_DEFAULTS = Object.freeze({
   width: "normal", //   对话宽度：normal | wide | full
   codeWrap: false, //   代码块自动换行
   motion: "system", //  动画：system | on | off
-  glass: "system", //   毛玻璃：system | on | off
   sendKey: "enter", //  发送：enter（Shift+Enter 换行）| mod（⌘/Ctrl+Enter 发送，Enter 换行）
   notify: false, //     窗口不在前台时，回复完成 / 需要确认弹系统通知
   sideW: 0, //          侧栏宽度（px），拖分隔条调的；0 = 默认（tokens 的 --side-w，窄窗口时更窄）
@@ -23,14 +22,13 @@ export const PREF_DEFAULTS = Object.freeze({
   updateDismissed: "", // 侧栏叉掉的新版本提示是哪个版本；更新的版本照样提示
 });
 /** "恢复默认外观"重置的键（对话习惯不动） */
-export const APPEARANCE_KEYS = ["text", "font", "fontName", "codeFont", "width", "codeWrap", "motion", "glass"];
+export const APPEARANCE_KEYS = ["text", "font", "fontName", "codeFont", "width", "codeWrap", "motion"];
 
 const CHOICES = {
   text: ["sm", "md", "lg", "xl"],
   font: ["system", "serif", "custom"],
   width: ["normal", "wide", "full"],
   motion: ["system", "on", "off"],
-  glass: ["system", "on", "off"],
   sendKey: ["enter", "mod"],
 };
 
@@ -92,7 +90,7 @@ function apply(p) {
   d.width = p.width;
   d.codeWrap = p.codeWrap ? "on" : "off";
   d.motion = p.motion === "off" ? "off" : p.motion === "on" ? "full" : mqMotion.matches ? "reduce" : "full";
-  d.glass = p.glass === "system" ? (mqGlass.matches ? "off" : "on") : p.glass;
+  d.glass = mqGlass.matches ? "off" : "on"; // 没有设置项，只跟随系统的"降低透明度"
   // 拖过的宽度：<html> 上内联 --side-w-user / --panel-w-user（shell.css 取 var(--side-w-user, var(--side-w))）
   for (const [k, prop] of [["sideW", "--side-w-user"], ["panelW", "--panel-w-user"]])
     if (p[k]) root.style.setProperty(prop, `${p[k]}px`);

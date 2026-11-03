@@ -4,23 +4,8 @@
   /* —— 下载 ——
      版式和首页同一套：居中的页头 + 一个主操作，下面是等宽的卡片。层次靠留白和细线，不靠色块、边条；品牌色只给页头的主按钮和“你的系统”。
      结构见 views/DownloadView.astro。 */
-  /* 页头和平台卡落在一块圆角大卡片里，背景和首页 Hero 同一套（hero-scene.css）。四周留 8px，顶边压到导航下面。
-     地平线放在 .dl-stage 里，位置跟着平台卡走，不用算页头有多高：--stage-h 取 100%，公共规则里的 top 就只剩 --hz-y（顶沿比卡片顶边高多少）。
-     叠放次序：背景各层 → 磨砂颗粒（z 1）→ 页头、卡片（z 2）。背景的动画和首页一样，写在 hero-scene.css。 */
+  /* 页头和平台卡落在一块圆角大卡片里（.scene-top，在 hero-scene.css），背景和动画都和首页 Hero 同一套 */
   .dl-page { padding-top: 0; }
-  .dl-top {
-    --dl-inset: 8px; --stage-h: 100%; --hz-y: -24px; --hz-w: max(2600px, 190%);
-    position: relative; isolation: isolate; overflow: clip;
-    margin: calc(var(--dl-inset) - var(--nav-h)) var(--dl-inset) 0;
-    padding: calc(var(--nav-h) - var(--dl-inset) + var(--hero-top)) 0 var(--stack-head);
-    border-radius: var(--r-feature); background: var(--hero-panel-bg); box-shadow: inset 0 0 0 1px var(--line);
-  }
-  .dl-top::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: var(--hero-grain); }
-  /* 大卡片比页面窄一圈，内容宽度补回来，和下面几节的左右边对齐 */
-  .dl-top > .container { width: min(var(--container), 100% + 2 * var(--dl-inset) - 2 * var(--gutter)); }
-  .dl-stage { position: relative; }
-  .dl-hero, .dl-plats, .dl-note { position: relative; z-index: 2; }
-
   .dl-hero { display: grid; justify-items: center; margin-bottom: var(--stack-head); text-align: center; }
   .dl-hero__mark { margin-bottom: var(--space-6); }
   .dl-hero .lead { max-width: 34em; margin-top: var(--space-4); }
@@ -82,7 +67,6 @@
     .dl-ways { grid-template-columns: minmax(0, 1fr); }
   }
   @media (max-width: 767px) {
-    .dl-top { --dl-inset: 6px; --hz-w: 1500px; border-radius: var(--r-card); }
     .dl-sums { padding-inline: var(--space-4); }
     .dl-sums__row { grid-template-columns: minmax(0, 1fr) auto; }
     .dl-sums__hash { grid-column: 1 / -1; grid-row: 2; }
@@ -90,68 +74,58 @@
   }
 
   /* —— 合作伙伴 ——
-     和首页同一种语言：首屏是一张大圆角卡（顶光 + 星空 + 地平线上探头的机器人），章节头用 SectionHead，层次靠字号、留白和细线。
-     品牌色只给主按钮、标题高亮、第三步和“获得佣金”这条通知。结构见 views/PartnersView.astro。
-     动效只有一个：佣金示意的三条通知依次到达（内容出现，只播一次）；背景全部静止。 */
-  .pt-page { padding-top: clamp(12px, 2vw, 24px); }
+     和首页同一种语言：首屏和首页 Hero 同一套（.scene-top：居中的页头 → 地平线托着三条佣金通知），章节头用 SectionHead，层次靠字号、留白和细线。
+     品牌色只给主按钮、标题关键词、第三步和“获得佣金”这条通知。结构见 views/PartnersView.astro。
+     内容的动效只有一个：三条通知依次到达（只播一次）；背景的动画和首页 Hero 一样，写在 hero-scene.css。 */
+  .pt-page { padding-top: 0; }
   .pt-body { color: var(--text-2); font-size: var(--fs-body); line-height: 1.7; text-wrap: pretty; }
-  .pt-body a, .pt-form__foot a, .pt-mail a { color: var(--text); text-decoration: underline 1px var(--line-strong); text-underline-offset: 4px; }
-  .pt-body a:hover, .pt-form__foot a:hover, .pt-mail a:hover { text-decoration-color: currentColor; }
+  .pt-body a, .pt-mail a { color: var(--text); text-decoration: underline 1px var(--line-strong); text-underline-offset: 4px; }
+  .pt-body a:hover, .pt-mail a:hover { text-decoration-color: currentColor; }
   .pt-sec { margin-top: clamp(80px, 10vw, 136px); }
 
-  /* 首屏 */
-  .pt-hero {
-    --pt-hz: 60px;
-    --pt-bot: 72px;
-    --pt-base: linear-gradient(180deg, #0d0e12, var(--bg-feature) 64%);
-    --pt-beam: rgba(255, 255, 255, .085);
-    --pt-star: #dfe6ff;
-    --pt-ground: linear-gradient(180deg, #16171d, #0e0f13 55%);
-    --pt-rim: rgba(255, 255, 255, .14);
-    --pt-edge: var(--line);
-    position: relative; display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: center; gap: var(--grid-gap);
-    padding: clamp(48px, 6vw, 88px) clamp(24px, 5vw, 72px) calc(var(--pt-hz) + var(--pt-bot) * .5 + clamp(40px, 5vw, 64px));
-    border-radius: var(--r-banner); overflow: hidden; isolation: isolate;
-    background: var(--grain), radial-gradient(60% 80% at 30% -10%, var(--pt-beam), transparent 70%), var(--pt-base);
+  /* 首屏页头：和首页 Hero 同一列——小胶囊 → 标题 → 说明 → 按钮 → 要点，居中；标题背后的星有意稀一些（HeroSky） */
+  .pt-hero { display: grid; justify-items: center; margin-bottom: var(--stack-head); text-align: center; }
+  /* 小胶囊：和首页的同一种，六个机器人叠成一排 + 一句话，这里不是链接 */
+  .pt-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px; height: 36px; margin-bottom: var(--space-6); padding: 0 14px 0 5px;
+    border-radius: var(--r-btn); background: var(--grain), var(--glass); box-shadow: var(--glass-ring);
+    font-size: var(--fs-sm); font-weight: 500; -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   }
-  [data-theme="light"] .pt-hero {
-    --pt-base: linear-gradient(180deg, #ffffff, #f7f8fa 70%);
-    --pt-beam: #ffffff;
-    --pt-star: #a3abc0;
-    --pt-ground: #eef0f3;
-    --pt-rim: #ffffff;
-    --pt-edge: var(--glass-edge);
-    box-shadow: var(--glass-ring), inset 0 1px 0 #ffffff, 0 1px 2px rgba(17, 24, 39, .05), 0 30px 70px -36px rgba(17, 24, 39, .22);
+  .pt-crew { display: inline-flex; }
+  .pt-crew .bot-face { margin-left: -8px; border-radius: 50%; background: var(--bg-raised); box-shadow: 0 0 0 2px var(--hero-panel-top); }
+  .pt-crew .bot-face:first-child { margin-left: 0; }
+  /* 标题：第一行渐隐的渐变字，第二行是关键词（品牌色 + 光晕），和首页 Hero 同一种。渐变字上下多留一点内边距，字形的上下沿不会被裁掉 */
+  .pt-hero h1 { display: grid; justify-items: center; font-size: clamp(42px, 5.4vw, 72px); line-height: 1.06; letter-spacing: -.04em; text-wrap: balance; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .pt-hero h1 { font-size: clamp(36px, 5vw, 68px); line-height: 1.2; letter-spacing: -.02em; }
+  :lang(ru) .pt-hero h1 { font-size: clamp(32px, 4.2vw, 56px); line-height: 1.14; letter-spacing: -.03em; }
+  .pt-hero h1 > :is(span, em) {
+    display: block; padding-block: .1em; margin-block: -.1em; font-style: normal;
+    color: transparent; -webkit-text-fill-color: transparent; -webkit-background-clip: text; background-clip: text;
   }
-  .pt-hero::after { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px var(--pt-edge); }
-  .pt-hero__sky { position: absolute; inset: 0 0 auto; z-index: 0; height: 78%; color: var(--pt-star); pointer-events: none; -webkit-mask-image: linear-gradient(#000 30%, transparent); mask-image: linear-gradient(#000 30%, transparent); }
-  .pt-hero__sky svg { display: block; width: 100%; height: 100%; fill: currentColor; }
-  .pt-hero__sky .glint, [data-theme="light"] .pt-hero__sky .dot { display: none; }
-  [data-theme="light"] .pt-hero__sky .glint { display: inline; }
-  .pt-hero__copy, .pt-feed { position: relative; z-index: 4; min-width: 0; }
-  .pt-hero__copy { display: grid; justify-items: start; }
-  .pt-hero h1 { margin-top: var(--space-6); font-size: clamp(40px, 5vw, 68px); line-height: 1.08; letter-spacing: -.035em; }
-  :is(:lang(zh), :lang(ja), :lang(ko)) .pt-hero h1 { font-size: clamp(34px, 4.2vw, 58px); line-height: 1.26; letter-spacing: 0; }
-  :lang(ru) .pt-hero h1 { font-size: clamp(32px, 3.8vw, 52px); line-height: 1.14; }
-  .pt-hero h1 > span { display: block; }
-  .pt-hero .lead { max-width: 34em; margin-top: var(--space-6); text-wrap: pretty; }
-  .pt-hero__cta { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-8); }
-  .pt-hero__points { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-top: var(--space-8); color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; }
-  .pt-hero__points li { display: inline-flex; align-items: center; gap: var(--space-2); }
-  .pt-hero__points .icon { flex: none; width: 16px; height: 16px; color: var(--accent-fg); }
-  /* 地平线和探头的机器人：和首页收尾横幅同一种 */
-  .pt-hero__bots { position: absolute; left: 0; right: 0; bottom: calc(var(--pt-hz) - var(--pt-bot) * .48); z-index: 1; display: flex; justify-content: center; gap: clamp(8px, 2.4vw, 28px); }
-  .pt-hero__horizon { position: absolute; left: 50%; top: calc(100% - var(--pt-hz)); z-index: 2; width: 180%; height: 420px; translate: -50% 0; border-radius: 50%; pointer-events: none; background: var(--pt-ground); box-shadow: inset 0 1px 0 var(--pt-rim); }
+  .pt-hero h1 > span { background-image: linear-gradient(180deg, var(--text) 32%, color-mix(in srgb, var(--text) 60%, transparent)); }
+  .pt-hero h1 > em { position: relative; background-image: linear-gradient(180deg, var(--lime-200), var(--lime) 70%); }
+  /* 浅色下黄绿的字发脏，关键词改用天天的蓝（和首页 Hero 第一幕一样） */
+  [data-theme="light"] .pt-hero h1 > em { background-image: linear-gradient(180deg, oklch(.56 .17 var(--hero-hue)), oklch(.44 .15 calc(var(--hero-hue) + 18))); }
+  .pt-hero h1 > em::before { content: ""; position: absolute; inset: 18% -6% -4%; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, var(--hero-em-glow), transparent); filter: blur(16px); }
+  .pt-hero .lead { max-width: 36em; margin-top: var(--space-6); text-wrap: balance; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .pt-hero .lead { max-width: 34em; }
+  .pt-hero__cta { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-8); }
+  .pt-hero__cta .btn--primary { box-shadow: 0 16px 44px -14px var(--hero-cta-glow); }
+  .pt-hero__points { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-6); margin-top: var(--space-6); color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; }
+  .pt-hero__points li { display: inline-flex; align-items: center; gap: 6px; }
+  .pt-hero__points .icon { flex: none; width: 14px; height: 14px; color: oklch(.8 .13 var(--hero-hue)); }
+  [data-theme="light"] .pt-hero__points .icon { color: oklch(.52 .15 var(--hero-hue)); }
 
-  /* 佣金示意：三条通知，一路走到“获得佣金” */
-  .pt-feed { display: grid; gap: var(--space-2); margin: 0; }
-  .pt-feed ol { display: grid; gap: var(--space-3); }
-  .pt-feed__item { display: flex; align-items: center; gap: var(--space-3); margin-inline-start: calc(var(--i) * 16px); padding: 14px 16px; border-radius: 18px; background: var(--grain), var(--glass-strong); box-shadow: var(--glass-ring), 0 18px 40px -24px var(--shadow-c); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); font-size: var(--fs-body-sm); line-height: 1.5; }
+  /* 舞台：地平线托着三条通知，一路走到“获得佣金”；一条细线把它们连起来 */
+  .pt-feed { display: grid; gap: var(--space-3); margin: 0; }
+  .pt-feed ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .pt-feed__item { position: relative; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-6); border-radius: var(--r-card); background: var(--grain), var(--glass-strong); box-shadow: var(--glass-ring), 0 24px 60px -32px var(--shadow-c); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); font-size: var(--fs-body-sm); line-height: 1.5; }
+  .pt-feed__item:not(:last-child)::after { content: ""; position: absolute; top: 50%; left: 100%; width: var(--space-4); height: 1px; background: var(--line-strong); }
   .pt-feed__item .bot-face { flex: none; }
   .pt-feed__coin { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--signal-bg); color: var(--signal-fg); }
   .pt-feed__coin .icon { width: 20px; height: 20px; }
-  .pt-feed__item--earn { font-weight: 600; font-size: var(--fs-body); box-shadow: inset 0 0 0 1.5px var(--accent-fg), 0 18px 40px -24px var(--shadow-c); }
-  .pt-feed figcaption { justify-self: end; color: var(--text-2); font-size: var(--fs-xs); }
+  .pt-feed__item--earn { font-weight: 600; font-size: var(--fs-body); box-shadow: inset 0 0 0 1.5px var(--accent-fg), 0 24px 60px -32px var(--shadow-c); }
+  .pt-feed figcaption { justify-self: center; color: var(--text-2); font-size: var(--fs-xs); }
   @media (prefers-reduced-motion: no-preference) {
     .pt-feed__item { animation: pt-arrive .55s var(--ease-out) calc(var(--i) * 480ms + 240ms) backwards; }
   }
@@ -190,7 +164,7 @@
   .pt-stays .icon { width: 14px; height: 14px; color: var(--accent-fg); }
   .pt-bots { flex: none; display: flex; gap: clamp(8px, 1.4vw, 20px); }
 
-  /* 申请：左边说明和邮箱，右边表单 */
+  /* 申请：左边说明和邮箱，右边去 Modelflare 控制台的入口 */
   .pt-apply { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--grid-gap); align-items: start; }
   .pt-apply__intro { display: grid; gap: var(--space-6); }
   .pt-apply__points { display: grid; gap: var(--space-3); }
@@ -201,39 +175,15 @@
   .pt-mail { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-body); overflow-wrap: anywhere; }
   .pt-mail .copy-btn { padding: 0 8px; }
 
-  .pt-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--space-4); padding: clamp(20px, 3vw, 36px); border-radius: var(--r-feature); }
-  .pt-form[hidden], .pt-panel[hidden] { display: none; }
-  .pt-field { display: grid; align-content: start; gap: var(--space-2); min-width: 0; margin: 0; padding: 0; border: 0; }
-  :is(.pt-field--wide, .pt-failed, .pt-form__foot) { grid-column: 1 / -1; }
-  .pt-label { display: flex; justify-content: space-between; gap: var(--space-3); width: 100%; padding: 0; font-size: var(--fs-body-sm); font-weight: 500; line-height: 1.5; }
-  fieldset > .pt-label { margin-bottom: var(--space-2); }
-  .pt-opt { flex: none; color: var(--text-2); font-size: var(--fs-sm); font-weight: 400; }
-  .pt-input { width: 100%; height: 48px; padding: 0 14px; border: 0; border-radius: var(--r-field); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--line); color: var(--text); font-size: var(--fs-body); }
-  .pt-input::placeholder { color: var(--text-2); opacity: .8; }
-  .pt-input--area { display: block; height: auto; min-height: 120px; padding-block: 12px; line-height: 1.6; resize: vertical; }
-  .pt-input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent-fg), 0 0 0 4px var(--accent-wash); }
-  [data-invalid] > .pt-input { box-shadow: inset 0 0 0 1.5px var(--danger); }
-  .pt-err, .pt-failed { color: var(--danger); font-size: var(--fs-sm); line-height: 1.5; }
-  .pt-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-  .pt-chip { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: var(--r-btn); color: var(--text-2); font-size: var(--fs-body-sm); box-shadow: inset 0 0 0 1px var(--line); transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast); }
-  .pt-chip:hover { color: var(--text); background: var(--hover); }
-  .pt-chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-  .pt-chip:has(input:checked) { color: var(--text); font-weight: 500; background: var(--accent-wash); box-shadow: inset 0 0 0 1.5px var(--accent-fg); }
-  .pt-chip:has(input:focus-visible) { box-shadow: inset 0 0 0 1.5px var(--accent-fg), 0 0 0 4px var(--accent-wash); }
-  [data-invalid] .pt-chip:not(:has(input:checked)) { box-shadow: inset 0 0 0 1px var(--danger); }
-  .pt-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-  .pt-form__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-6); margin-top: var(--space-2); }
-  .pt-form__foot p { flex: 1 1 16em; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.6; }
-
-  /* 提交后的状态：已收到 / 还差一步（发邮件） */
+  /* 入口卡片 */
   .pt-panel { display: grid; justify-items: start; gap: var(--space-4); padding: clamp(24px, 3vw, 40px); border-radius: var(--r-feature); }
-  .pt-panel .h3:focus { outline: none; }
-  .pt-panel .code { width: 100%; }
-  .pt-panel .code code { font-size: var(--fs-sm); }
   .pt-panel__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
 
   @media (max-width: 1023px) {
-    .pt-hero, .pt-who, .pt-apply { grid-template-columns: minmax(0, 1fr); }
+    .pt-who, .pt-apply { grid-template-columns: minmax(0, 1fr); }
+    /* 通知改成竖排，细线往下连到下一条（对准机器人头像的中心） */
+    .pt-feed ol { grid-template-columns: minmax(0, 1fr); width: min(100%, 560px); margin-inline: auto; }
+    .pt-feed__item:not(:last-child)::after { top: 100%; left: calc(var(--space-6) + 20px); width: 1px; height: var(--space-4); }
     .pt-bento__card--models, .pt-bento__card--data { grid-column: span 12; }
     .pt-bento__card--bots { flex-direction: column; align-items: flex-start; }
     /* 三步改成竖排：节点在左，细线往下连到下一步 */
@@ -244,12 +194,15 @@
     .pt-path > li:not(:last-child)::after { top: 56px; bottom: calc(8px - var(--space-8)); left: 24px; right: auto; width: 1px; height: auto; }
   }
   @media (max-width: 767px) {
-    .pt-hero { --pt-hz: 48px; --pt-bot: 50px; padding-inline: 20px; border-radius: var(--r-feature); }
-    .pt-hero__bots { gap: 4px; }
-    .pt-hero__bots .bot-face { --s: 50px !important; }
-    .pt-hero__cta, .pt-hero__cta .btn, .pt-path__cta, .pt-form__foot .btn, .pt-panel__actions, .pt-panel__actions .btn { width: 100%; }
-    .pt-feed__item { margin-inline-start: 0; }
-    .pt-form { grid-template-columns: minmax(0, 1fr); }
+    .pt-eyebrow { margin-bottom: var(--space-4); font-size: var(--fs-xs); }
+    .pt-crew .bot-face:nth-child(n + 4) { display: none; }
+    .pt-hero h1 { font-size: clamp(34px, 9.4vw, 44px); }
+    :is(:lang(zh), :lang(ja), :lang(ko)) .pt-hero h1 { font-size: clamp(30px, 8.6vw, 40px); }
+    :lang(ru) .pt-hero h1 { font-size: clamp(28px, 7.6vw, 36px); }
+    .pt-hero .lead { margin-top: var(--space-4); }
+    .pt-hero__cta, .pt-hero__cta .btn, .pt-path__cta, .pt-panel__actions, .pt-panel__actions .btn { width: 100%; }
+    .pt-feed__item { padding: var(--space-4); }
+    .pt-feed__item:not(:last-child)::after { left: calc(var(--space-4) + 20px); }
     .pt-tile { width: 48px; height: 48px; }
     .pt-bots { flex-wrap: wrap; gap: var(--space-2); }
     .pt-bots .bot-face { --s: 44px !important; }

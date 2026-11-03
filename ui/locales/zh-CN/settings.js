@@ -14,24 +14,19 @@ export default {
   },
   connections: {
     feishu: "飞书消息",
-    channelSub: "所有机器人共用，可以加多个账号。聊天时发一次 /bot 名字，就换一个机器人聊",
+    channelSub: "在这些 App 里给机器人发消息。账号所有机器人共用，聊天时发 /bot 名字 就能换一个机器人。",
     channelKeys: "{channel} 渠道 聊天 连接 账号 机器人 /bot",
-    addAccount: "添加账号",
     manage: "管理",
     defaultIs: "默认由 {bot} 回复",
     requests: "{count} 个使用请求",
-    addChannelTitle: "添加{channel}账号",
     defaultBot: "默认机器人",
     defaultBotHint: "新会话先由它回复。聊天时发 /bot 看有哪些机器人，发一次 /bot 名字就换过去，之后这个会话一直和它聊。",
     removeAccount: "移除这个账号",
     removeChannelBody: "所有机器人都不能再从这个账号收发消息，它的允许名单也会清掉。聊天记录保留。",
-    notionSub: "所有机器人共用，可以加多个账号。只读机器人只能读取，机器人都不能删除页面",
-    feishuSub: "所有机器人共用，可以加多个账号。用你的身份读会话和消息，只读",
+    notionSub: "页面和数据库。只读机器人只能读取，机器人都不能删除页面",
+    feishuSub: "用你的身份读会话和消息，只读",
     notionKeys: "notion 笔记 文档 数据库 连接 账号 授权",
     feishuKeys: "飞书 feishu lark 消息 会话 连接 账号 授权",
-    oneClick: "一键授权",
-    notionOther: "用令牌",
-    feishuOther: "用已有应用",
     viaToken: "令牌",
     viaOAuth: "已授权",
     needsReauth: "授权已失效，需要重新授权",
@@ -41,7 +36,6 @@ export default {
     removeTitle: "移除 {name}？",
     removeBody: "所有机器人都不能再用这个账号。之后可以重新添加。",
     notionOAuthTitle: "授权 Notion",
-    notionOAuthBody: "已在浏览器里打开 Notion 的授权页，同意后回到这里。",
     oauthFailed: "打不开授权页，请稍后再试",
     openAgain: "没打开？点这里",
     waiting: "正在等你授权…",
@@ -53,15 +47,96 @@ export default {
     feishuTitle: "添加飞书账号",
     feishuAppHint: "应用要开通读消息的用户权限。填完后再扫码授权。",
     next: "下一步",
-    feishuChatStep: "用飞书扫码，创建你的机器人应用。完成后在飞书里给它发条消息就能聊。",
-    feishuStepCreate: "第 1 步：用飞书扫码，创建你的个人应用",
-    feishuStepAuthorize: "第 2 步：用飞书扫码，授权读取你的会话和消息",
     qrAlt: "飞书授权二维码",
     openInBrowser: "在浏览器里打开 ↗",
     retry: "重试",
     renameHint: "对机器人说账号时可以用这个名字，比如「看我工作飞书的消息」。",
     nameLabel: "名字",
     save: "保存",
+    dataSub: "机器人能替你读取这些账号。所有机器人共用，可以加多个账号，比如对它说「看我工作飞书的消息」。",
+    connect: "连接",
+    addOne: "再加一个",
+    addAnother: "再加一个账号",
+    addAnotherSub: "同一个 App 可以连多个账号",
+    how: {
+      weixin: "用手机微信扫码",
+      feishu: "用手机飞书扫码，应用自动创建",
+      telegram: "在 @BotFather 创建机器人，填 Token",
+      slack: "创建 Slack 应用，填两个 Token",
+      discord: "创建 Discord 应用，填 Bot Token"
+    },
+    connectTitle: "连接{channel}",
+    connectedTitle: "{channel}已连接",
+    connectingTitle: "正在连接{channel}…",
+    failedTitle: "{channel}没有连上",
+    waitingScan: "等你扫码…",
+    waitingOwner: "等第一条消息完成绑定",
+    useToken: "改用令牌",
+    useOneClick: "改用一键授权",
+    useApp: "改用已有应用",
+    useScan: "改用扫码",
+    feishuPortal: "飞书开放平台 ↗",
+    oauthTimedOut: "等太久了，授权页已经失效，请重新开始。",
+    steps: {
+      weixin: [
+        "用手机微信的「扫一扫」扫下面的二维码",
+        "在手机上点确认"
+      ],
+      feishu: [
+        "用手机飞书扫下面的二维码",
+        "按提示创建你的机器人应用"
+      ],
+      feishuApp: [
+        "在 {link} 启用「机器人」，事件订阅选「使用长连接接收事件」并订阅 {event}",
+        "开通权限：{p1}、{p2}、{p3}、{p4}",
+        "把 App ID 和 App Secret 填到下面"
+      ],
+      telegram: [
+        "在 Telegram 里找 {bot}，发 {cmd} 创建机器人",
+        "把它给你的 Token 填到下面"
+      ],
+      slack: [
+        "在 {link} 创建应用，打开 Socket Mode，生成带 {conn} 的 App-Level Token",
+        "给 Bot Token 加 {s1}、{s2}、{s3}、{s4}，事件订阅 {event}",
+        "在 App Home 允许发消息，再安装到工作区",
+        "把两个 Token 填到下面"
+      ],
+      discord: [
+        "在 {link} 创建应用并添加 Bot，复制 Token",
+        "用 OAuth2 的 URL Generator 勾选 bot，把它加到你所在的服务器",
+        "把 Token 填到下面，然后在 Discord 里私聊它"
+      ],
+      notion: [
+        "在刚打开的浏览器页面里选好内容，点同意",
+        "回到这里，账号会自动出现"
+      ],
+      feishuData: [
+        "用手机飞书扫码，创建你的个人应用",
+        "再扫一次，授权读取你的会话和消息"
+      ],
+      feishuDataApp: [
+        "用手机飞书扫码，授权读取你的会话和消息"
+      ]
+    },
+    tryIt: "在{channel}里给它发一句话试试",
+    switchBot: "想换一个机器人聊，发 /bot 名字",
+    ownerWaiting: "等你发第一条消息。第一个发消息的人会成为主人，其他人要经主人允许才能用。",
+    ownerBound: "「{who}」是主人，可以开始聊了。",
+    ownerLogin: "你的{channel}已经是主人，可以开始聊了。",
+    openChat: "打开{channel} ↗",
+    done: "完成",
+    fix: "修改连接方式",
+    limit: {
+      weixin: "微信的规定：你每发一条消息，它 24 小时内最多回 10 条。",
+      telegram: "目前只处理单聊。应用没开时发来的消息，24 小时内都能补上。",
+      slack: "目前只处理单聊。应用没开时发来的消息收不到。",
+      discord: "目前只处理单聊。应用没开时发来的消息收不到。"
+    },
+    connection: "连接方式",
+    viaScan: "微信扫码",
+    changeApp: "更换应用",
+    changeToken: "更换 Token",
+    removed: "已移除 {name}"
   },
   gateway: {
     running: "运行中",
@@ -82,10 +157,22 @@ export default {
     search: "查找设置",
     nav: "设置分页",
   },
+  groups: {
+    theme: "主题",
+    text: "文字",
+    layout: "版面",
+    effects: "效果",
+    desktop: "桌面应用",
+    account: "账户",
+    models: "模型",
+    line: "连接",
+    channels: "聊天渠道",
+    data: "数据账号",
+  },
   searchResults: "搜索结果",
   noMatch: "没有匹配的设置",
   preview: {
-    ask: "帮我把这段请求改成 async / await 的写法",
+    label: "预览",
     reply: "好的，改写后错误处理也更直观。下面这行在开启{b}后会折行显示：",
   },
   logout: {
@@ -184,11 +271,6 @@ export default {
       sub: "关闭后界面切换、弹出和机器人头像都不再动；跟随系统时遵循「减少动态效果」",
       keys: "动画 动效 过渡 减少动态效果 晕 animation motion",
     },
-    glass: {
-      name: "毛玻璃效果",
-      sub: "关闭后侧栏、菜单和对话框换成实色，文字更清楚、也更省电；跟随系统时遵循「降低透明度」",
-      keys: "毛玻璃 透明 模糊 降低透明度 省电 卡顿 blur transparency",
-    },
     resetAppearance: {
       name: "恢复默认外观",
       subDesktop: "主题、字体、缩放和以上所有外观设置回到默认",
@@ -285,6 +367,8 @@ export default {
     },
     cuStatus: {
       name: "电脑操作后端",
+      ready: "可用",
+      notReady: "不可用",
       keys: "computer use cua 辅助功能 屏幕录制",
     },
     cuNotice: {

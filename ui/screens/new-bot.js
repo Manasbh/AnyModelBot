@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, Icon, IconButton, Button, autoGrow } from "../components/ui.js";
 import { BotAvatar, AvatarPicker, MAIN_CHAR } from "../components/avatar.js";
 import { api } from "../lib/api.js";
-import { failed } from "../lib/store.js";
+import { createStore, failed } from "../lib/store.js";
 import { t } from "../lib/i18n.js";
 
 /** 模板。名称、简介和人设在词典 newBot.tpl.<key> 里，读的时候按当前语言翻译（选模板时按当时的语言填进表单） */
@@ -30,6 +30,9 @@ export const TEMPLATES = [
   template("coder", "code"),
 ];
 
+/** 正在填的新机器人：侧栏那一行占位跟着显示头像和名字，建好后原地换成真的那一行 */
+export const newBotDraft = createStore(null);
+
 export function NewBotScreen({ first, onCreated, onCancel }) {
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -43,6 +46,12 @@ export function NewBotScreen({ first, onCreated, onCancel }) {
     requestAnimationFrame(() => nameRef.current?.focus());
   }, []);
   useEffect(() => autoGrow(promptRef.current, 240), [prompt]);
+  useEffect(() => {
+    newBotDraft.set({ name: name.trim(), avatar });
+  }, [name, avatar]);
+  useEffect(() => () => {
+    newBotDraft.set(null);
+  }, []);
 
   const pick = (tp) => {
     setTpl(tp.key);
@@ -61,7 +70,7 @@ export function NewBotScreen({ first, onCreated, onCancel }) {
     setBusy(true);
     try {
       const r = await api("/bots", { method: "POST", body: { name: n, systemPrompt: prompt.trim(), avatar } });
-      onCreated(r.bot);
+      await onCreated(r.bot);
     } catch (err) {
       failed(err);
       setBusy(false);

@@ -44,7 +44,7 @@ export const failed = (e) => toast(typeof e === "string" ? e : e?.message || t("
 
 // —— confirm sheet ——
 export const dialog = createStore(null);
-/** confirm({ title, body, confirmLabel, danger }) → Promise<boolean> */
+/** confirm({ title, body, confirmLabel, danger, check }) → Promise<boolean>。check：{ label, value }，框里多一个勾选项，选择写回 check.value */
 export function confirmSheet(opts) {
   return new Promise((resolve) => dialog.set({ ...opts, resolve }));
 }

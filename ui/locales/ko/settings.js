@@ -13,24 +13,19 @@ export default {
   },
   "connections": {
     "feishu": "Feishu 메시지",
-    "channelSub": "모든 봇이 공유하며 여러 계정을 추가할 수 있습니다. 대화에서 /bot과 이름을 한 번 보내면 다른 봇으로 전환됩니다",
+    "channelSub": "이 앱들에서 봇에게 메시지를 보낼 수 있습니다. 계정은 모든 봇이 함께 쓰며, 채팅에서 /bot과 이름을 보내면 다른 봇으로 바뀝니다.",
     "channelKeys": "{channel} 채널 채팅 연결 계정 봇 /bot",
-    "addAccount": "계정 추가",
     "manage": "관리",
     "defaultIs": "기본 응답 봇: {bot}",
     "requests": "접근 요청 {count}개",
-    "addChannelTitle": "{channel} 계정 추가",
     "defaultBot": "기본 봇",
     "defaultBotHint": "새 대화에 응답할 봇입니다. 대화에서 /bot으로 목록을 보고 /bot과 이름을 한 번 보내면 해당 대화가 선택한 봇으로 전환됩니다.",
     "removeAccount": "이 계정 삭제",
     "removeChannelBody": "모든 봇이 이 계정으로 메시지를 주고받을 수 없게 되며 허용 목록도 삭제됩니다. 대화 기록은 유지됩니다.",
-    "notionSub": "모든 봇이 공유하며 여러 계정을 추가할 수 있습니다. 읽기 전용 봇은 읽기만 가능하고 어떤 봇도 페이지를 삭제할 수 없습니다",
-    "feishuSub": "모든 봇이 공유하며 여러 계정을 추가할 수 있습니다. 내 계정으로 채팅과 메시지를 읽으며 변경은 하지 않습니다",
+    "notionSub": "페이지와 데이터베이스. 읽기 전용 봇은 읽기만 할 수 있고, 어떤 봇도 페이지를 삭제할 수 없습니다",
+    "feishuSub": "내 권한으로 대화와 메시지를 읽습니다(읽기 전용)",
     "notionKeys": "notion 노션 노트 문서 데이터베이스 연결 계정 인증",
     "feishuKeys": "feishu lark 메시지 채팅 연결 계정 인증",
-    "oneClick": "접근 허용",
-    "notionOther": "토큰 사용",
-    "feishuOther": "내 앱 사용",
     "viaToken": "토큰",
     "viaOAuth": "인증됨",
     "needsReauth": "인증이 만료되었습니다. 다시 인증해 주세요",
@@ -40,7 +35,6 @@ export default {
     "removeTitle": "{name}을(를) 삭제할까요?",
     "removeBody": "모든 봇이 이 계정을 사용할 수 없게 됩니다. 나중에 다시 추가할 수 있습니다.",
     "notionOAuthTitle": "Notion 접근 허용",
-    "notionOAuthBody": "브라우저에서 Notion 인증 페이지를 열었습니다. 접근을 허용한 뒤 여기로 돌아오세요.",
     "oauthFailed": "인증 페이지를 열지 못했습니다. 나중에 다시 시도해 주세요",
     "openAgain": "열리지 않았나요? 여기를 누르세요",
     "waiting": "접근 허용을 기다리는 중…",
@@ -52,15 +46,96 @@ export default {
     "feishuTitle": "Feishu 계정 추가",
     "feishuAppHint": "앱에 메시지 읽기 사용자 권한이 필요합니다. 다음 단계에서 QR 코드를 스캔해 인증합니다.",
     "next": "다음",
-    "feishuChatStep": "Feishu로 스캔해 봇 앱을 만드세요. 그런 다음 Feishu에서 봇에게 메시지를 보내 대화를 시작하세요.",
-    "feishuStepCreate": "1단계: Feishu로 스캔해 개인 앱 만들기",
-    "feishuStepAuthorize": "2단계: Feishu로 스캔해 채팅 및 메시지 읽기 허용",
     "qrAlt": "Feishu 인증 QR 코드",
     "openInBrowser": "브라우저에서 열기 ↗",
     "retry": "다시 시도",
     "renameHint": "봇과 대화할 때 이 이름을 사용할 수 있습니다. 예: ‘업무용 Feishu 확인해 줘’",
     "nameLabel": "이름",
-    "save": "저장"
+    "save": "저장",
+    "dataSub": "봇이 이 계정들을 대신 읽을 수 있습니다. 모든 봇이 함께 쓰고 여러 개 추가할 수 있으며, “회사 Feishu 메시지 확인해 줘”처럼 말하면 됩니다.",
+    "connect": "연결",
+    "addOne": "하나 더 추가",
+    "addAnother": "계정 하나 더 추가",
+    "addAnotherSub": "같은 앱에 여러 계정을 연결할 수 있습니다",
+    "how": {
+      "weixin": "휴대폰 WeChat으로 QR 코드 스캔",
+      "feishu": "휴대폰 Feishu로 스캔(앱은 자동으로 생성)",
+      "telegram": "@BotFather에서 봇을 만들고 토큰 입력",
+      "slack": "Slack 앱을 만들고 토큰 2개 입력",
+      "discord": "Discord 앱을 만들고 봇 토큰 입력"
+    },
+    "connectTitle": "{channel} 연결",
+    "connectedTitle": "{channel} 연결됨",
+    "connectingTitle": "{channel} 연결 중…",
+    "failedTitle": "{channel} 연결 실패",
+    "waitingScan": "스캔을 기다리는 중…",
+    "waitingOwner": "첫 메시지를 보내면 연동이 완료됩니다",
+    "useToken": "토큰으로 연결",
+    "useOneClick": "원클릭 인증으로 연결",
+    "useApp": "내 앱으로 연결",
+    "useScan": "스캔으로 연결",
+    "feishuPortal": "Feishu 오픈 플랫폼 ↗",
+    "oauthTimedOut": "시간이 너무 오래 걸려 인증 페이지가 만료되었습니다. 다시 시작하세요.",
+    "steps": {
+      "weixin": [
+        "휴대폰 WeChat의 ‘스캔’으로 아래 QR 코드 스캔",
+        "휴대폰에서 확인"
+      ],
+      "feishu": [
+        "휴대폰 Feishu로 아래 QR 코드 스캔",
+        "안내에 따라 봇 앱 만들기"
+      ],
+      "feishuApp": [
+        "{link}에서 ‘봇’을 켜고, 이벤트 구독에서 ‘장기 연결로 이벤트 수신’을 선택한 뒤 {event} 구독",
+        "권한 켜기: {p1}, {p2}, {p3}, {p4}",
+        "App ID와 App Secret을 아래에 입력"
+      ],
+      "telegram": [
+        "Telegram에서 {bot}을 찾아 {cmd}를 보내 봇 만들기",
+        "받은 토큰을 아래에 입력"
+      ],
+      "slack": [
+        "{link}에서 앱을 만들고 Socket Mode를 켠 뒤 {conn} 권한의 App-Level Token 생성",
+        "Bot Token에 {s1}, {s2}, {s3}, {s4}를 추가하고 이벤트 {event} 구독",
+        "App Home에서 메시지를 허용하고 워크스페이스에 설치",
+        "토큰 2개를 아래에 입력"
+      ],
+      "discord": [
+        "{link}에서 앱을 만들고 Bot을 추가한 뒤 토큰 복사",
+        "OAuth2 URL Generator에서 bot을 선택해 내가 속한 서버에 추가",
+        "토큰을 아래에 입력한 뒤 Discord에서 봇에게 DM 보내기"
+      ],
+      "notion": [
+        "열린 브라우저 페이지에서 내용을 고르고 동의",
+        "여기로 돌아오면 계정이 자동으로 나타납니다"
+      ],
+      "feishuData": [
+        "휴대폰 Feishu로 스캔해 개인 앱 만들기",
+        "한 번 더 스캔해 대화와 메시지 읽기 허용"
+      ],
+      "feishuDataApp": [
+        "휴대폰 Feishu로 스캔해 대화와 메시지 읽기 허용"
+      ]
+    },
+    "tryIt": "{channel}에서 메시지를 보내 보세요",
+    "switchBot": "다른 봇과 대화하려면 /bot과 이름을 보내세요",
+    "ownerWaiting": "첫 메시지를 기다리는 중입니다. 먼저 메시지를 보낸 사람이 소유자가 되고, 다른 사람은 소유자의 허용이 필요합니다.",
+    "ownerBound": "‘{who}’ 님이 소유자입니다. 이제 대화할 수 있습니다.",
+    "ownerLogin": "내 {channel} 계정이 소유자입니다. 이제 대화할 수 있습니다.",
+    "openChat": "{channel} 열기 ↗",
+    "done": "완료",
+    "fix": "연결 정보 변경",
+    "limit": {
+      "weixin": "WeChat 규정: 메시지 1건당 24시간 안에 최대 10건까지 답할 수 있습니다.",
+      "telegram": "지금은 1:1 대화만 처리합니다. 앱이 꺼져 있을 때 온 메시지는 24시간 안이면 나중에 받을 수 있습니다.",
+      "slack": "지금은 1:1 대화만 처리합니다. 앱이 꺼져 있을 때 온 메시지는 받을 수 없습니다.",
+      "discord": "지금은 1:1 대화만 처리합니다. 앱이 꺼져 있을 때 온 메시지는 받을 수 없습니다."
+    },
+    "connection": "연결 방식",
+    "viaScan": "WeChat QR 코드",
+    "changeApp": "앱 변경",
+    "changeToken": "토큰 변경",
+    "removed": "{name} 제거됨"
   },
   "gateway": {
     "running": "실행 중",
@@ -97,10 +172,22 @@ export default {
     "search": "설정 검색",
     "nav": "설정 항목"
   },
+  "groups": {
+    "theme": "테마",
+    "text": "글자",
+    "layout": "레이아웃",
+    "effects": "효과",
+    "desktop": "데스크톱 앱",
+    "account": "계정",
+    "models": "모델",
+    "line": "연결",
+    "channels": "채팅 채널",
+    "data": "데이터 계정",
+  },
   "searchResults": "검색 결과",
   "noMatch": "일치하는 설정이 없습니다",
   "preview": {
-    "ask": "이 요청을 async / await로 다시 작성해 줘",
+    "label": "미리 보기",
     "reply": "좋아요. 오류 처리도 더 명확해집니다. {b}을(를) 켜면 아래 줄이 자동으로 줄바꿈됩니다:"
   },
   "logout": {
@@ -198,11 +285,6 @@ export default {
       "name": "애니메이션",
       "sub": "끄면 화면 전환, 팝업, 봇 아바타의 움직임이 멈춥니다. 시스템 선택 시 동작 줄이기 설정을 따릅니다",
       "keys": "애니메이션 동작 움직임 전환 줄이기"
-    },
-    "glass": {
-      "name": "반투명 유리 효과",
-      "sub": "끄면 사이드바, 메뉴, 대화상자를 단색으로 표시해 글자가 선명해지고 배터리를 절약합니다. 시스템 선택 시 투명도 줄이기 설정을 따릅니다",
-      "keys": "유리 흐림 블러 투명도 배터리 성능 느림"
     },
     "resetAppearance": {
       "name": "화면 설정 초기화",
@@ -306,6 +388,8 @@ export default {
     },
     "cuStatus": {
       "name": "컴퓨터 사용 백엔드",
+      "ready": "사용 가능",
+      "notReady": "사용 불가",
       "keys": "컴퓨터 사용 cua 손쉬운 사용 화면 기록"
     },
     "cuNotice": {

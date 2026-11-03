@@ -1,8 +1,7 @@
 /* Shell：sidebar 280 | main 1fr | info panel 320（按需）。没有顶栏。
-   窗口最底层是环境光（--bg + 左上的品牌黄绿光 + 跟着当前机器人变的色相光），
-   侧栏是直接盖在环境光上的毛玻璃；主区和信息面板是浮在上面的圆角面板（--pane-gap 间隙）。
+   窗口最底层是一层纯色 --bg，不放光晕、不随机器人变色（用户 2026-11-03 要求）；
+   侧栏就是窗口底色，和窗口是同一个平面；主区和信息面板是圆角面板，只有一道细线（--pane-gap 间隙）。
    侧栏、信息面板和主区之间的空隙是分隔条（README「分隔条」）：拖动调宽，双击恢复。 */
-@property --aura-hue { syntax: "<number>"; inherits: true; initial-value: 250; }
 /* 列宽注册成 <length>，才能平滑过渡：信息面板开合、双击恢复默认宽度、键盘调宽时列宽滑过去，主区跟着让位。
    不继承：过渡的每一帧只重算 .app 和两条分隔条（它们显式 inherit），不牵动整棵对话的样式 */
 @property --side-col { syntax: "<length>"; inherits: false; initial-value: 280px; }
@@ -10,17 +9,8 @@
 @layer app {
 #app { height: 100%; }
 
-/* —— 环境光：.app、引导页、设计库样例（.aura-bg）共用。--aura-hue 由 main.js 按当前机器人设置，换机器人时慢慢过渡 —— */
-.app, .onboard, .aura-bg {
-  --aura: oklch(var(--aura-l) var(--aura-c) var(--aura-hue) / var(--aura-a));
-  --aura-2: oklch(var(--aura-l) calc(var(--aura-c) * .7) calc(var(--aura-hue) + 70) / calc(var(--aura-a) * .55));
-  background:
-    radial-gradient(70% 50% at 0% 0%, var(--aura-brand), transparent 72%),
-    radial-gradient(60% 75% at 0% 100%, var(--aura), transparent 72%),
-    radial-gradient(55% 60% at 100% 0%, var(--aura-2), transparent 70%),
-    var(--bg);
-  transition: --aura-hue var(--dur-ambient) var(--ease-in-out);
-}
+/* —— 窗口底色：.app、引导页、设计库样例（.window-bg）共用 —— */
+.app, .onboard, .window-bg { background: var(--bg); }
 /* 引导页的语言切换（onboarding.js 的 LangSwitch）：在引导列顶上靠右，不碰窗口角上的红绿灯 / 窗口按钮；
    左边的地球图标是标识，展开时不跟着箭头转 */
 .onboard-lang { justify-self: end; }
@@ -35,14 +25,14 @@
   display: grid; height: 100vh;
   grid-template-columns: var(--side-col) minmax(0, 1fr) var(--panel-track);
   grid-template-rows: minmax(0, 1fr);
-  transition: --aura-hue var(--dur-ambient) var(--ease-in-out), --side-col var(--dur-slow) var(--ease-spring), --panel-track var(--dur-slow) var(--ease-spring);
+  transition: --side-col var(--dur-slow) var(--ease-spring), --panel-track var(--dur-slow) var(--ease-spring);
 }
 .app > .side { grid-area: 1 / 1; }
 .app > .main { grid-area: 1 / 2; }
 .app > .panel { grid-area: 1 / 3; }
 .app.with-panel { --panel-track: var(--panel-col); }
 /* 拖分隔条时列宽跟手，不过渡 */
-:root[data-resizing] .app { transition: --aura-hue var(--dur-ambient) var(--ease-in-out); }
+:root[data-resizing] .app { transition: none; }
 /* 分隔条在空隙的正中，比空隙宽一点（两边各探进 2px，更好抓）；细线只画在面板直边那一段（上下让出面板的圆角） */
 .app > .splitter { --side-col: inherit; --panel-track: inherit; z-index: calc(var(--z-float) + 1); --split-inset: calc(var(--pane-gap) + var(--r-pane)); }
 .app > .split-side { --split-x: calc(var(--side-col) - var(--pane-gap) / 2); }
@@ -50,23 +40,22 @@
 /* "已保存" sits in the window's bottom-left corner, over the sidebar above the account button,
    so it never covers the floating composer: left edge on the sidebar rows' line, one --side-inset above the account row */
 .app .toasts { left: var(--side-inset); bottom: calc(var(--side-inset) * 2 + var(--ctl-2xl)); }
-/* 主区：浮在环境光上的面板。不要给它加 backdrop-filter / transform——里面的菜单是 position: fixed */
+/* 主区：窗口底色上的一块面板，只有一道细线、没有投影。不要给它加 backdrop-filter / transform——里面的菜单是 position: fixed */
 .main {
   position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column;
   margin: var(--pane-gap) var(--pane-gap) var(--pane-gap) 0;
-  border-radius: var(--r-pane); background: var(--surface); box-shadow: var(--shadow-pane); overflow: hidden;   /* 描边：浮在环境光上的面板，浅色下和环境光只差 1.1:1，要一道细线（--hairline）的边 */
+  border-radius: var(--r-pane); background: var(--surface); box-shadow: var(--shadow-pane); overflow: hidden;   /* 描边：--shadow-pane 就是一道细线，面板靠它和底色分开 */
 }
-.view { --rise: 4px; animation: rise-in var(--dur-moderate) var(--ease-out); }
+.view { animation: fade-in var(--dur-base) var(--ease-out); }
 
 /* —— Sidebar（参考 Grok Bot）：新建按钮 | 常驻搜索 | 机器人行 | 账户。
-   行的状态：悬停叠一层淡灰，按下再深一级，选中是浮起的白色玻璃片（--side-active + --shadow-tile）——
-   悬停偏暗、选中偏亮，两种状态一眼分得开 —— */
+   行的状态：悬停一层淡灰，选中深一级（--side-active），都是平的，没有投影、不浮起（参考 Codex、Grok） —— */
 .side {
   --ib-bg-hover: var(--side-hover);
   --ib-bg-press: var(--side-press);
   --ib-bg-on: var(--side-active);
   min-height: 0; display: flex; flex-direction: column;
-  background: var(--grain), var(--glass-side);
+  background: var(--glass-side);
 }
 /* 顶部按钮和主区顶栏在同一条中线上：主区离窗口上沿 --pane-gap，这里也先让出 --pane-gap。
    右边让到新建按钮的图标（28 的按钮里 16 的图标，四周各 6）落在行文字的右边线上（--side-inset + --side-row-px），
@@ -86,50 +75,49 @@
 .side-back:hover { background: var(--side-hover); color: var(--fg); }
 .side-back:active { background: var(--side-press); }
 .side-top .icon-btn { --ib-size: var(--ctl-md); --ib-fg: var(--ctl-fg); }
-.side-top .icon-btn.on { box-shadow: var(--shadow-tile); }
 /* 搜索框和行同宽、和返回按钮同高；搜索图标 14 + 间隙 12 = 导航图标 16 + 间隙 10，搜索文字和导航文字对齐 */
 .side-search {
   flex: none; display: flex; align-items: center; gap: var(--space-3); height: var(--ctl-lg); margin: 0 var(--side-inset) var(--side-inset); padding: 0 var(--side-row-px);
   border-radius: var(--r-lg); background: var(--pill); color: var(--muted);
-  transition: box-shadow var(--t-fast), background var(--t-fast), color var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast);
 }
 .side-search:hover { background: var(--pill-hover); }
-.side-search:focus-within { background: var(--card); color: var(--fg-2); box-shadow: inset 0 0 0 1px var(--accent), var(--ring); }
+.side-search:focus-within { background: var(--card); color: var(--fg-2); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .side-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: none; background: transparent; font-size: var(--fs-md); color: var(--fg); }
 .side-search input::placeholder { color: var(--muted); }
 .side-search input::-webkit-search-cancel-button { display: none; }
 
-/* 上边留一行的间隙，选中行的投影不被滚动容器裁掉。
+/* 上边留一行的间隙。
    右边用外边距而不是内边距：滚动条落在行的右边上，不落进侧栏和主区之间的空隙（那里是分隔条） */
 .side-list {
   flex: 1; min-height: 0; overflow-y: auto; padding: var(--side-row-gap) 0 var(--side-inset) var(--side-inset); margin-right: var(--side-inset);
   display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--side-row-gap);
 }
 .side-list > .hint { padding: var(--space-2) var(--side-row-px); }
-/* 机器人列表和设置导航在侧栏里互换时（进出设置）轻轻浮上来，两个方向一样 */
-.side-list { --rise: 3px; animation: rise-in var(--dur-moderate) var(--ease-out); }
+/* 机器人列表和设置导航在侧栏里互换时淡入 */
+.side-list { animation: fade-in var(--dur-base) var(--ease-out); }
 .nav-item {
   --focus-offset: -2px;
   display: flex; align-items: center; gap: var(--space-2-5); height: var(--ctl-lg); padding: 0 var(--side-row-px);
   border-radius: var(--r-lg); font-size: var(--fs-md); color: var(--fg-2); text-align: left;
-  transition: background var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+  transition: background var(--t-fast), color var(--t-fast);
 }
 .nav-item .ic { color: var(--muted); transition: color var(--t-fast); }
 .nav-item:hover { background: var(--side-hover); color: var(--fg); }
 .nav-item:active { background: var(--side-press); }
-.nav-item.sel { background: var(--side-active); box-shadow: var(--shadow-tile); color: var(--fg); font-weight: var(--fw-medium); }
+.nav-item.sel { background: var(--side-active); color: var(--fg); font-weight: var(--fw-medium); }
 .nav-item.sel .ic, .nav-item:hover .ic { color: var(--fg); }
 .thread {
   --focus-offset: -2px;
   min-width: 0;
   display: flex; align-items: center; gap: var(--space-3); width: 100%; height: 60px; padding: 0 var(--side-row-px);
   border-radius: var(--r-xl); text-align: left; position: relative;
-  transition: background var(--t-fast), box-shadow var(--t-fast);
+  transition: background var(--t-fast);
 }
 /* 行外面包一层 .thread-item，"更多"按钮叠在行上：指针在按钮上时整行仍是悬停的样子 */
 .thread:hover, .thread-item:hover > .thread { background: var(--side-hover); }
 button.thread:active { background: var(--side-press); }
-.thread.sel, .thread-item > .thread.sel, button.thread.sel:active { background: var(--side-active); box-shadow: var(--shadow-tile); }
+.thread.sel, .thread-item > .thread.sel, button.thread.sel:active { background: var(--side-active); }
 .thread .body { min-width: 0; flex: 1; display: grid; gap: var(--space-0-5); }
 .thread .line { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; }
 .thread .title { flex: 1; min-width: 0; font-size: var(--fs-lg); font-weight: var(--fw-medium); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: var(--lh-tight); }
@@ -150,22 +138,22 @@ button.thread:active { background: var(--side-press); }
 .thread-more {
   --ib-size: var(--ctl-sm); --ib-fg: var(--muted);
   position: absolute; top: var(--space-2); right: var(--space-1-5);
-  opacity: 0; transition: opacity var(--t-fast), background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  opacity: 0; transition: opacity var(--t-fast), background var(--t-fast), color var(--t-fast);
 }
 .thread-item:hover > .thread-more, .thread-more:focus-visible, .thread-more[aria-expanded="true"] { opacity: 1; }
 .thread-item:is(:hover, :has(> .thread-more:focus-visible), :has(> .thread-more[aria-expanded="true"])) .when { opacity: 0; }
 .thread-skel { flex: 1; display: grid; gap: var(--space-1-5); }
 /* 「需要你」（screens/needs-you.js）：机器人列表上方一行，只在有事时出现。黄点在头像那一列的中线上，
-   文字和机器人名对齐，件数和机器人行的计数在同一条竖线上；选中时和机器人行一样是浮起的玻璃片 */
+   文字和机器人名对齐，件数和机器人行的计数在同一条竖线上；选中时和机器人行一样深一级 */
 .needs-row {
   --focus-offset: -2px;
   display: flex; align-items: center; gap: var(--space-3); width: 100%; height: var(--ctl-xl); padding: 0 var(--side-row-px);
   border-radius: var(--r-xl); text-align: left; font-size: var(--fs-lg); font-weight: var(--fw-medium); color: var(--fg);
-  transition: background var(--t-fast), box-shadow var(--t-fast);
+  transition: background var(--t-fast);
 }
 .needs-row:hover { background: var(--side-hover); }
 .needs-row:active { background: var(--side-press); }
-.needs-row.sel, .needs-row.sel:active { background: var(--side-active); box-shadow: var(--shadow-tile); }
+.needs-row.sel, .needs-row.sel:active { background: var(--side-active); }
 .needs-row .mark { width: 38px; flex: none; display: grid; place-items: center; }   /* 和侧栏头像一样宽 */
 .needs-row .label { flex: 1; min-width: 0; }
 .needs-row .badge.count { --badge-bg: var(--amber-soft); --badge-fg: var(--amber); }
@@ -181,11 +169,11 @@ button.thread:active { background: var(--side-press); }
 .account {
   --focus-offset: -2px;
   display: flex; align-items: center; gap: var(--space-2-5); min-width: 0; flex: 1; height: var(--ctl-2xl); padding: 0 var(--side-row-px);
-  border-radius: var(--r-xl); text-align: left; transition: background var(--t-fast), box-shadow var(--t-fast);
+  border-radius: var(--r-xl); text-align: left; transition: background var(--t-fast);
 }
 .account:hover { background: var(--side-hover); }
 .account:active { background: var(--side-press); }
-.account.on { background: var(--side-active); box-shadow: var(--shadow-tile); }
+.account.on { background: var(--side-active); }
 .account .me {
   width: var(--ctl-md); height: var(--ctl-md); border-radius: 50%; flex: none; display: grid; place-items: center;
   background: var(--pill);
@@ -193,39 +181,28 @@ button.thread:active { background: var(--side-press); }
 }
 .account .who { flex: 1; min-width: 0; font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--fg); line-height: var(--lh-snug); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 账户浮层：余额只在这里显示，点头像才弹出（常驻显示会让人觉得一直在花钱） */
-.account-pop { display: grid; gap: var(--space-2-5); padding: var(--space-3); }
-.account-pop-name { font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.account-pop-bal { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.account-pop-label { font-size: var(--fs-2xs); color: var(--muted); }
-/* 余额不足：和其他出错的提示行一样只铺一层淡红（--red-wash），字用 --fg，前面一个红点；
-   悬停、按下时淡红加深一级，不加下划线（整条都是链接） */
-.low-balance {
-  --low-wash: var(--red-wash);
-  flex: none; display: flex; align-items: center; gap: var(--space-2);
-  margin: 0 var(--side-inset); padding: var(--space-2) var(--side-row-px); border-radius: var(--r-lg);
-  font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--fg); background: var(--low-wash);
-  transition: background var(--t-fast);
+.account-pop { display: grid; gap: var(--space-3); padding: var(--space-3); }
+.account-pop-name { font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.account-pop-bal { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+/* 余额（账户浮层、设置 › Modelflare）：一个安静的数字，低于提醒线时也不变色（红字像欠费），下面一行小字说明，前面一个琥珀色小点 */
+.bal { display: grid; gap: var(--space-1); min-width: 0; }
+.bal-label { font-size: var(--fs-xs); color: var(--muted); }
+.bal-amount { font-size: var(--fs-3xl); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-tight); line-height: var(--lh-tight); font-variant-numeric: tabular-nums; color: var(--fg); overflow-wrap: anywhere; }
+.bal-note { display: flex; align-items: center; gap: var(--space-1-5); font-size: var(--fs-xs); line-height: var(--lh-snug); color: var(--muted); }
+/* 侧栏底部的提示（余额不多了、有新版本）：一行安静的灰底，语气交给前面的小点，不铺红、不铺品牌色。
+   小点落在头像那条竖线上；整行可点，悬停深一级；右边是一句动作（充值）或关闭钮 */
+.side-note {
+  flex: none; display: flex; align-items: center; gap: var(--space-1); min-height: var(--ctl-lg);
+  margin: 0 var(--side-inset) var(--space-1); border-radius: var(--r-lg); background: var(--side-hover);
+  font-size: var(--fs-md); line-height: var(--lh-snug); color: var(--fg); transition: background var(--t-fast);
 }
-.low-balance::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--red); }
-.low-balance:hover { --low-wash: color-mix(in srgb, var(--red) 14%, transparent); text-decoration: none; }
-.low-balance:active { --low-wash: color-mix(in srgb, var(--red) 20%, transparent); }
-/* 有新版本：和余额提示一个位置、一样的字号，但不是出错，铺强调色的淡底，前面一个强调色的点；
-   文字整段是链接，右边的叉只关掉这个版本的提示 */
-.side-update {
-  flex: none; display: flex; align-items: center; gap: var(--space-1);
-  margin: 0 var(--side-inset) var(--space-1); padding-right: var(--space-1); border-radius: var(--r-lg);
-  background: var(--accent-wash);
-  transition: background var(--t-fast);
-}
-.side-update:hover { background: var(--side-hover); }
-.side-update:active { background: var(--side-press); }
-.side-update a {
-  flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-2);
-  padding: var(--space-2) 0 var(--space-2) var(--side-row-px);
-  font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--fg);
-}
-.side-update a:hover { text-decoration: none; }
-.side-update a::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--accent); }
+.side-note:hover { background: var(--side-press); }
+.side-note:hover, .side-note:hover a { text-decoration: none; color: var(--fg); }
+.side-note > .icon-btn { margin-right: var(--space-1); }
+.side-note-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-2); min-height: var(--ctl-lg); padding: 0 var(--space-2-5); color: var(--fg); }
+.side-note .v { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-note .go { flex: none; font-size: var(--fs-xs); color: var(--muted); }
+.dot.new { --dot-bg: var(--signal); }
 
 /* —— 窗口标题栏：桌面版没有系统标题栏，侧栏顶部这一行（--pane-gap + --head-h）就是标题栏。
    左上角归谁看平台：macOS 是红绿灯（应用名在菜单栏里，这里不再放 Logo），Windows 是应用图标 + 名称（Windows 的习惯）。
@@ -280,10 +257,10 @@ button.thread:active { background: var(--side-press); }
 .panel {
   width: calc(var(--panel-col) - var(--pane-gap)); min-height: 0; display: flex; flex-direction: column;
   margin: var(--pane-gap) var(--pane-gap) var(--pane-gap) 0;
-  border-radius: var(--r-pane); background: var(--grain), var(--glass-panel); box-shadow: var(--shadow-pane); overflow: hidden;
-  animation: fade-in var(--dur-slow) var(--ease-out);
+  border-radius: var(--r-pane); background: var(--glass-panel); box-shadow: var(--shadow-pane); overflow: hidden;
+  animation: fade-in var(--dur-base) var(--ease-out);
 }
-.panel.leaving { animation: fade-out var(--dur-slow) var(--ease-in) forwards; pointer-events: none; }
+.panel.leaving { animation: fade-out var(--dur-base) var(--ease-in) forwards; pointer-events: none; }
 .panel-head {
   height: var(--head-h); flex: none; display: flex; align-items: center; gap: var(--bar-gap); padding: 0 var(--head-px) 0 var(--pane-px);
   -webkit-app-region: drag;
@@ -291,7 +268,7 @@ button.thread:active { background: var(--side-press); }
 .panel-head > * { -webkit-app-region: no-drag; }
 .panel-head .title { flex: 1; min-width: 0; font-size: var(--fs-lg); font-weight: var(--fw-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .panel-head .icon-btn { --ib-size: var(--ctl-md); }   /* 16 的图标四周各 6：图标外沿落在 --head-px + 6 = --pane-px 上，和标题左边对称 */
-/* 行是贴着面板的玻璃片：片离面板边缘 8，行里再缩进 8，文字落在 --pane-px，和面板标题对齐 */
+/* 行的悬停底离面板边缘 8，行里再缩进 8，文字落在 --pane-px，和面板标题对齐 */
 .panel-body { flex: 1; overflow-y: auto; padding: 0 var(--space-2) var(--space-6); }
 .panel-body .list-head { margin: var(--section-gap-sm) var(--space-2) var(--space-1); }
 .panel-body .list-head:first-child { margin-top: var(--space-2); }
@@ -307,10 +284,6 @@ button.thread:active { background: var(--side-press); }
 /* 待审批：卡片和行一样贴着面板，上方的说明缩进到行文字那条线 */
 .panel-body .approval > .hint { padding: 0 var(--space-2); }
 .panel-body .row > .hint { flex: none; white-space: nowrap; }
-.panel-qr {
-  width: 180px; height: 180px; image-rendering: pixelated; background: var(--qr-bg);
-  padding: var(--space-2); border-radius: var(--r-lg);
-}
 /* 会话记录预览（信息面板 → 最近会话） */
 .transcript { display: grid; gap: var(--space-2); max-height: 60vh; overflow: auto; }
 .transcript-msg { justify-self: start; max-width: 85%; }
@@ -385,7 +358,7 @@ a.text { display: inline-flex; align-items: center; text-decoration: none; }
   .app.with-panel { --panel-track: 0px; }
   .app > .panel {
     position: fixed; z-index: var(--z-drawer); top: var(--pane-gap); right: var(--pane-gap); bottom: var(--pane-gap); margin: 0;
-    background: var(--grain), var(--glass-pop); backdrop-filter: var(--glass-filter-lg); box-shadow: var(--shadow-pop);
+    background: var(--glass-pop); backdrop-filter: var(--glass-filter-lg); box-shadow: var(--shadow-pop);
     animation: slide-in var(--dur-moderate) var(--ease-out);
   }
   .app > .panel.leaving { animation: slide-out var(--dur-base) var(--ease-in) forwards; }

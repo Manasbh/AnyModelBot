@@ -1,6 +1,6 @@
 // 共用组件：图标、按钮、分段控件、弹出菜单、确认框、提示胶囊、复制按钮、骨架。
 // 样式在 ui/design/components/*.css；这里的组件只是给常用组合一个带逻辑的写法，直接写 class 也可以。
-import { h } from "preact";
+import { h, render } from "preact";
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "preact/hooks";
 import htm from "htm";
 import { useStore, toasts, dismissToast, dialog } from "../lib/store.js";
@@ -372,14 +372,40 @@ export function usePopPosition(anchor, open, { width = 280, prefer = "down", ali
       const up = prefer === "up" ? above > 160 || above > below : below < Math.min(maxHeight, 220) && above > below;
       let left = align === "right" ? r.right - width : r.left;
       left = Math.max(edge, Math.min(left, vw - width - edge));
-      const ox = Math.max(12, Math.min(width - 12, r.left + (r.width || 0) / 2 - left));
-      setPos(up ? { left, bottom: vh - r.top + gap, up: true, ox, max: Math.min(maxHeight, above) } : { left, top: r.bottom + gap, up: false, ox, max: Math.min(maxHeight, below) });
+      const next = up ? { left, bottom: vh - r.top + gap, max: Math.min(maxHeight, above) } : { left, top: r.bottom + gap, max: Math.min(maxHeight, below) };
+      setPos((p) => (p && p.left === next.left && p.top === next.top && p.bottom === next.bottom && p.max === next.max ? p : next));
     };
     compute();
+    // 任何一层滚动（capture 才收得到）或窗口变化，都跟着锚点走
     window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
+    window.addEventListener("scroll", compute, true);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("scroll", compute, true);
+    };
   }, [open, anchor]);
   return pos;
+}
+
+/**
+ * 渲染到 <body> 下面的一层。祖先带 backdrop-filter / transform（对话框、抽屉、正在入场的页面）时，
+ * position: fixed 是相对它们算的，还会被它们裁切，所以浮层都放到最外面。
+ */
+function Portal({ children }) {
+  const host = useRef(null);
+  if (!host.current) host.current = document.createElement("div");
+  useLayoutEffect(() => {
+    const el = host.current;
+    document.body.appendChild(el);
+    return () => {
+      render(null, el);
+      el.remove();
+    };
+  }, []);
+  useLayoutEffect(() => {
+    render(children, host.current);
+  });
+  return null;
 }
 
 export function Popover({ anchor, onClose, class: cls = "", width = 280, prefer, align, maxHeight, children, label, keepFocus }) {
@@ -398,8 +424,10 @@ export function Popover({ anchor, onClose, class: cls = "", width = 280, prefer,
     return () => prev?.focus?.({ preventScroll: true });
   }, []);
   if (!pos) return null;
-  const style = { left: pos.left + "px", width: width + "px", "--ox": pos.ox + "px", maxHeight: pos.max + "px", ...(pos.up ? { bottom: pos.bottom + "px" } : { top: pos.top + "px" }) };
-  return html`<div class=${`pop ${cls}${pos.up ? " up" : ""}`} ref=${ref} style=${style} role="dialog" aria-label=${label}>${children}</div>`;
+  const style = { left: pos.left + "px", width: width + "px", maxHeight: pos.max + "px", ...(pos.bottom !== undefined ? { bottom: pos.bottom + "px" } : { top: pos.top + "px" }) };
+  // 局部主题（样例页的双主题对照）跟着锚点
+  const theme = anchor?.closest?.("[data-theme]:not(html)")?.dataset.theme;
+  return html`<${Portal}><div class=${`pop ${cls}`} ref=${ref} style=${style} role="dialog" aria-label=${label} data-theme=${theme}>${children}</div><//>`;
 }
 
 /**
@@ -448,7 +476,7 @@ export function Menu({ anchor, items, onClose, width = 240, prefer, align, label
 }
 
 /** 行右侧的菜单按钮（magpie .proto.pick） */
-export function MenuButton({ value, options, onChange, disabled, label, width = 260 }) {
+export function MenuButton({ value, options, onChange, disabled, label, width = 260, align = "right" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const cur = options.find((o) => o[0] === value);
@@ -456,7 +484,7 @@ export function MenuButton({ value, options, onChange, disabled, label, width = 
       onClick=${() => setOpen((v) => !v)}>
       <span class="v">${cur ? cur[1] : value || "—"}</span><${Icon} name="chevDown" />
     </button>
-    ${open && html`<${Menu} anchor=${ref.current} width=${width} align="right" label=${label} onClose=${() => setOpen(false)}
+    ${open && html`<${Menu} anchor=${ref.current} width=${width} align=${align} label=${label} onClose=${() => setOpen(false)}
       items=${options.map(([v, text, note]) => ({ label: text, note, cur: v === value, onSelect: () => v !== value && onChange(v) }))} />`}`;
 }
 
@@ -498,14 +526,17 @@ export const Badge = ({ s }) => {
 };
 
 /** 自绘确认框：焦点先在"取消"（安全选项），Esc 关闭，Tab 在框内循环 */
-export function Sheet({ title, onClose, children, wide, label, leaving }) {
+/** sticky：点遮罩不关（扫码、填表进行到一半时，误点不该把流程丢掉）；Esc 和关闭钮照常 */
+export function Sheet({ title, onClose, children, wide, label, leaving, closable = true, sticky = false }) {
   const ref = useRef(null);
   useEffect(() => {
     const prev = document.activeElement;
-    requestAnimationFrame(() => (ref.current?.querySelector("[data-autofocus]") || ref.current?.querySelector("button, input, textarea"))?.focus());
+    requestAnimationFrame(() => (ref.current?.querySelector("[data-autofocus]") || ref.current?.querySelector("input, textarea") || ref.current?.querySelector("button"))?.focus());
     const key = (e) => {
       if (e.isComposing || e.keyCode === 229) return;
       if (e.key === "Escape") {
+        // 对话框里开着下拉时，Esc 先关下拉（useDismiss）
+        if (document.querySelector(".pop")) return;
         e.stopPropagation();
         onClose();
       }
@@ -528,9 +559,9 @@ export function Sheet({ title, onClose, children, wide, label, leaving }) {
       prev?.focus?.({ preventScroll: true });
     };
   }, []);
-  return html`<div class=${cx("scrim", leaving && "leaving")} onPointerDown=${(e) => e.target === e.currentTarget && onClose()}>
+  return html`<div class=${cx("scrim", leaving && "leaving")} onPointerDown=${(e) => !sticky && e.target === e.currentTarget && onClose()}>
     <div class=${`sheet${wide ? " wide" : ""}`} ref=${ref} role="dialog" aria-modal="true" aria-label=${label || title}>
-      ${title && html`<h2>${title}</h2>`}
+      ${title && html`<div class="sheet-head"><h2>${title}</h2>${closable && html`<${IconButton} icon="close" iconSize="md" class="sheet-close" label=${t("common.close")} onClick=${onClose} />`}</div>`}
       ${children}
     </div>
   </div>`;
@@ -548,8 +579,9 @@ export function DialogHost() {
     dialog.set(null);
     d.resolve(v);
   };
-  return html`<${Sheet} title=${d.title} leaving=${leaving} onClose=${() => done(false)}>
+  return html`<${Sheet} title=${d.title} leaving=${leaving} closable=${false} onClose=${() => done(false)}>
     ${d.body && html`<p class="body">${d.body}</p>`}
+    ${d.check && html`<label class="sheet-check"><input type="checkbox" checked=${d.check.value} onChange=${(e) => (d.check.value = e.target.checked)} /><span>${d.check.label}</span></label>`}
     <div class="actions">
       <${Button} data-autofocus onClick=${() => done(false)}>${d.cancelLabel || t("common.cancel")}<//>
       <${Button} variant=${d.danger ? "danger" : "primary"} onClick=${() => done(true)}>${d.confirmLabel || t("common.confirm")}<//>

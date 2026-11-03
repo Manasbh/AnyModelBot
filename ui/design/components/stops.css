@@ -1,5 +1,5 @@
 /* 档位滑块：几档离散的值（模型选择器里的性价比、模型智能）。和开关一个样子：圆头轨道、圆钮在轨道里，
-   填充 = 主操作色（浅色墨、深色黄绿），从左头一直填到圆钮。每一档一个小点，填充上的点用前景色。
+   填充 = 主操作色（浅色墨、深色近白），从左头一直填到圆钮。每一档一个小点，填充上的点用前景色。
    比开关粗一号：圆钮四周留 4px，拉到头时圆钮和轨道的圆头是同心圆（圆钮半径 = 轨道半径 − 留白）。
    不在任何一档上（.custom）：没有圆钮和填充，只剩轨道和点。
    结构：<div role="slider" class="stops" style="--stops-at: 0…1"> .stops-fill  .stops-dot(--stops-i)×n  .stops-knob
@@ -38,7 +38,7 @@
   position: absolute; top: var(--stops-pad); left: var(--stops-pad); width: var(--stops-knob-d); height: var(--stops-knob-d); border-radius: 50%;
   background: var(--stops-knob-bg); box-shadow: var(--seg-edge); pointer-events: none;
   transform: translateX(calc(var(--stops-run) * var(--stops-at)));
-  transition: transform var(--dur-moderate) var(--ease-spring), opacity var(--t-base);
+  transition: transform var(--t-base), opacity var(--t-base);
 }
 /* 拖动时跟手，不弹 */
 .stops.dragging :is(.stops-fill, .stops-knob) { transition: none; }

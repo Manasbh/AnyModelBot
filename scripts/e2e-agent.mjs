@@ -22,7 +22,8 @@
 //   reinstall (POST /amb/api/pwsh/install) must bring PowerShell 7 back (psver=7).
 // --tool: the mock model asks for one shell tool call before answering each message (exercises tool spawning).
 // --managed: use the bundled magpie gateway (as users do) with "Modelflare" pointed at the mock
-//   (AMB_MODELFLARE_BASE_URL) and connected through the API; otherwise the app calls the mock directly.
+//   (AMB_MODELFLARE_BASE_URL, AMB_MODELFLARE_ISSUER), signing in through the API the way the app does; the mock
+//   plays the browser's redirect back. Otherwise the app calls the mock directly.
 // --stream: send the message through the UI's SSE endpoint (/chat/stream) instead of /chat.
 // --reasoning: the mock streams reasoning_content deltas before the answer (like reasoning models).
 // --observe-ms N: keep the app running N ms after the reply (process monitor keeps logging), then
@@ -103,10 +104,45 @@ function freePort() {
   });
 }
 
+// ---------- mock Modelflare account (--managed): sign-in and the connected-app API, same shapes as test/helpers.ts ----------
+const accountKeys = [];
+let accountKeySeq = 0;
+function serveAccount(req, res, body) {
+  const u = new URL(req.url, "http://mock");
+  const json = (o, status = 200) => {
+    res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(o));
+    return true;
+  };
+  const keyOut = (k) => ({ ...k, key_tail: `sk-e2e-${k.id}`.slice(-4), status: "enabled", unlimited: k.limit_usd === null, remain_usd: k.limit_usd });
+  if (u.pathname === "/.well-known/openid-configuration") {
+    return json({ issuer: llmUrl, authorization_endpoint: `${llmUrl}/oauth/authorize`, token_endpoint: `${llmUrl}/oauth/token`, revocation_endpoint: `${llmUrl}/oauth/revoke` });
+  }
+  if (u.pathname === "/oauth/token" && req.method === "POST") {
+    return json({ access_token: "at-e2e", refresh_token: "rt-e2e", token_type: "Bearer", expires_in: 3600, scope: "openid profile offline_access account api_keys" });
+  }
+  if (u.pathname === "/oauth/revoke") return json({});
+  if (!u.pathname.startsWith("/api/connected-app/")) return false;
+  const p = u.pathname.slice("/api/connected-app".length);
+  if (p === "/account") return json({ success: true, data: { display_name: "E2E", username: "e2e", group: "default", balance_usd: 10, used_usd: 0, billed_to_enterprise: false, quota_per_unit: 500000 } });
+  if (p === "/api-keys" && req.method === "POST") {
+    const b = JSON.parse(body || "{}");
+    const k = { id: ++accountKeySeq, name: b.name, limit_usd: b.limit_usd ?? null, used_usd: 0, created_at: Math.floor(Date.now() / 1000) };
+    accountKeys.push(k);
+    return json({ success: true, data: { ...keyOut(k), key: `sk-e2e-${k.id}` } });
+  }
+  if (p === "/api-keys" && req.method === "GET") return json({ success: true, data: accountKeys.map(keyOut) });
+  if (p.startsWith("/api-keys/")) {
+    const k = accountKeys.find((x) => x.id === Number(p.slice("/api-keys/".length)));
+    return json(k ? { success: true, data: keyOut(k) } : { success: false, message: "not found" }, k ? 200 : 404);
+  }
+  return json({ success: true, data: [] });
+}
+
 // ---------- mock model ----------
 const llm = http.createServer(async (req, res) => {
   const chunks = [];
   for await (const c of req) chunks.push(c);
+  if (managed && serveAccount(req, res, Buffer.concat(chunks).toString("utf8"))) return;
   let b = {};
   try {
     b = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
@@ -165,7 +201,7 @@ const base = `http://127.0.0.1:${port}`;
 const env = {
   ...process.env,
   AMB_DATA_DIR: dataDir,
-  ...(managed ? { AMB_MODELFLARE_BASE_URL: llmUrl + "/v1" } : { AMB_MAGPIE_BASE_URL: llmUrl + "/v1", AMB_MAGPIE_API_KEY: "mock-key", AMB_DEFAULT_MODEL: MODEL }),
+  ...(managed ? { AMB_MODELFLARE_BASE_URL: llmUrl + "/v1", AMB_MODELFLARE_ISSUER: llmUrl } : { AMB_MAGPIE_BASE_URL: llmUrl + "/v1", AMB_MAGPIE_API_KEY: "mock-key", AMB_DEFAULT_MODEL: MODEL }),
   AMB_UI_PORT: String(port),
   AMB_UI_TOKEN: token,
   AMB_LOG_LEVEL: "debug",
@@ -280,14 +316,27 @@ try {
     api("/amb/api/agent", {}, 5000).then((r) => jl("agent-status.jsonl", r.body), (e) => jl("agent-status.jsonl", { error: String(e?.message ?? e) }));
   }, 2000);
 
-  // 2b) managed: connect "Modelflare" (= the mock) through the API, like onboarding does
+  // 2b) managed: sign in to "Modelflare" (= the mock) through the API, like onboarding does
   if (managed) {
     for (let i = 0; i < 60 && summary.status?.gateway?.state !== "running"; i++) {
       await new Promise((r) => setTimeout(r, 500));
       summary.status = (await api("/amb/api/status")).body;
     }
-    const c = await api("/amb/api/modelflare", { method: "PUT", body: JSON.stringify({ apiKey: "mf-e2e-key-0123456789", line: "auto" }) }, 60_000);
-    summary.connect = { status: c.status, connected: c.body?.connected, error: c.body?.error, models: c.body?.models };
+    const login = await api("/amb/api/account/login", { method: "POST", body: "{}" }, 60_000);
+    if (!login.body?.loginUrl) throw new Error(`sign-in did not start: ${JSON.stringify(login)}`);
+    // What the browser does once the user approves: come back to the app's local callback with the code and state
+    const auth = new URL(login.body.loginUrl);
+    const back = new URL(auth.searchParams.get("redirect_uri"));
+    back.searchParams.set("code", "e2e-code");
+    back.searchParams.set("state", auth.searchParams.get("state"));
+    await fetch(back);
+    let account = {};
+    for (let i = 0; i < 120 && account.state !== "signed_in" && !account.error; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+      account = (await api("/amb/api/account")).body ?? {};
+    }
+    const c = await api("/amb/api/modelflare", {}, 30_000);
+    summary.connect = { status: c.status, state: account.state, connected: c.body?.connected, error: account.error || c.body?.error };
     say("modelflare connect:", JSON.stringify(summary.connect));
     summary.models = (await api("/amb/api/models", {}, 30_000)).body?.models;
     say("models:", JSON.stringify(summary.models));

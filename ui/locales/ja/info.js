@@ -30,7 +30,6 @@ export default {
     "disconnect": "接続を解除",
     "disconnectTitle": "Feishu との接続を解除しますか？",
     "disconnectBody": "このボットの Feishu App ID と App Secret を削除します。",
-    "setupHint": "Feishu Open Platform で Bot 機能を有効にし、イベントの受信方法を「Receive events through long connection」に設定して、{event} を購読してください。必要な権限：{p1}、{p2}、{p3}、{p4}。"
   },
   "messenger": {
     "bindHint": "自分のアカウントからボットにメッセージを送り、紐付けを完了してください。",
@@ -42,18 +41,15 @@ export default {
     "telegram": {
       "sub": "ロングポーリングでメッセージを受信します",
       "token": "Bot トークン",
-      "setupHint": "Telegram で {bot} に {cmd} を送り、ボットを作成して、発行されたトークンを貼り付けてください。現在はダイレクトメッセージのみに対応しています。アプリを閉じている間のメッセージは、最大 24 時間分まで取得できます。"
     },
     "slack": {
       "sub": "Socket Mode でメッセージを受信します",
       "botToken": "Bot トークン",
       "appToken": "アプリレベルトークン",
-      "setupHint": "api.slack.com/apps でアプリを作成し、Socket Mode を有効にして、{conn} を持つアプリレベルトークンを発行してください。Bot のスコープに {s1}、{s2}、{s3}、{s4} を追加し、{event} を購読して、App Home でのメッセージを許可した後、ワークスペースにインストールします。現在はダイレクトメッセージのみに対応しています。アプリを閉じている間のメッセージは受信できません。"
     },
     "discord": {
       "sub": "Gateway 経由でメッセージを受信します",
       "token": "Bot トークン",
-      "setupHint": "Discord Developer Portal でアプリケーションを作成し、Bot を追加してトークンをコピーしてください。「OAuth2 → URL Generator」で bot を選択し、自分が参加しているサーバーに追加してから、ダイレクトメッセージを送ります。現在はダイレクトメッセージのみに対応しています。アプリを閉じている間のメッセージは受信できません。"
     }
   },
   "weixin": {

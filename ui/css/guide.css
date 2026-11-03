@@ -3,11 +3,10 @@
    要点的地方亮一圈 accent（和键盘焦点同一种语言），输入框借用拖入文件时的样子。 */
 @layer app {
 
-/* —— 进度格：做完的格子是主操作色，点亮时弹一下 —— */
+/* —— 进度格：做完的格子是主操作色 —— */
 .guide-bar { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: var(--space-1); }
 .guide-bar i { height: 4px; border-radius: 2px; background: var(--pill-hover); }
-.guide-bar i.on { background: var(--primary); animation: guide-seg var(--dur-slow) var(--ease-back) both; animation-delay: calc(var(--stagger) * var(--i, 0) / 4); }
-@keyframes guide-seg { from { opacity: .3; transform: scaleY(calc(1 + 1.2 * var(--motion))); } }
+.guide-bar i.on { background: var(--primary); }
 
 /* —— 对话空状态里的清单卡 —— */
 .chat-empty.with-guide { padding-top: var(--space-12); }
@@ -33,11 +32,11 @@ button.guide-step > .ic { color: var(--muted); }
   flex: none; display: grid; place-items: center; width: var(--ctl-xs); height: var(--ctl-xs); border-radius: 50%;
   background: var(--pill-hover); color: var(--muted); font-size: var(--fs-2xs); font-weight: var(--fw-semibold);
 }
-.guide-step.done .n { background: var(--primary); color: var(--on-primary); }
+.guide-step.done .n { background: var(--pill-press); color: var(--fg-2); }
 .guide-step.done .title { color: var(--muted); font-weight: var(--fw-regular); }
-/* 当前这一步：铺一层 --accent-wash（状态，不是又一层容器），序号亮成黄绿片 */
-.guide-step.open { align-items: flex-start; padding: var(--space-2-5) var(--space-2); background: var(--accent-wash); }
-.guide-step.open .n { background: var(--accent-solid); color: var(--on-accent); box-shadow: 0 0 0 .5px var(--accent-line); }   /* 描边：黄绿圆点在白底上只有 1.15:1，要一道墨色细边 */
+/* 当前这一步：底色深一级（状态，不是又一层容器），序号换成主操作色 */
+.guide-step.open { align-items: flex-start; padding: var(--space-2-5) var(--space-2); background: var(--well-hover); }
+.guide-step.open .n { background: var(--primary); color: var(--on-primary); }
 .guide-step .body { flex: 1; min-width: 0; display: grid; gap: var(--space-1-5); }
 .guide-step.open .title { font-weight: var(--fw-semibold); }
 .guide-step .desc { margin: 0; color: var(--fg-2); line-height: var(--lh-normal); }
@@ -48,34 +47,29 @@ button.guide-step > .ic { color: var(--muted); }
 /* —— 侧栏左下角的清单入口：账户行上面，和侧栏的行对齐 —— */
 .guide-pill {
   flex: none; display: flex; align-items: center; gap: var(--space-2-5); height: var(--ctl-xl); margin: 0 var(--side-inset);
-  padding: 0 var(--side-row-px); border-radius: var(--r-lg); background: var(--accent-wash);
+  padding: 0 var(--side-row-px); border-radius: var(--r-lg); background: var(--side-hover);
   font-size: var(--fs-md); color: var(--fg); text-align: left;
   transition: background var(--t-fast);
 }
-.guide-pill:hover { background: var(--side-hover); }
+.guide-pill:hover { background: var(--side-press); }
 .guide-pill:active { background: var(--side-press); }
-.guide-pill[aria-expanded="true"] { background: var(--side-active); box-shadow: var(--shadow-tile); }
+.guide-pill[aria-expanded="true"] { background: var(--side-active); }
 .guide-pill .guide-bar { flex: none; grid-template-columns: repeat(var(--n, 6), 4px); gap: var(--space-0-5); }
 .guide-pill .guide-bar i { height: 14px; }
 .guide-pill .v { flex: 1; min-width: 0; font-weight: var(--fw-medium); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .guide-pill .num { font-size: var(--fs-xs); color: var(--muted); }
-.guide-pill.bumped { animation: bump var(--dur-slow) var(--ease-out); }
 
 /* —— 引导卡片：浮层玻璃，放在要点的地方旁边（.up / .down / .left），小三角指过去 —— */
 .guide-coach {
-  position: fixed; z-index: calc(var(--z-popover) - 1); width: min(300px, calc(100vw - 2 * var(--pane-gap)));
+  position: fixed; z-index: calc(var(--z-modal) - 1); width: min(300px, calc(100vw - 2 * var(--pane-gap)));
   padding: var(--card-pad); display: grid; gap: var(--space-2-5); color: var(--fg);
-  background: var(--grain), var(--glass-pop); backdrop-filter: var(--glass-filter-lg);
+  background: var(--glass-pop); backdrop-filter: var(--glass-filter-lg);
   border-radius: var(--r-pane); box-shadow: var(--shadow-pop);
-  --pop-scale: .96;
-  animation: fade-in var(--dur-base) var(--ease-out), pop-in var(--dur-slower) var(--ease-spring);
+  animation: fade-in var(--dur-base) var(--ease-out);
 }
 .guide-coach.glide { transition: left var(--t-moderate), top var(--t-moderate); }
-.guide-coach.up { transform-origin: var(--ax) 100%; --pop-dy: 6px; }
-.guide-coach.down { transform-origin: var(--ax) 0; }
-.guide-coach.left { transform-origin: 100% var(--ay); --pop-dy: 0px; }
 /* 小三角：转 45° 的方块只露出卡片外面那一半 */
-.guide-coach-arrow { position: absolute; width: 12px; height: 12px; rotate: 45deg; background: var(--grain), var(--glass-pop); backdrop-filter: var(--glass-filter-lg); }
+.guide-coach-arrow { position: absolute; width: 12px; height: 12px; rotate: 45deg; background: var(--glass-pop); backdrop-filter: var(--glass-filter-lg); }
 .guide-coach.up .guide-coach-arrow { left: var(--ax); bottom: 0; translate: -50% 50%; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
 .guide-coach.down .guide-coach-arrow { left: var(--ax); top: 0; translate: -50% -50%; clip-path: polygon(0 0, 100% 0, 0 100%); }
 .guide-coach.left .guide-coach-arrow { top: var(--ay); right: 0; translate: 50% -50%; clip-path: polygon(0 0, 100% 0, 100% 100%); }
@@ -83,9 +77,8 @@ button.guide-step > .ic { color: var(--muted); }
 .guide-coach-top .icon-btn { margin-right: calc(-1 * var(--space-1-5)); }
 .guide-done {
   display: inline-flex; align-items: center; gap: var(--space-1); height: var(--ctl-xs); padding: 0 var(--space-2); border-radius: var(--r-full);
-  background: var(--accent-solid); color: var(--on-accent); font-size: var(--fs-2xs); font-weight: var(--fw-semibold);
-  box-shadow: 0 0 0 .5px var(--accent-line);   /* 描边：黄绿填充面在白底上要一道墨色细边 */
-  animation: fade-in var(--dur-base) var(--ease-out), pop-in var(--dur-slower) var(--ease-back);
+  background: var(--green-soft); color: var(--green); font-size: var(--fs-2xs); font-weight: var(--fw-semibold);
+  animation: fade-in var(--dur-base) var(--ease-out);
 }
 .guide-coach-body { display: grid; gap: var(--space-2); }
 .guide-coach h3 { margin: 0; font-size: var(--fs-xl); font-weight: var(--fw-semibold); line-height: var(--lh-tight); }
@@ -109,7 +102,7 @@ button.guide-step > .ic { color: var(--muted); }
 @keyframes guide-ping { 50% { outline-offset: calc(var(--space-0-5) + var(--space-1) * var(--motion)); outline-color: var(--accent-soft); } }
 /* 信息面板里的行装在会裁切的分组里：外圈往里收，不呼吸 */
 .row.guide-spot { outline-offset: calc(-1 * var(--space-0-5)); animation: none; }
-.composer.guide-spot { --composer-edge: var(--accent); --composer-edge-w: 1.5px; --composer-shadow: var(--ring), var(--shadow-md); --composer-tint: var(--accent-wash); }
+.composer.guide-spot { --composer-edge: var(--accent); --composer-edge-w: 1.5px; --composer-shadow: var(--ring); --composer-tint: var(--pill); }
 
 /* —— 生图的预置演示（MediaDemo）：和真的回复同一套样子（工作状态行、chat.css 的 .msg-files / .msg-img），
    下面一行说明是自带的示例图；点开在原地放大（限高，放大后仍在一屏里） —— */

@@ -6,27 +6,25 @@
 .pick {
   display: inline-flex; align-items: center; gap: var(--space-1); height: var(--ctl-sm); max-width: 260px;
   padding: 0 var(--space-1-5) 0 var(--space-2-5); border-radius: var(--r-md); background: var(--pill); color: var(--fg);
-  font-size: var(--fs-sm); transition: background var(--t-fast), transform var(--t-fast);
+  font-size: var(--fs-sm); transition: background var(--t-fast);
 }
 .pick:hover:not(:disabled), .pick[aria-expanded="true"] { background: var(--pill-hover); }
-.pick:active:not(:disabled) { background: var(--pill-press); transform: scale(var(--press)); }
+.pick:active:not(:disabled) { background: var(--pill-press); }
 .pick:disabled { opacity: var(--o-disabled); }
 .pick .v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pick .ic { --ic-size: var(--ic-xs); color: var(--muted); transition: transform var(--t-base); }
+.pick .ic { --ic-size: var(--ic-xs); color: var(--muted); transition: transform var(--t-fast); }
 .pick[aria-expanded="true"] .ic { transform: rotate(180deg); }
 
-/* —— 弹出层：从锚点方向（--ox）弹出；向上打开时加 .up —— */
+/* —— 弹出层：只淡入，不位移、不缩放。挂在 <body> 下（ui.js 的 Popover），定位不受祖先的 backdrop-filter / transform 影响 —— */
 .pop {
   --pop-r: var(--r-xl);
   --pop-pad: var(--space-1);
-  position: fixed; z-index: var(--z-popover); width: 280px; max-height: 360px;
+  position: fixed; z-index: var(--z-popover); width: 280px; max-height: 360px; -webkit-app-region: no-drag;
   display: flex; flex-direction: column;
-  background: var(--grain), var(--glass-pop); backdrop-filter: var(--glass-filter-lg);
+  background: var(--glass-pop); backdrop-filter: var(--glass-filter-lg);
   border-radius: var(--pop-r); box-shadow: var(--shadow-pop); overflow: hidden;
-  transform-origin: var(--ox, 24px) top;
-  animation: fade-in var(--dur-base) var(--ease-out), pop-in var(--dur-slower) var(--ease-spring);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
-.pop.up { transform-origin: var(--ox, 24px) bottom; --pop-dy: 6px; }
 .pop.model-picker { width: 340px; max-height: 420px; }
 .pop.model-picker li:not(.group):not(.sep) { min-height: 34px; }
 
@@ -106,12 +104,11 @@
 .palette {
   --pop-r: var(--r-pane);
   --pop-pad: var(--space-1);
-  position: fixed; z-index: var(--z-palette); left: 50%; top: 14vh; width: min(520px, calc(100vw - 2 * var(--float-inset))); translate: -50% 0;
+  -webkit-app-region: no-drag; position: fixed; z-index: var(--z-palette); left: 50%; top: 14vh; width: min(520px, calc(100vw - 2 * var(--float-inset))); translate: -50% 0;
   max-height: 60vh; display: flex; flex-direction: column;
-  background: var(--grain), var(--glass-pop); backdrop-filter: var(--glass-filter-lg);
-  border-radius: var(--pop-r); box-shadow: var(--shadow-pop); overflow: hidden;
-  --pop-dy: -10px; --pop-scale: .97;
-  animation: fade-in var(--dur-base) var(--ease-out), pop-in var(--dur-slower) var(--ease-spring);
+  background: var(--glass-pop); backdrop-filter: var(--glass-filter-lg);
+  border-radius: var(--pop-r); box-shadow: var(--shadow-modal); overflow: hidden;
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 .palette .search input { height: 46px; font-size: var(--fs-lg); }
 .palette li { min-height: 36px; font-size: var(--fs-md); }

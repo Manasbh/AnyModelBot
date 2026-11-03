@@ -435,11 +435,9 @@
   }
 
   /* 入场（纯 CSS，不等脚本；只在没开"减少动态效果"时播，播完回到正常样式）：
-     地平线从下面升起、光晕亮起来（亮起后静止，不循环）→ 胶囊 → 标题一块块由虚变实 → 天天弹出来 → 说明、按钮、要点 →
+     地平线从下面升起、光晕亮起来（这两条和天空的动画在 hero-scene.css，下载页页头共用）→ 胶囊 → 标题一块块由虚变实 → 天天弹出来 → 说明、按钮、要点 →
      窗口、手机升上来 → 两侧卡片淡入 → 关键词扫过一道光。 */
   @media (prefers-reduced-motion: no-preference) {
-    .hero__horizon { animation: hero-sunrise 2s var(--ease-out) 100ms backwards; }
-    .hero__glow { animation: hero-glow-in 2.2s var(--ease-out) 250ms backwards; }
     :is(.hero__eyebrow, .hero__lead, .hero__cta, .hero__meta) { animation: hero-in .9s var(--ease-out) backwards; }
     .hero__lead { animation-delay: 420ms; }
     .hero__cta { animation-delay: 520ms; }
@@ -454,31 +452,13 @@
     .hstage__phone { animation: hero-rise 1.3s var(--ease-out) 820ms backwards; }
     .hstage__lane { animation: hero-fade 1s var(--ease-out) 1200ms backwards; }
     [data-theme="light"] .hero__em .hero__c { animation-name: hero-char, hero-glint-l; }
-    /* 星空：少数星星慢慢闪、流星偶尔划过（见 .hero__sky 的说明） */
-    .hero__dots .tw { animation: star-twinkle var(--d) ease-in-out var(--t) infinite; }
-    .hero__glints .tw { animation: glint-sparkle var(--d) ease-in-out var(--t) infinite; }
-    .hero__cloud { animation: cloud-drift var(--c) linear var(--t) infinite; }
-    .hero__meteor { animation: hero-meteor var(--c) linear var(--w) infinite; }
   }
-  @keyframes star-twinkle { 50% { opacity: var(--dim); } }
-  /* 闪光：几乎看不见（小、淡）→ 亮起来、转 45° → 再隐去；大半时间停在"几乎看不见"，偶尔一闪 */
-  @keyframes glint-sparkle {
-    0%, 100% { opacity: calc(var(--o) * .12); scale: calc(var(--s) * .35); rotate: 0deg; }
-    45% { opacity: calc(var(--o) * .12); scale: calc(var(--s) * .35); rotate: 0deg; }
-    65% { opacity: var(--o); scale: calc(var(--s) * 1.15); rotate: 45deg; }
-    85% { opacity: calc(var(--o) * .12); scale: calc(var(--s) * .35); rotate: 90deg; }
-  }
-  /* 白云：从卡片左外侧飘到右外侧（cqw 是 .hero__sky 的宽度） */
-  @keyframes cloud-drift { from { translate: calc(-1 * var(--w)) 0; } to { translate: 100cqw 0; } }
-  @keyframes hero-meteor { 0% { opacity: 0; translate: 0 0; } 1% { opacity: .8; } 4.5% { opacity: 0; translate: 285px 93px; } 100% { opacity: 0; translate: 285px 93px; } }
   @keyframes hero-in { from { opacity: 0; translate: 0 24px; filter: blur(10px); } }
   @keyframes hero-char { from { opacity: 0; translate: 0 .32em; filter: blur(12px); } }
   @keyframes hero-pop { from { opacity: 0; scale: .2; rotate: -24deg; } }
   @keyframes hero-glint { 40% { filter: brightness(1.7) drop-shadow(0 0 .1em color-mix(in srgb, var(--lime) 70%, transparent)); } }
   @keyframes hero-rise { from { opacity: 0; translate: 0 90px; } }
   @keyframes hero-fade { from { opacity: 0; } }
-  @keyframes hero-sunrise { from { opacity: 0; translate: -50% 220px; } }
-  @keyframes hero-glow-in { from { opacity: 0; scale: .6 .4; } }
   @keyframes hero-glint-l { 40% { filter: brightness(1.25) drop-shadow(0 0 .12em oklch(.75 .15 var(--hero-hue) / .55)); } }
 
   /* —— 小窗口的标题栏（"它能动手"和演示导览共用）：40px，三个圆点，底下一根分隔线 —— */

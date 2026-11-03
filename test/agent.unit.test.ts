@@ -6,7 +6,7 @@ import { Store } from "../src/store/db.js";
 import { ApprovalCenter, isOptionReply, parseAnswer, promptText, taskPromptText } from "../src/agent/approvals.js";
 import { WeixinReply } from "../src/channels/weixin/channel.js";
 import { WeixinQuota } from "../src/channels/weixin/quota.js";
-import { AgentHost, SHELL_LIMITS, agentApi, modelLimits, providerFor, providerProfiles, type AgentApi, type ModelRoute } from "../src/agent/host.js";
+import { AgentHost, SHELL_LIMITS, agentApi, claudeAdaptive, effortApplies, modelLimits, providerFor, providerProfiles, type AgentApi, type ModelRoute } from "../src/agent/host.js";
 import { AgentBridge, BOT_HEADER, type ProxyEvent, type Rejection } from "../src/agent/bridge.js";
 import { ApiFallbacks, shapeRejection } from "../src/agent/api-fallback.js";
 import { ActivityLog } from "../src/agent/activity.js";
@@ -398,8 +398,38 @@ describe("agent API per model", () => {
     const claude = patchFor("mfb-b/claude-sonnet-5", "anthropic-messages", true);
     expect(claude).toContain('        api: anthropic-messages\n        baseURL: "http://127.0.0.1:1"\n');
     expect(claude).toContain("            input: [text, image]\n");
-    // Claude 不开思考（和以前一样用模型默认）
-    expect(claude).not.toMatch(/reasoning|compat/);
+    // Claude 没有 provider 级的默认强度：用户没选时不开思考（和以前一样用模型默认），选了才按会话带上
+    expect(claude).not.toMatch(/^ +reasoning: /m);
+    expect(claude).toContain("            reasoningEfforts:\n              low: low\n              medium: medium\n              high: high\n");
+    expect(claude).toContain("            compat:\n              forceAdaptiveThinking: true\n");
+  });
+
+  it("reasoning effort: declared only where it can be sent; Claude 4.6+ uses adaptive thinking, Chat keeps the system role", () => {
+    expect(effortApplies("openai-responses", undefined)).toBe(true);
+    expect(effortApplies("openai-responses", false)).toBe(false);
+    for (const api of ["openai-completions", "anthropic-messages"] as const) {
+      expect(effortApplies(api, true)).toBe(true);
+      expect(effortApplies(api, undefined)).toBe(false);
+      expect(effortApplies(api, false)).toBe(false);
+    }
+    for (const m of ["claude-opus-5-5", "modelflare/claude-sonnet-5", "mfb-b/claude-haiku-5-5", "claude-fable-5-1", "claude-mythos-5-1", "claude-opus-4-6", "claude-sonnet-4-6", "claude-opus-4.8"]) expect(claudeAdaptive(m), m).toBe(true);
+    for (const m of ["claude-haiku-4-5", "claude-opus-4-5-20251101", "claude-opus-4-20250514", "claude-sonnet-4-5", "claude-3-5-sonnet-20241022", "gpt-6"]) expect(claudeAdaptive(m), m).toBe(false);
+
+    const routes = [route("claude-opus-5-5", "anthropic-messages", true), route("claude-haiku-4-5", "anthropic-messages", true), route("claude-unknown", "anthropic-messages", undefined), route("glm-5", "openai-completions", true), route("plain", "openai-completions", false)];
+    const p = providerProfiles(routes, "http://127.0.0.1:1", "b");
+    const of = (provider: string, id: string) => p[provider].models.find((m) => m.id === id)!;
+    const efforts = { low: "low", medium: "medium", high: "high" };
+    expect(of("magpie-anthropic", "claude-opus-5-5")).toMatchObject({ reasoningEfforts: efforts, compat: { forceAdaptiveThinking: true } });
+    expect(of("magpie-anthropic", "claude-haiku-4-5").reasoningEfforts).toEqual(efforts);
+    expect(of("magpie-anthropic", "claude-haiku-4-5").compat).toBeUndefined();
+    expect(of("magpie-anthropic", "claude-unknown").reasoningEfforts).toBeUndefined();
+    expect(of("magpie", "glm-5")).toMatchObject({ reasoningEfforts: efforts, compat: { supportsDeveloperRole: false } });
+    expect(of("magpie", "plain").reasoningEfforts).toBeUndefined();
+    // Claude 的 Chat 备用路线同样按模型资料声明
+    expect(of("magpie", "claude-opus-5-5")).toMatchObject({ reasoningEfforts: efforts, compat: { supportsDeveloperRole: false } });
+    // 没有 provider 级的默认强度：用户没选时什么都不发
+    expect(p["magpie-anthropic"].reasoning).toBeUndefined();
+    expect(p.magpie.reasoning).toBeUndefined();
   });
 
   it("one agent process serves every model: a provider per API (Responses split by reasoning), every model also under Chat for the fallback", () => {

@@ -7,7 +7,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { listen, mockModelflare, approveInBrowser, readJson } from "./helpers.js";
+import { listen, mockModelflare, approveInBrowser, callbackLink, readJson } from "./helpers.js";
 import { discover, startLogin, pkcePair } from "../src/account/oauth.js";
 import { AccountManager, summarizeUsage, type AccountHooks } from "../src/account/manager.js";
 import { AccountVault } from "../src/account/vault.js";
@@ -57,6 +57,23 @@ describe("回环 PKCE 登录", () => {
     await expect(attempt.result).rejects.toMatchObject({ code: "access_denied" });
   });
 
+  it("手动交回链接：别的 state 报错但登录还在等；地址栏里的链接（没有协议头也行）换到令牌；之后再贴报已结束", async () => {
+    const attempt = await startLogin(await discover(mf.url), { clientId: "anymodel-bot", scope: "openid offline_access" });
+    expect(() => attempt.complete("not a link")).toThrow(/不是这次登录/);
+    expect(() => attempt.complete("http://127.0.0.1:1/callback?code=x&state=forged")).toThrow(/不是这次登录/);
+    const link = callbackLink(mf, attempt.url);
+    attempt.complete(`  ${link.replace(/^http:\/\//, "")}#  `);
+    await expect(attempt.result).resolves.toMatchObject({ refreshToken: expect.stringMatching(/^rt-/) });
+    expect(() => attempt.complete(link)).toThrow(/已经结束/);
+  });
+
+  it("手动交回的链接带着拒绝：登录结束", async () => {
+    const attempt = await startLogin(await discover(mf.url), { clientId: "anymodel-bot", scope: "openid offline_access" });
+    const state = new URL(attempt.url).searchParams.get("state")!;
+    attempt.complete(`http://127.0.0.1:1/callback?error=access_denied&state=${encodeURIComponent(state)}`);
+    await expect(attempt.result).rejects.toMatchObject({ code: "access_denied" });
+  });
+
   it("发现文档把端点指到别的主机时拒绝", async () => {
     const evil = await listen((_req, res) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ issuer: "x", authorization_endpoint: "https://evil.example/a", token_endpoint: "https://evil.example/t", revocation_endpoint: "https://evil.example/r" })));
     try {
@@ -93,7 +110,6 @@ describe("AccountManager", () => {
     },
     setBotKey: async (botId, key) => void calls.push(`bot:${botId}:${key}`),
     removeBotKey: async (botId) => void calls.push(`unbot:${botId}`),
-    keyBalance: async () => undefined,
     sharedKeyTail: () => gw.slice(-4),
     // mock 签发的 Key 被删了就失效；别的 Key 当作用户自己粘贴的、还能用的
     sharedKeyRejected: async () => !gw || (gw.startsWith("sk-key-") && !mf.s.keys.some((k) => `sk-key-${k.id}` === gw)),
@@ -197,6 +213,16 @@ describe("AccountManager", () => {
     await manager.setBotBudget("b1", "写作助手", { enabled: false, limitUsd: 8 });
     expect(mf.s.keys.map((k) => k.id)).toEqual([1]);
     expect(calls).toContain("unbot:b1");
+  });
+
+  it("贴回登录后的链接：没在登录时 409，链接不对 400 且继续等，对的链接完成登录", async () => {
+    expect(() => manager.completeLoginFromLink("x")).toThrow(expect.objectContaining({ status: 409 }));
+    const url = await manager.startLogin();
+    expect(() => manager.completeLoginFromLink("http://127.0.0.1:1/callback?code=x&state=forged")).toThrow(expect.objectContaining({ status: 400 }));
+    expect(manager.status().state).toBe("signing_in");
+    manager.completeLoginFromLink(callbackLink(mf, url));
+    await until(() => manager.signedIn);
+    expect(manager.status()).toMatchObject({ state: "signed_in", source: "account" });
   });
 
   it("没登录时不能设预算", async () => {

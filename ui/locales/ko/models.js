@@ -13,7 +13,14 @@ export default {
   "loadFailed": "모델을 불러오지 못했습니다: {error}",
   "useCustom": "‘{id}’ 사용",
   "customId": "사용자 지정 모델 ID",
-  "none": "사용 가능한 모델이 없습니다. 이 키의 그룹에 아직 활성화된 모델이 없습니다",
+  "none": "사용 가능한 모델이 없습니다. 계정에 아직 활성화된 모델이 없습니다",
+  "effort": {
+    "name": "추론 강도",
+    "auto": "자동",
+    "low": "낮음",
+    "medium": "보통",
+    "high": "높음"
+  },
   "tiers": {
     "value": "가성비",
     "strategy": {

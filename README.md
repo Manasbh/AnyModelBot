@@ -80,7 +80,7 @@ AnyModelBot 的模型全部来自 **[Modelflare](https://modelflare.dev/?utm_sou
 
 **AnyModelBot 怎么用 Modelflare**
 
-- **登录一次就行。** 首次启动会打开浏览器，登录（或注册）Modelflare。之后应用自己把这台设备连上，不用复制 Key。在 Docker 或服务器上运行？改为粘贴一个 API Key。
+- **登录一次就行。** 首次启动会打开浏览器，登录（或注册）Modelflare。之后应用自己把这台设备连上，不用复制 Key。在 Docker 或服务器上运行？在任意设备的浏览器里登录，再把登录后的链接贴回应用。
 - **所有模型，一个选择器。** 你的 Modelflare 模型会自动列出，每个模型旁边都有上下文长度、能力标记和参考价。
 - **用多少付多少。** 余额、低余额提醒和每日用量都在应用里看。选模型之前，先看公开价格表，和官方价格对比一下。
 - **一条诚实的边界。** 模型请求会经过 Modelflare 转发给你选定的供应商，Modelflare 会保留请求日志；保留什么、保留多久，见[信任中心](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)。除此之外的内容都留在你的设备上（[详情](#-工作原理与隐私)）。

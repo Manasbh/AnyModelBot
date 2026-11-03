@@ -5,10 +5,9 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, Seg, Switch, Sheet, CopyButton, Skeleton, MenuButton } from "../components/ui.js";
 import { AccountButton } from "./sidebar.js";
-import { PickModel, shortModel, showsStrategy, strategyOptions } from "../components/model-picker.js";
-import { KeyForm } from "./onboarding.js";
+import { PickModel, effortOptions, setEffort, shortModel, showsStrategy, strategyOptions, useEffort } from "../components/model-picker.js";
 import { DomainConnection } from "../components/domain-connection.js";
-import { LoginSheet, NotificationsSheet, UsageSheet } from "./account.js";
+import { NotificationsSheet, UsageSheet } from "./account.js";
 import { api } from "../lib/api.js";
 import { MF_CONSOLE, MF_DOCS_LINK, MF_TOPUP, usd } from "../lib/links.js";
 import { useStore, confirmSheet, failed, saved, toast } from "../lib/store.js";
@@ -177,9 +176,9 @@ export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, acc
 export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, mf, onMfChanged, onSettings, models, modelsError, reloadModels, status, update, bots, onOpenBotSettings, account: acct, onAccount }) {
   const [s, setS] = useState(null);
   const g = useStore(guide);
-  const [rekey, setRekey] = useState(false);
+  const effort = useEffort();
   const [notices, setNotices] = useState(false);
-  const [sheet, setSheet] = useState(""); // login | usage | notifications
+  const [sheet, setSheet] = useState(""); // usage | notifications
   const [invite, setInvite] = useState(null);
   const [unread, setUnread] = useState(null);
   const [cu, setCu] = useState(null);
@@ -234,15 +233,6 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       await api("/modelflare/line", { method: "PUT", body: { line } });
       onMfChanged();
       saved();
-    } catch (e) {
-      failed(e);
-    }
-  };
-  const disconnect = async () => {
-    if (!(await confirmSheet({ title: t("settings.disconnect.title"), body: t("settings.disconnect.body"), confirmLabel: t("settings.disconnect.confirm"), danger: true }))) return;
-    try {
-      await api("/modelflare", { method: "DELETE" });
-      onMfChanged();
     } catch (e) {
       failed(e);
     }
@@ -361,21 +351,11 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
 
       managed && acct && { tab: "modelflare", id: "account", name: t("settings.rows.account.name"),
         sub: signedIn ? (acct.billedToEnterprise ? t("settings.rows.account.enterprise", { name: acctName }) : acctName) : acct.state === "unavailable" ? acct.error : t("settings.rows.account.signedOut"), keys: t("settings.rows.account.keys"),
-        ctl: signedIn
-          ? html`<button type="button" class="text danger" onClick=${logout}>${t("settings.rows.account.logout")}</button>`
-          : acct.loginAvailable === false
-            ? html`<span class="val">${t("settings.rows.account.noBrowserLogin")}</span>`
-            : html`<button type="button" class="text accent" onClick=${() => setSheet("login")}>${t("settings.rows.account.login")}</button>` },
-      { tab: "modelflare", id: "connection", name: signedIn ? t("settings.rows.connection.nameSignedIn") : t("settings.rows.connection.name"),
-        sub: !managed ? t("settings.rows.connection.subExternal") : signedIn ? t("settings.rows.connection.subSignedIn") : t("settings.rows.connection.sub"), keys: t("settings.rows.connection.keys"),
-        ctl: managed
-          ? html`<span class="mf-state"><span class=${`dot ${mf.connected ? "ok" : "err"}`}></span>${mf.connected ? t("common.connected") : t("common.notConnected")}</span>
-              ${mf.keyTail && html`<span class="val">••••${mf.keyTail}</span>`}
-              ${!signedIn && html`<button type="button" class="text" onClick=${() => setRekey(true)}>${t("settings.rows.connection.rekey")}</button>
-                <button type="button" class="text danger" onClick=${disconnect}>${t("settings.rows.connection.disconnect")}</button>`}`
-          : html`<span class="val" title=${mf && mf.baseUrl}>${mf && mf.baseUrl}</span>` },
+        ctl: signedIn ? html`<button type="button" class="text danger" onClick=${logout}>${t("settings.rows.account.logout")}</button>` : null },
+      !managed && { tab: "modelflare", id: "connection", name: t("settings.rows.connection.name"), sub: t("settings.rows.connection.subExternal"), keys: "",
+        ctl: html`<span class="val" title=${mf && mf.baseUrl}>${mf && mf.baseUrl}</span>` },
       managed && acct && mf.connected && { tab: "modelflare", id: "balance", name: t("settings.rows.balance.name"),
-        sub: acct.error ? t("settings.rows.balance.error", { error: acct.error }) : acct.source === "key" ? t("settings.rows.balance.fromKey") : acct.updatedAt ? t("settings.rows.balance.updated", { time: fmtTimeOfDay(acct.updatedAt) }) : t("common.reading"), keys: t("settings.rows.balance.keys"),
+        sub: acct.error ? t("settings.rows.balance.error", { error: acct.error }) : acct.updatedAt ? t("settings.rows.balance.updated", { time: fmtTimeOfDay(acct.updatedAt) }) : t("common.reading"), keys: t("settings.rows.balance.keys"),
         ctl: html`<span class=${`balance${acct.lowBalance ? " low" : ""}`}>${usd(acct.balanceUsd)}</span>
           <button type="button" class="icon-btn" title=${t("common.refresh")} aria-label=${t("settings.rows.balance.refresh")} onClick=${refreshBalance}><${Icon} name="refresh" size="sm" /></button>
           <a class="btn" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("settings.rows.balance.topUp")}</a>` },
@@ -392,6 +372,8 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
         ctl: html`<span class="val">${invite.code}</span><${CopyButton} text=${invite.url} label=${t("settings.rows.invite.copy")} />` },
       showsStrategy(acct) && { tab: "modelflare", id: "key-quality", name: t("settings.rows.keyQuality.name"), sub: t("settings.rows.keyQuality.sub"), keys: t("settings.rows.keyQuality.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.keyQuality.name")} value=${acct.keyQuality.strategy} onChange=${putKeyQuality} options=${strategyOptions()} />` },
+      managed && mf.connected && { tab: "modelflare", id: "reasoning-effort", name: t("models.effort.name"), sub: t("settings.rows.effort.sub"), keys: t("settings.rows.effort.keys"),
+        ctl: html`<${Seg} label=${t("models.effort.name")} value=${effort} onChange=${(v) => setEffort(v).then((ok) => ok && saved())} options=${effortOptions()} />` },
       managed && { tab: "modelflare", id: "line", name: t("settings.rows.line.name"), sub: t("settings.rows.line.sub"), keys: t("settings.rows.line.keys"),
         ctl: html`<${DomainConnection} value=${mf.line} onChange=${setLine} />` },
       { tab: "modelflare", id: "default-model", name: t("settings.rows.defaultModel.name"), sub: t("settings.rows.defaultModel.sub"), keys: t("settings.rows.defaultModel.keys"),
@@ -459,7 +441,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       { tab: "about", id: "links", name: "Modelflare", sub: t("settings.rows.links.sub"),
         ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">modelflare.dev ↗</a><a class="text" href=${MF_DOCS_LINK} target="_blank" rel="noopener noreferrer">${t("settings.rows.links.docs")}</a>` },
     ].filter(Boolean);
-  }, [s, mf, mode, p, models, modelsError, cu, status, update, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts]);
+  }, [s, mf, mode, p, models, modelsError, cu, status, update, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts, effort]);
 
   const needle = q.trim().toLowerCase();
   const shown = needle ? rows.filter((r) => `${r.name} ${r.sub || ""} ${r.keys || ""}`.toLowerCase().includes(needle)) : rows.filter((r) => r.tab === tab);
@@ -476,12 +458,8 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       ${s && !needle && tab === "troubleshoot" ? html`<${TroubleshootPane} bots=${bots} desktop=${desktop} />` : parts.map(([label, list]) => html`${label && html`<div class="set-part">${label}</div>`}
         <div class="list">${list.map((r) => html`<${Row} key=${r.id} id=${r.id} name=${r.name} sub=${r.sub} title=${r.title || r.sub} flash=${flash === r.id}>${r.ctl}<//>`)}</div>`)}
     </div>
-    ${rekey && html`<${Sheet} title=${t("settings.rekey.title")} onClose=${() => setRekey(false)}>
-      <${KeyForm} line=${mf.line} showLine=${false} submitLabel=${t("settings.rekey.submit")} onConnected=${() => { setRekey(false); saved(); onMfChanged(); reloadModels(); }} />
-    <//>`}
     ${notices && html`<${NoticesSheet} onClose=${() => setNotices(false)} />`}
     <${ConnectionSheets} conn=${conn} bots=${bots} />
-    ${sheet === "login" && html`<${LoginSheet} onClose=${() => setSheet("")} onSignedIn=${(r) => { onAccount(r); onMfChanged(); reloadModels(); }} />`}
     ${sheet === "usage" && html`<${UsageSheet} onClose=${() => setSheet("")} />`}
     ${sheet === "notifications" && html`<${NotificationsSheet} onClose=${() => { setSheet(""); setUnread(null); }} />`}
   </section>`;

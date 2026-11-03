@@ -10,12 +10,14 @@ import { SettingsScreen, SettingsSide, TABS } from "./screens/settings.js";
 import { BotSettingsScreen } from "./screens/bot-settings.js";
 import { NewBotScreen } from "./screens/new-bot.js";
 import { NeedsYouScreen } from "./screens/needs-you.js";
+import { BotAppScreen } from "./screens/bot-app.js";
+import { DiscoverScreen } from "./screens/discover.js";
 import { GroupScreen, GroupSheet } from "./screens/group.js";
 import { BotAvatar, MAIN_CHAR, charOf } from "./components/avatar.js";
 import { Onboarding } from "./screens/onboarding.js";
 import { CoachMark } from "./components/guide.js";
 import { api } from "./lib/api.js";
-import { loadGuide, setFocus } from "./lib/guide.js";
+import { loadGuide, setFocus, setGuideTrim } from "./lib/guide.js";
 import { setThemeMode } from "./lib/theme.js";
 import { failed, toast, useStore } from "./lib/store.js";
 import { prefs, setPrefs } from "./lib/prefs.js";
@@ -30,6 +32,9 @@ function parseHash() {
   if (kind === "group" && a) return { view: "group", groupId: a };
   if (kind === "new") return { view: "new" };
   if (kind === "needs") return { view: "needs" };
+  if (kind === "discover") return { view: "discover" };
+  if (kind === "app" && a) return { view: "app", botId: a };
+  if (kind === "preview" && a) return { view: "preview", catalogId: a };
   if (kind === "models") return { view: "settings", tab: "modelflare", row: "" }; // 旧链接
   return { view: "chat", botId: kind === "chat" ? a : "" };
 }
@@ -147,6 +152,11 @@ function App() {
   const [groupsData, , reloadGroups] = useLoader(() => (connected ? api("/groups") : Promise.resolve(null)), [connected]);
   const [groupSheet, setGroupSheet] = useState(null); // 建群 / 改群的弹窗：{ group? }
   const [modelsData, , loadModels] = useLoader(() => (connected ? api("/models") : Promise.resolve(null)), [connected]);
+  // 目录 Bot：目录是空的时候界面和没有这个功能时一样
+  const [catalogData, , reloadCatalog] = useLoader(() => api("/catalog"));
+  const catalog = catalogData ? catalogData.bots : [];
+  useInterval(reloadCatalog, 600_000);
+  useEffect(() => setGuideTrim(catalog.length > 0), [catalog.length > 0]);
   // Modelflare 账户与余额：后端每 5 分钟读一次；界面每分钟取快照，切回窗口时请后端立刻刷新
   const [account, , , setAccount] = useLoader(() => api("/account"), [connected]);
   const managed = !!(mf && mf.mode === "managed");
@@ -204,6 +214,11 @@ function App() {
 
   // 信息面板：关上时多留一会儿，播完"列宽滑回 0、面板淡出"再卸载
   const panelOpen = route.view === "chat" && infoOpen && !!bot;
+  // 目录 Bot 的主界面是专属界面；被安全原因下架的退回普通对话
+  const isAppBot = (b) => !!b && b.origin === "catalog" && !b.app?.removed?.security;
+  useEffect(() => {
+    if (route.view === "chat" && isAppBot(bot)) go(`/app/${encodeURIComponent(bot.id)}`);
+  }, [route.view, bot && bot.id, bot && bot.origin]);
   const panelFx = usePresence(panelOpen, "--dur-slow");
   const lastPanel = useRef(null);
   if (panelOpen) lastPanel.current = bot;
@@ -284,7 +299,18 @@ function App() {
   };
   const openChat = (id) => {
     if (id) setLastBot(id);
-    go(`/chat/${encodeURIComponent(id || (bot && bot.id) || "")}`);
+    const target = id || (bot && bot.id) || "";
+    go(`/${isAppBot((bots || []).find((b) => b.id === target)) ? "app" : "chat"}/${encodeURIComponent(target)}`);
+  };
+  const openDiscover = () => go("/discover");
+  const openCatalog = (e) => (e.instanceId ? openChat(e.instanceId) : go(`/preview/${encodeURIComponent(e.id)}`));
+  // 第一次发消息创建了实例：地址换成实例，界面不重新加载（BotAppScreen 按目录 id 复用）
+  const onInstalled = async (b) => {
+    await reloadBots();
+    reloadCatalog();
+    setLastBot(b.id);
+    history.replaceState(null, "", `#/app/${encodeURIComponent(b.id)}`);
+    setRoute(parseHash());
   };
   const newBot = () => go("/new");
   // 清单里点一项：回到对话页，引导卡片指着要点的地方
@@ -336,7 +362,7 @@ function App() {
         if (route.view === "bot-settings" && !typing) openChat(route.botId);
         else if (route.view === "new" && !typing && bots && bots.length) openChat();
         else if (route.view === "settings" && !typing) openChat();
-        else if (route.view === "needs" && !typing) openChat();
+        else if ((route.view === "needs" || route.view === "discover") && !typing) openChat();
         else if (route.view === "chat" && infoOpen && !typing) setInfoOpen(false);
       }
     };
@@ -350,6 +376,7 @@ function App() {
     { label: t("app.cmd.settings"), kbd: isMac ? "⌘," : "Ctrl+,", keys: t("app.cmd.settingsKeys"), run: () => openSettings() },
     { label: t("app.cmd.newBot"), kbd: isMac ? "⌘N" : "Ctrl+N", keys: t("app.cmd.newBotKeys"), run: newBot },
     ...(needs.n > 0 ? [{ label: t("app.cmd.needs", { count: needs.n }), keys: t("app.cmd.needsKeys"), run: openNeeds }] : []),
+    ...(catalog.length > 0 ? [{ label: t("botapp.sidebar.discover"), keys: "discover", run: openDiscover }] : []),
     ...(route.view === "chat" ? [{ label: infoOpen ? t("app.cmd.closeInfo") : t("app.cmd.openInfo"), kbd: isMac ? "⌘⇧I" : "Ctrl+Shift+I", keys: t("app.cmd.infoKeys"), run: () => setInfoOpen((v) => !v) }] : []),
     // 任务和规则在当前机器人的信息面板里（「任务」组）
     ...(bot ? [{ label: t("app.cmd.tasks"), keys: t("app.cmd.tasksKeys"), run: () => (openChat(bot.id), setInfoOpen(true)) }] : []),
@@ -376,8 +403,9 @@ function App() {
     </main>`;
   }
   if (!connected) {
-    return html`<${Onboarding} status=${mf} gateway=${status && status.gateway} defaultModel=${settings && settings.defaultModel}
-        onDone=${() => { reloadMf(); reloadSettings(); go("/chat/"); }} />
+    return html`<${Onboarding} gateway=${status && status.gateway} defaultModel=${settings && settings.defaultModel}
+        skipModelStep=${catalog.length > 0}
+        onDone=${() => { reloadMf(); reloadSettings(); go(catalog.length > 0 ? "/discover" : "/chat/"); }} />
       <${Toasts} />`;
   }
 
@@ -388,7 +416,7 @@ function App() {
   const shownPanel = panelFx.mounted ? panelBot || lastPanel.current : null;
   const routedBot = view === "bot-settings" && bots ? bots.find((b) => b.id === route.botId) : null;
   // 环境光的色相跟着当前机器人角色的主色（设置页和新建页用缺省的冷色）
-  const auraBot = view === "chat" ? bot : view === "bot-settings" ? routedBot : null;
+  const auraBot = view === "chat" || view === "app" ? bot : view === "bot-settings" ? routedBot : null;
   const auraHue = (auraBot && AURA_HUE[charOf(auraBot)]) || 250;
   return html`<div class=${`app${panelBot ? " with-panel" : ""}`} ref=${appRef} style=${{ "--aura-hue": String(auraHue) }}>
     ${view === "settings"
@@ -397,13 +425,18 @@ function App() {
       : html`<${Sidebar} bots=${bots} botsError=${botsErr} reloadBots=${reloadBots} selectedId=${bot && bot.id} view=${view === "chat" && bots && !bots.length ? "new" : view}
           previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null} update=${update}
           onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
-          groups=${groups} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup} />`}
+          groups=${groups} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup}
+          catalog=${catalog} catalogId=${route.catalogId} onDiscover=${openDiscover} onOpenCatalog=${openCatalog} />`}
     <${Splitter} class="split-side" size="--side-w" label=${t("app.resizeSide")} value=${sideW} room=${room("--panel-track")} onCommit=${(v) => setPrefs({ sideW: v })} />
     <main class="main">
       ${view === "chat" && bot && html`<${ChatScreen} key=${bot.id} bot=${bot} models=${models} modelsError=${modelsError} reloadModels=${reloadModels}
         defaultModel=${settings && settings.defaultModel} infoOpen=${infoOpen} onToggleInfo=${() => setInfoOpen((v) => !v)}
         onWorking=${onWorking} pending=${pending[bot.id] || 0} serverBusy=${!!agentWorking[bot.id]} onOpenSettings=${openSettings} onOpenBotSettings=${openBotSettings} onBotUpdated=${onBotUpdated}
         account=${managed ? account : null} onAccount=${setAccount} />`}
+      ${view === "discover" && html`<${DiscoverScreen} catalog=${catalog} onOpen=${openCatalog} />`}
+      ${(view === "preview" || (view === "app" && bot && bot.app)) && html`<${BotAppScreen} key=${view === "preview" ? route.catalogId : bot.app.catalogId} catalogId=${view === "preview" ? route.catalogId : bot.app.catalogId} bot=${view === "preview" ? (bots || []).find((b) => b.app?.catalogId === route.catalogId) || null : bot}
+        onInstalled=${onInstalled} onBotUpdated=${onBotUpdated} onOpenBotSettings=${openBotSettings} onOpenSettings=${openSettings}
+        chatProps=${{ models, modelsError, reloadModels, defaultModel: settings && settings.defaultModel, onWorking, pending: (bot && pending[bot.id]) || 0, serverBusy: !!(bot && agentWorking[bot.id]), onOpenSettings: openSettings, onOpenBotSettings: openBotSettings, onBotUpdated, account: managed ? account : null, onAccount: setAccount }} />`}
       ${view === "group" && routedGroup && bots && html`<${GroupScreen} key=${routedGroup.id} group=${routedGroup} bots=${bots} onEdit=${() => setGroupSheet({ group: routedGroup })} onOpenSettings=${openSettings} onChanged=${reloadGroups} />`}
       ${view === "group" && groupsData && !routedGroup && html`<div class="empty-state"><b>${t("app.groupMissing")}</b><button type="button" class="text" onClick=${() => openChat()}>${t("app.backToChat")}</button></div>`}
       ${(view === "new" || (view === "chat" && bots && !bots.length)) && html`<${NewBotScreen} first=${!!bots && !bots.length}

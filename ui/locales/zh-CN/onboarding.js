@@ -1,10 +1,8 @@
-// onboarding · zh-CN：引导页（screens/onboarding.js：登录、粘贴 Key、选默认模型）
+// onboarding · zh-CN：引导页（screens/onboarding.js：登录、选默认模型）
 export default {
   slogan: "任意模型，一个助手",
   gatewayFailed: "内置模型网关没有启动：{error}。修复后重启应用再连接。",
   unknownReason: "未知原因",
-  keyOnly: "Docker 或远程部署无法用浏览器登录，请填写 API Key",
-  createKey: "在 Modelflare 控制台创建 Key ↗",
   line: {
     "label": "API 域名",
     "sub": "自行选择域名，也可先测速；不会自动切换。",
@@ -18,28 +16,15 @@ export default {
     "timeout": "超时",
     "unreachable": "无法连接"
   },
-  key: {
-    label: "API Key",
-    placeholder: "粘贴你的 Modelflare API Key",
-    paste: "从剪贴板粘贴",
-    show: "显示",
-    hide: "隐藏",
-    showKey: "显示 Key",
-    hideKey: "隐藏 Key",
-    retype: "重新输入",
-    checkGroup: "去控制台检查分组 ↗",
-    note: "密钥只保存在本机，不会写入日志或命令行参数。",
-    connecting: "正在连接…",
-    submit: "连接 Modelflare",
-    slow: "网络较慢。",
-    slowLine: "网络较慢，可在「高级」里测速并选择 API 域名。",
-    advanced: "高级",
-  },
   login: {
     label: "登录 / 注册 Modelflare",
     waiting: "在浏览器里完成登录后，会自动回到这里",
     reopen: "重新打开登录页 ↗",
     copyLink: "复制链接",
+    manualHint: "在浏览器里登录后，页面会跳到一个打不开的地址，这是正常的。把地址栏里的完整链接复制到下面。",
+    manualLabel: "登录后的链接",
+    manualSubmit: "完成登录",
+    manualSending: "正在登录…",
   },
   model: {
     /** n 是带样式的数字，count 用来选单复数 */
@@ -54,7 +39,7 @@ export default {
     video: "视频",
     videoLabel: "默认视频模型",
     console: "去控制台 ↗",
-    empty: "这个 Key 所在的分组暂无可用模型。可以在控制台给分组开放模型后再回来刷新。",
+    empty: "你的账户暂无可用模型。可以在控制台开放模型后再回来刷新。",
     saving: "正在保存…",
     start: "开始对话",
     startAnyway: "仍然开始",

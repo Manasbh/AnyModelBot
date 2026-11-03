@@ -11,3 +11,6 @@ test-results/
 .DS_Store
 # 在仓库根目录误跑 Astro 时生成的类型文件（官网的在 site/.astro，由 site/.gitignore 忽略）
 .astro/
+
+# 目录 Bot 的打包产物（amb-bot pack）
+dist-catalog/

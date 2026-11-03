@@ -430,12 +430,16 @@ export async function mockModelflare() {
 }
 
 /** 模拟浏览器：用户在授权页同意后，Modelflare 把授权码带回本机回调地址 */
-export async function approveInBrowser(mf: Awaited<ReturnType<typeof mockModelflare>>, loginUrl: string): Promise<Response> {
+export function callbackLink(mf: Awaited<ReturnType<typeof mockModelflare>>, loginUrl: string): string {
   const u = new URL(loginUrl);
   const code = `code-${crypto.randomUUID()}`;
   const redirect = u.searchParams.get("redirect_uri")!;
   mf.s.pending.set(code, { challenge: u.searchParams.get("code_challenge")!, redirect });
-  return fetch(`${redirect}?code=${code}&state=${encodeURIComponent(u.searchParams.get("state")!)}`);
+  return `${redirect}?code=${code}&state=${encodeURIComponent(u.searchParams.get("state")!)}`;
+}
+
+export async function approveInBrowser(mf: Awaited<ReturnType<typeof mockModelflare>>, loginUrl: string): Promise<Response> {
+  return fetch(callbackLink(mf, loginUrl));
 }
 
 /** 假的 Telegram / Slack / Discord 传输层：记下发出去的和改过的消息，按需让某一步失败 */

@@ -1,8 +1,4 @@
 export default {
-  login: {
-    title: "Войти в Modelflare",
-    hint: "При входе введённый API-ключ будет заменён.",
-  },
   usage: {
     title: "Использование",
     days: "Дней: {n}",

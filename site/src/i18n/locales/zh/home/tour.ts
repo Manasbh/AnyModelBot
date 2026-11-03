@@ -11,7 +11,7 @@ export default {
     },
     {
       "title": "登录 Modelflare",
-      "caption": "首次启动在浏览器里登录一次 Modelflare，回来就自动连好；Docker / 远程部署可以改填 API Key。"
+      "caption": "首次启动在浏览器里登录一次 Modelflare，回来就自动连好；Docker / 远程部署登录后把链接贴回来即可。"
     },
     {
       "title": "选默认模型",

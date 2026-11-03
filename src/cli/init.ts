@@ -1,7 +1,6 @@
 /**
  * 首次设置向导（终端版；界面里也能完成同样的设置）：
- * 1. 连接 Modelflare：登录账户（打印登录链接，在这台电脑的浏览器里完成），或粘贴 API Key
- *    （先校验 GET /v1/models，再写入内置网关的隔离配置；key 不进命令行参数）
+ * 1. 连接 Modelflare：登录账户（打印登录链接，在这台电脑的浏览器里完成；SSH 远程时在别的设备上登录，再把链接贴回来）
  * 2. 飞书 App ID / App Secret → 写入本程序数据库
  */
 import readline from "node:readline";
@@ -67,23 +66,17 @@ async function setup(app: App, rl: ReturnType<typeof lineReader>, dataDir: strin
       throw new Error(tr("cli.noMagpie"));
     }
     await app.magpie.start();
-    const status = app.modelflareStatus();
     const account = app.ensureAccount();
+    await app.retirePastedKey();
+    const status = app.modelflareStatus();
     if (status.connected) {
       console.log(tr("cli.alreadyConnected", { tail: status.keyTail, account: account.signedIn ? tr("cli.accountSuffix", { name: account.status().name || tr("cli.signedIn") }) : "" }));
     } else {
       const how = (await rl.ask(tr("cli.askHow"))).toLowerCase();
       if (how !== "skip") {
         const line = normalizeLine((await rl.ask(tr("cli.askLine"))).trim().toLowerCase());
-        if (how === "key") {
-          const key = await rl.ask("Modelflare API Key：", true);
-          const r = await app.connectModelflare(key, line);
-          if (!r.ok) throw new Error(r.message + (r.code === "network" ? tr("cli.checkDomains") : ""));
-          console.log(tr("cli.connected", { count: r.models.length }));
-        } else {
-          await app.setModelflareLine(line);
-          await loginInBrowser(app);
-        }
+        await app.setModelflareLine(line);
+        await loginInBrowser(app, rl, how === "remote");
       }
     }
   }
@@ -97,12 +90,13 @@ async function setup(app: App, rl: ReturnType<typeof lineReader>, dataDir: strin
   }
 }
 
-/** 浏览器登录：回调落在本机 127.0.0.1，所以浏览器必须在这台电脑上（SSH 远程请改用 API Key） */
-async function loginInBrowser(app: App): Promise<void> {
+/** 浏览器登录：回调落在本机 127.0.0.1。remote：浏览器在别的设备上（SSH 远程），回调到不了这里，把登录后的链接贴回来 */
+async function loginInBrowser(app: App, rl: ReturnType<typeof lineReader>, remote: boolean): Promise<void> {
   const account = app.ensureAccount();
   const url = await account.startLogin();
   console.log(`\n${tr("cli.openLink")}\n${url}\n`);
-  openInBrowser(url);
+  if (remote) account.completeLoginFromLink(await rl.ask(tr("cli.askLoginLink")));
+  else openInBrowser(url);
   for (;;) {
     await new Promise((r) => setTimeout(r, 500));
     const s = account.status();

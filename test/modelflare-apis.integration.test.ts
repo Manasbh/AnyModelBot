@@ -7,6 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { App } from "../src/app.js";
+import { AccountVault } from "../src/account/vault.js";
 import { loadConfig } from "../src/config.js";
 import { resolveMagpieBinary } from "../src/magpie/supervisor.js";
 import { FakeFeishu, mockOpenAI, until } from "./helpers.js";
@@ -14,6 +15,8 @@ import { FakeFeishu, mockOpenAI, until } from "./helpers.js";
 const d = resolveMagpieBinary() ? describe : describe.skip;
 
 const models = ["claude-opus-5-5", "gpt-6-sol"];
+// 登录状态只看本机账户文件；这几个用例不碰账户接口，发行方指向一个不会有人连的地址
+const ISSUER = "http://127.0.0.1:9";
 
 d("Modelflare 的三种对话接口", () => {
   let llm: Awaited<ReturnType<typeof mockOpenAI>>;
@@ -42,12 +45,14 @@ d("Modelflare 的三种对话接口", () => {
   beforeAll(async () => {
     llm = await mockOpenAI({ key: "mf-api-key", models, kinds: Object.fromEntries(models.map((m) => [m, "text"])) });
     process.env.AMB_MODELFLARE_BASE_URL = llm.url + "/v1";
+    process.env.AMB_MODELFLARE_ISSUER = ISSUER;
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-apis-"));
     await boot();
   }, 60_000);
 
   afterAll(async () => {
     delete process.env.AMB_MODELFLARE_BASE_URL;
+    delete process.env.AMB_MODELFLARE_ISSUER;
     await app?.stop();
     await llm?.close();
   });
@@ -71,11 +76,28 @@ d("Modelflare 的三种对话接口", () => {
     for (const p of Array.isArray(j) ? j : j.providers) if (p.id === "modelflare") delete p.responses, delete p.anthropic;
     fs.writeFileSync(file(), JSON.stringify(j, null, 2));
     expect(provider().anthropic).toBeUndefined();
+    // 这把 Key 是登录时签发的：重启后要留着
+    AccountVault.at(dataDir).save({ issuer: ISSUER, refreshToken: "rt-test", scope: "", deviceKeyId: 1, signedInAt: Date.now() });
 
     await boot();
     await until(async () => provider().anthropic === llm.url, 20_000, 200);
     expect(provider()).toMatchObject({ chat: llm.url + "/v1", responses: llm.url + "/v1", anthropic: llm.url });
     expect(await say("claude-opus-5-5", "又见面了")).toContain("[claude-opus-5-5] 你说：又见面了");
     expect(llm.calls.at(-1)?.api).toBe("messages");
+  }, 60_000);
+
+  it("旧版本填的 Key（没有登录）：重启后从网关移除，回到登录页并说明原因", async () => {
+    await app.stop();
+    AccountVault.at(dataDir).clear();
+    expect(provider()).toBeTruthy();
+
+    await boot();
+    expect(provider()).toBeUndefined();
+    expect(app.modelflareStatus().connected).toBe(false);
+    expect(app.account.status()).toMatchObject({ state: "signed_out", error: expect.stringContaining("API Key") });
+    // 下次启动没有什么可移除的，也不再提
+    await app.stop();
+    await boot();
+    expect(app.account.status().error).toBe("");
   }, 60_000);
 });

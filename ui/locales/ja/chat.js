@@ -53,8 +53,8 @@ export default {
   },
   "error": {
     "stopFailed": "停止できませんでした：{error}",
-    "fixKey": "キーを更新",
-    "authInvalid": "Modelflare のキーが無効か、取り消されています。",
+    "fixKey": "ログイン",
+    "authInvalid": "Modelflare へのアクセス許可が無効か、取り消されています。もう一度ログインしてください。",
     "loadHistory": "メッセージ履歴を読み込めませんでした：{error}"
   },
   "menu": {

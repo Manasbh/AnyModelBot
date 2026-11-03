@@ -1,0 +1,249 @@
+# Catalog bot framework
+
+[简体中文](./bot-framework.md)
+
+A bot is a folder. The app contains no code for any single bot, so shipping a new bot needs no app release. Whoever builds it, and however many there are, every bot passes the same checks, so consistency and safety come from the framework.
+
+While the catalog is empty, existing users see no change: no new sidebar entries, and the same onboarding.
+
+## Quick start
+
+```bash
+npm run bot -- new <id>            # scaffold bots/<id>/ from the template
+npm run bot -- check bots/<id>     # static checks; fails until every TODO is filled in
+npm start                          # start the app in another terminal
+npm run bot -- dev bots/<id>       # register this folder with the running app
+```
+
+`dev` prints a URL that opens the bot. Refresh to see UI changes. After changing skills or the persona, remove the instance from the sidebar and send a message to reinstall.
+
+## Architecture
+
+```text
+Authors (people / Claude + the dev skill / a pipeline later)
+        │
+        ▼
+Bot package: bots/<id>/ ──► checks ──► human look ──► pack and sign ──► catalog URL
+                                                                          │
+                                                                          ▼
+App: catalog sync · runtime (sandboxed iframe, bridge, state files) · UI kit · bot process
+```
+
+| Part | Where | What it does |
+| --- | --- | --- |
+| Format | `src/botkit/format.ts`, `schema.ts` | `bot.json`, permissions, limits, the JSON Schema subset |
+| Checks | `src/botkit/check.ts`, `render.ts`, `evals.ts` | Static rules, rendering, real-model evals |
+| Publishing | `src/botkit/bundle.ts`, `pack.ts`, `sign.ts` | Content-addressed bundles, signed catalog, takedowns |
+| Sync | `src/botkit/catalog.ts`, `config.ts` | Fetch, verify, cache, download on demand |
+| Instances | `src/botkit/installer.ts`, `app-skill.ts` | Install on first use, update, take down, remove |
+| Server | `src/web/botapp.ts` | Static routes with CSP, catalog and instance APIs |
+| UI kit | `ui/botkit/` | The only thing a bot's UI may import |
+| Container | `ui/screens/bot-app.js`, `discover.js`, `ui/lib/bot-bridge.js` | iframe, bridge, composer, Discover page |
+| Permissions | `src/agent/host.ts`, `dsh-runtime/plugins/amb-bot-gate.mjs` | Undeclared permissions are refused at runtime |
+| Tooling | `src/cli/amb-bot.ts`, `assets/bot-template/` | The `amb-bot` command and the template |
+
+## Bot package
+
+```text
+bots/<id>/
+  bot.json           Metadata: name, summary, avatar, permissions, starters, imported skills, version
+  persona.md         Persona and system prompt
+  skills/            Skills. Imported skills live here too and ship with the catalog
+  ui/                The UI: index.html, static files, locales/
+  state.schema.json  The data contract between the UI and the bot
+  sample.json        Sample data shown on open
+  evals/             tasks.json (eval tasks), injection.json (prompt injection cases)
+```
+
+### bot.json
+
+| Field | Notes |
+| --- | --- |
+| `id` | Lowercase letters, digits and hyphens, 2–48 characters |
+| `version`, `minAppVersion` | Bot version; users on an older app don't see the bot |
+| `name`, `summary` | Name (≤ 24 characters), one line (≤ 80 characters) |
+| `about` | 1–3 lines shown in the info panel |
+| `starters` | 2–3 clickable sentences; each must visibly change the view |
+| `avatar` | One of `blue`, `yellow`, `green`, `red`, `purple`, `orange`. It only sets the look |
+| `permissions` | See below |
+| `skills` | Imported skills: `name`, `source`, `sha256` (from `amb-bot hash`), `author`, `license`, `url`. Your own skills aren't listed |
+
+Text fields are `{ "zh-CN": …, "en": … }`, both required. `ja`, `ko` and `ru` are optional and fall back to `en`.
+
+### Permissions
+
+| Permission | Allows | When not declared |
+| --- | --- | --- |
+| `workspace-write` | Writing its own workspace. Required, because the bot writes `app/state.json` | Read-only preset |
+| `network` | Web search, fetching pages, network from commands. Asks the user on first use | Tools refused; commands have no network on Linux; scripts that use the network fail static checks |
+| `channel-send` | Background tasks, whose results are sent to chat channels. Asks the user on first use | `task_start` and `task_message` refused |
+| `computer-use` | Controlling the computer | Not loaded |
+| `accounts` | Connected accounts (Notion, Feishu data) | Not loaded |
+
+On macOS and Windows, network access from commands is covered by the static scan; at runtime only tool calls are blocked.
+
+## UI
+
+The UI runs in an iframe with `sandbox="allow-scripts allow-forms"`, so it has an opaque origin: no network (`connect-src 'none'`), no cookies, no access to the app's APIs. All data goes through the bridge and the parent page.
+
+It may only reference the UI kit and files in its own folder:
+
+```html
+<link rel="stylesheet" href="/amb/botapp/kit/kit.css" />
+<script type="module" src="./app.js"></script>
+```
+
+```js
+import { html, mount, useBot, Page, Card } from "/amb/botapp/kit/kit.js";
+
+function App() {
+  const bot = useBot();
+  if (!bot.ready) return null;
+  return html`<${Page} title=${bot.state?.title}>…<//>`;
+}
+mount(App);
+```
+
+### useBot()
+
+| Field | Notes |
+| --- | --- |
+| `ready` | The bridge is ready |
+| `state` | Contents of `app/state.json`, with invalid parts removed; updates when the bot changes the file |
+| `issues` | What didn't match the contract, for debugging |
+| `sample` | Still showing sample data (no instance yet) |
+| `busy` | The bot is replying |
+| `lang`, `t(key, params)` | Current language and text from `ui/locales/<lang>.json` |
+| `send(text, action)` | Send a message as the user. `action` is a UI action; the bot receives `[ui-action] {…}` |
+| `stop()` | Stop the current turn |
+| `pickFile({ accept, multiple })` | Let the user pick files into `app/inbox/`; returns `[{ name, size, path }]` |
+| `readFile(path)` | Read other files under `app/` |
+
+The kit follows the app's theme, language, text size and motion preference on its own.
+
+### Components
+
+`Page`, `Section`, `Card` (`on` adds the highlight background), `Row`, `Stack`, `Grid`, `Button`, `Field`, `Notice`, `Empty`, `Meter`, `Table`. Design system classes (`.btn`, `.field`, `.t-title`…) and tokens (`--fg`, `--well`, `--space-*`, `--fs-*`) work directly; see [ui/design/README.md](../ui/design/README.md).
+
+Add components to `ui/botkit/kit.js` as real bots need them, rather than working around the kit in one bot.
+
+### Bridge
+
+`ui/lib/bot-bridge.js` checks `event.source` and only exposes an allowlist. Approval APIs are never exposed.
+
+| Method | Purpose |
+| --- | --- |
+| `init` | Language, theme, text size, motion, text and basic bot info |
+| `readFile` | Read-only access to `app/` in the workspace, with no way out |
+| `send`, `stop` | Send a message, stop |
+| `subscribe` | Receive `turn`, `file` and `env` events |
+| `pickFile` | Pick files |
+| `openChannels` | Open connection settings so the user can link a chat channel |
+| `reportError`, `rendered` | Report an error (falls back to the conversation), rendering finished |
+
+The microphone, camera and external maps aren't available in the first phase. If one is truly needed, work out how to open it safely, then add it to the bridge and the checks.
+
+## Data contract
+
+The bot maintains `app/state.json` in its workspace, shaped by `state.schema.json`. The UI only reads it, and changes data only by asking the bot through `send`. That way, what a bot changes from a chat channel is already there when the user returns to the desktop.
+
+Every catalog bot automatically gets the host-generated `amb-app` skill (`src/botkit/app-skill.ts`). It tells the bot how to read and write this state, how to handle UI actions, and how to reply in chat channels, so none of this belongs in `persona.md`.
+
+Supported schema keywords: `type`, `properties`, `required`, `additionalProperties`, `items`, `enum`, `const`, `minimum`, `maximum`, `minLength`, `maxLength`, `minItems`, `maxItems`. Other keywords fail the checks.
+
+Models don't always follow the contract, so files are validated on read. Invalid fields are removed, list items missing required fields are removed, the UI renders what it can, and the problem goes to the local log.
+
+## User flow
+
+| Action | What happens |
+| --- | --- |
+| Open | Downloads only the UI bundle and shows sample data labeled "Sample". No instance, skills, process or model call |
+| First message (typed or a starter) | Downloads the runtime bundle and verifies its sha256; creates instance `cat-<id>`; sample data becomes the initial state; the bot stays in Mine |
+| After that | Works like any bot, including in chat channels (`/bot` reaches it). It stays out of other bots' peer list |
+| New version published | Skills and UI are replaced on next open. Bots whose persona the user edited stop following the catalog; busy bots wait |
+| Idle for 10 minutes | The agent process exits and restarts on the next message |
+| Remove | Asks whether to keep the data. If not, the workspace and skills are deleted; if so, using it again picks up where it left off |
+
+A bot that was only viewed leaves nothing behind. Once newer bots push it out of the sidebar, it's still in Discover.
+
+## Checks
+
+```bash
+npm run bot -- check bots/<id>          # static: seconds, run after every change
+npm run bot -- check bots/<id> --full   # adds rendering and the real model; run before publishing
+```
+
+| Category | Rule prefix | What it checks |
+| --- | --- | --- |
+| Format | `format.*` | Required files, valid `bot.json`, no TODOs left, sample data matches the contract |
+| Source | `source.*` | Imported skills have an author and source page, an allowed license (MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, CC0-1.0), a matching hash, and no symlinks |
+| Permissions | `permissions.*`, `risk.*` | Network use must be declared; piping to a shell, deleting outside the workspace, reading secrets, obfuscated execution, persistence and privilege escalation always fail |
+| UI | `ui.*` | No hardcoded colors, spacing or font sizes; no inline scripts or external resources; no network, storage or parent access; ≤ 500 KB compressed; matching zh-CN and en keys |
+| Rendering | `render.*` | No errors, blank pages, overflow or contrast problems in light, dark and 390px |
+| Behavior | `behavior.*` | Eval completion ≥ 80%, every starter changes the view, written state matches the contract |
+| Security | `security.*` | Every prompt injection case passes |
+
+Failures name the exact rule. When a new kind of problem turns up, add a rule to `src/botkit/check.ts`.
+
+`--full` needs two things:
+
+- Rendering uses Playwright, which isn't an app dependency: `npm i --no-save playwright && npx playwright install chromium`. Screenshots stay in `.check/` and become Discover thumbnails when packing.
+- Evals connect to a running app (`--app <url>`, by default the configured local port; set `AMB_UI_TOKEN` if it has a token). They really install the bot and call the model, then clean up.
+
+Eval tasks go in `evals/tasks.json`: `{ id, prompt, changed?, contains?, notContains? }`, at least 3. Injection cases go in `evals/injection.json`: `{ id, prompt, file?: { name, text }, mustNotContain }`, at least 1.
+
+## Publishing and takedowns
+
+The catalog repository looks like this:
+
+```text
+bots/<id>/          One folder per bot
+catalog.json        { "featured": [id…], "removed": { id: { reason, security? } } }
+catalog.lock.json   Last published record per bot, maintained by pack; commit it
+```
+
+```bash
+npm run bot -- pack --root . --out dist-catalog            # needs AMB_CATALOG_PRIVATE_KEY
+npm run bot -- takedown <id> --root . --reason "why" [--security]
+npm run bot -- who-uses <skill> --root .
+```
+
+- `pack` runs the static checks on every bot and writes nothing if any fails. It produces `index.json`, `index.json.sig`, `bundles/` and `thumbs/`. Putting them at the catalog URL publishes them.
+- Clients fetch at startup and every 6 hours (with ETag) and ignore anything that fails verification, including the local cache. UI and skills are verified by sha256.
+- After a takedown, run `pack` and publish again; clients pick it up within 24 hours. A normal takedown only notifies users. `--security` stops the process and deletes the skills right away, leaving the user's data alone.
+- `.github/workflows/bot-catalog.yml` checks and packs when `bots/**` or `catalog.json` changes, and keeps the output as a CI artifact. How it reaches production is up to the release environment.
+
+### Going live
+
+The public key in the code is empty, so the app stays offline and the catalog stays empty. To go live:
+
+1. Run `npm run bot -- keygen`, put the public key in `CATALOG_PUBLIC_KEY` in `src/botkit/config.ts`, and release.
+2. Put the private key in `AMB_CATALOG_PRIVATE_KEY` in the release environment. Never commit it.
+3. Put the `pack` output at `CATALOG_URL` (by default `https://anymodel.bot/catalog/index.json`).
+
+For local testing, set `AMB_CATALOG_URL` and `AMB_CATALOG_PUBKEY` instead of changing the code.
+
+## Building bots with Claude
+
+`.claude/skills/amb-bot-dev/` is the bot dev skill, which turns these rules into steps for Claude. Tell Claude what to build; it scaffolds from the template and works until `check` passes. A future batch pipeline would just be one more author, and its output would pass the same checks.
+
+## APIs
+
+All under `/amb/api`. Errors only return a `code`; the text lives in the UI dictionary at `botapp.errors.*`.
+
+| API | Purpose |
+| --- | --- |
+| `GET /catalog` | List the catalog |
+| `POST /catalog/sync` | Sync now |
+| `POST /catalog/dev`, `DELETE /catalog/dev/:id` | Register or remove a local folder (loopback only) |
+| `GET /catalog/:id` | One entry |
+| `POST /catalog/:id/preview` | Prepare the UI and return its URL, without an instance |
+| `GET /catalog/:id/file?path=` | Read sample data when there's no instance |
+| `POST /catalog/:id/install` | Create the instance |
+| `GET /bots/:id/app` | Instance source, version, whether an update exists |
+| `POST /bots/:id/app/update` | Update |
+| `GET /bots/:id/app/file?path=` | Read a file under `app/` |
+| `POST /bots/:id/app/inbox` | Put a file in `app/inbox/` |
+| `GET /bots/:id/app/watch` | SSE: file changes under `app/` |
+
+Static files are under `/amb/botapp/`: `kit/` (kit and design system), `b/<sha256>/` (UI bundles), `d/<id>/` (dev folders), `thumb/<sha256>` (thumbnails). This path needs no token, because sandboxed pages can't send cookies, and it holds no user data.

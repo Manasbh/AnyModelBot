@@ -56,8 +56,8 @@ export default {
   },
   error: {
     stopFailed: "Не удалось остановить: {error}",
-    fixKey: "Обновить ключ",
-    authInvalid: "Ваш ключ Modelflare недействителен или отозван.",
+    fixKey: "Войти",
+    authInvalid: "Доступ к Modelflare истёк или отозван. Войдите снова.",
     loadHistory: "Не удалось загрузить историю сообщений: {error}",
   },
   menu: {

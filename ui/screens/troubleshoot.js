@@ -145,6 +145,19 @@ function PwshRows({ ps, busy, onRecheck, onInstall, onMode }) {
   <//>`;
 }
 
+/** 测试模型的一条线路（经内置网关 / 直连端点）：状态码和耗时；成功时带回显的模型名和回复，失败时带错误原文 */
+function ProbeRow({ name, p }) {
+  if (!p) return null;
+  if (p.skipped) return html`<${Row} compact name=${name} sub=${p.skipped}><span class="ts-state"><span class="dot"></span>${t("troubleshoot.probe.untested")}</span><//>`;
+  const sub = p.ok
+    ? join(p.url, p.echoedModel && t("troubleshoot.probe.echoed", { model: p.echoedModel }), p.reply && t("troubleshoot.probe.reply", { reply: p.reply }))
+    : join(p.url, p.error);
+  return html`<${Row} compact name=${name} sub=${sub} mono=${!p.ok}>
+    <span class="ts-state"><span class=${`dot ${p.ok ? "ok" : "err"}`}></span>${p.status ? `HTTP ${p.status}` : t(p.ok ? "troubleshoot.probe.ok" : "troubleshoot.stage.fail")}</span>
+    ${p.ms !== undefined && html`<span class="val num">${ms(p.ms)}</span>`}
+  <//>`;
+}
+
 export function TroubleshootPane({ bots, desktop }) {
   const [st, setSt] = useState(null);
   const [logs, setLogs] = useState(null);

@@ -80,7 +80,7 @@ Every model in AnyModelBot comes from **[Modelflare](https://modelflare.dev/?utm
 
 **How AnyModelBot uses Modelflare**
 
-- **Sign in once.** The first launch opens your browser to sign in to (or sign up for) Modelflare. The app then connects this device itself, so there is no key to copy. Running in Docker or on a server? Paste an API key instead.
+- **Sign in once.** The first launch opens your browser to sign in to (or sign up for) Modelflare. The app then connects this device itself, so there is no key to copy. Running in Docker or on a server? Sign in from a browser on any device, then paste the link you land on back into the app.
 - **Every model, one picker.** Your Modelflare models are listed automatically, with context length, capabilities and reference prices next to each one.
 - **Pay for what you use.** Balance, low-balance reminders and per-day usage show up inside the app. Check the public price list and compare it with the official rates before you choose a model.
 - **An honest boundary.** Model requests travel through Modelflare to the provider you pick, and Modelflare keeps request logs. See the [Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) for what is kept and for how long. Everything else stays on your device ([details](#-how-it-works--privacy)).

@@ -700,7 +700,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
           ${(it.activity?.length || it.steps) && html`<${WorkLine} workedMs=${it.workedMs} steps=${it.activity} count=${it.steps} load=${it.mid ? loadActivity(it.mid) : undefined} />`}
           ${it.interim?.length > 0 && html`<div class="msg"><${Markdown} text=${it.interim.join("\n\n")} /></div>`}
           ${files(it)}
-          <${ErrorNotice} text=${it.text} onRetry=${it.retry ? () => send(it.retry) : undefined} onFixKey=${() => onOpenSettings("modelflare", "connection")} />
+          <${ErrorNotice} text=${it.text} onRetry=${it.retry ? () => send(it.retry) : undefined} onFixKey=${() => onOpenSettings("modelflare", "account")} />
         </div>`);
       }
       // 回复下面直接挂在同一行里（在复制按钮之前）；挂在卡片、文件、出错提示后面时自成一行
@@ -711,7 +711,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   }, [items, generating, stopping, chipsAfter, lang, canOpen]);
 
   const empty = items && items.length === 0;
-  const showGuide = isActive(g) && !g.seen.includes("intro") && !!guideStep(g);
+  const showGuide = isActive(g) && !g.seen.includes("intro") && !g.trim && !!guideStep(g);
   // 头像跟着对话走：等你批准 > 还没出字（思考）/ 出字了（回复）> 你在输入（在听）
   const replying = generating && (items || []).some((x) => x.live && x.text);
   const face = pending > 0 ? "waiting" : generating ? (replying ? "replying" : "thinking") : text.trim() ? "listening" : "idle";

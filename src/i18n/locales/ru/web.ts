@@ -6,11 +6,9 @@ export default {
   externalNoConnection:
     "В режиме внешнего API подключение Modelflare не управляется",
   externalNoAccount: "В режиме внешнего API аккаунт Modelflare не управляется",
-  missingApiKey: "Отсутствует API-ключ",
-  noBrowserLogin:
-    "В Docker и при удалённом развёртывании вход через браузер недоступен. Используйте API-ключ",
   lowBalanceRange: "Порог уведомления должен быть от $0 до $1,000",
   badZoom: "Неподдерживаемый масштаб",
+  badReasoningEffort: "Неизвестная глубина рассуждений",
   badLang: "Неподдерживаемый язык",
   badSearchProvider: "Неподдерживаемый поисковый сервис",
   badSearchUrl: "Адрес SearXNG должен начинаться с http:// или https://",

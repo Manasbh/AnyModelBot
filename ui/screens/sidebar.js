@@ -12,8 +12,9 @@ import { confirmSheet, failed, toast, useStore } from "../lib/store.js";
 import { prefs, setPrefs } from "../lib/prefs.js";
 import { fmtAgo } from "../lib/format.js";
 import { MF_TOPUP, usd } from "../lib/links.js";
-import { t } from "../lib/i18n.js";
+import { t, useLang } from "../lib/i18n.js";
 import { NeedsRow } from "./needs-you.js";
+import { catalogFold, catalogSeen, latestOf, setCatalogFold, tr } from "../lib/catalog.js";
 import { GroupAvatars } from "./group.js";
 
 /**
@@ -63,7 +64,12 @@ function UpdateNotice({ update }) {
   </div>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup }) {
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog }) {
+  const lang = useLang();
+  const seen = useStore(catalogSeen);
+  const fold = useStore(catalogFold);
+  const latest = latestOf(catalog);
+  const hasNew = catalog.some((e) => !e.instanceId && !seen.includes(e.id));
   const [q, setQ] = useState("");
   const [ctx, setCtx] = useState(null); // 行的操作菜单：右键 { bot, x, y }，或者"更多"按钮 { bot, el }
   const [groupCtx, setGroupCtx] = useState(null); // 群聊行的操作菜单：{ group, x, y } 或 { group, el }
@@ -90,9 +96,12 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     }
   };
   const del = async (bot) => {
-    if (!(await confirmSheet({ title: t("sidebar.delete.title", { name: bot.name }), body: t("sidebar.delete.body"), confirmLabel: t("sidebar.delete.confirm"), danger: true }))) return;
+    // 目录 Bot 移除时问一句是否保留数据：保留的话再次使用能接上
+    const fromCatalog = bot.origin === "catalog";
+    if (!(await confirmSheet(fromCatalog ? { title: t("botapp.remove.title", { name: bot.name }), body: t("botapp.remove.body"), confirmLabel: t("botapp.remove.confirm"), danger: true } : { title: t("sidebar.delete.title", { name: bot.name }), body: t("sidebar.delete.body"), confirmLabel: t("sidebar.delete.confirm"), danger: true }))) return;
+    const keep = fromCatalog && (await confirmSheet({ title: t("botapp.remove.keepTitle"), body: t("botapp.remove.keepBody"), confirmLabel: t("botapp.remove.keep"), cancelLabel: t("botapp.remove.discard") }));
     try {
-      await api(`/bots/${bot.id}`, { method: "DELETE" });
+      await api(`/bots/${bot.id}${keep ? "?keepData=1" : ""}`, { method: "DELETE" });
       onDeleted(bot.id);
     } catch (e) {
       failed(e);
@@ -128,6 +137,11 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     </label>
     <nav class="side-list" aria-label=${t("sidebar.list")}>
       <${NeedsRow} count=${needs.n} on=${view === "needs"} onClick=${onNeeds} />
+      ${catalog.length > 0 && !needle && html`<button type="button" class=${`thread${view === "discover" ? " sel" : ""}`} aria-current=${view === "discover" ? "page" : undefined} onClick=${onDiscover}>
+        <span class="thread-icon"><${Icon} name="spark" size="md" /></span>
+        <span class="body"><span class="line"><span class="title">${t("botapp.sidebar.discover")}</span>${hasNew && html`<span class="thread-new-dot" title=${t("botapp.sidebar.new")}></span>`}</span></span>
+      </button>
+      <div class="side-group"><span class="text t-label">${t("botapp.sidebar.mine")}</span></div>`}
       ${view === "new" && html`<div class="thread sel" aria-current="page"><${BotAvatar} neutral size=${38} />
         <span class="body"><span class="line"><span class="title">${t("sidebar.newBot")}</span></span><span class="line"><span class="snip">${t("sidebar.creating")}</span></span></span></div>`}
       ${botsError && html`<div class="side-empty"><span>${t("sidebar.loadFailed")}</span><button type="button" class="btn" onClick=${reloadBots}>${t("common.retry")}</button></div>`}
@@ -135,7 +149,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       ${bots && !bots.length && view !== "new" && html`<div class="side-empty"><span>${t("sidebar.empty")}</span><button type="button" class="btn primary" onClick=${onNew}>${t("sidebar.create")}</button></div>`}
       ${bots && needle && !list.length && !shownGroups.length && html`<p class="hint">${t("sidebar.noMatch")}</p>`}
       ${list.map((b) => {
-        const sel = (view === "chat" || view === "bot-settings") && b.id === selectedId;
+        const sel = (view === "chat" || view === "bot-settings" || view === "app") && b.id === selectedId;
         // 等你的：「需要你」里这个机器人的件数和最早那件（没有时退回待审批数）
         const nd = needs.bots[b.id];
         const n = nd?.n || pending[b.id] || 0;
@@ -177,6 +191,16 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
             onClick=${(e) => { const el = e.currentTarget; setGroupCtx((c) => (c && c.el && c.group.id === g.id ? null : { group: g, el })); }} />
         </div>`;
       })}
+      ${latest.length > 0 && !needle && html`<button type="button" class="side-group text" aria-expanded=${!fold} onClick=${() => setCatalogFold(!fold)}>
+        <span class="text t-label">${t("botapp.sidebar.latest")}</span><${Icon} name=${fold ? "chevRight" : "chevDown"} size="sm" />
+      </button>
+      ${!fold && latest.map((e) => html`<button type="button" key=${"c" + e.id} class=${`thread bot-hover${view === "preview" && catalogId === e.id ? " sel" : ""}`} aria-current=${view === "preview" && catalogId === e.id ? "page" : undefined} onClick=${() => onOpenCatalog(e)}>
+        <span class="avatar-wrap"><${BotAvatar} char=${e.avatar} size=${38} /></span>
+        <span class="body">
+          <span class="line"><span class="title">${tr(e.name, lang)}</span>${!seen.includes(e.id) && html`<span class="thread-new-dot" title=${t("botapp.sidebar.new")}></span>`}</span>
+          <span class="line"><span class="snip">${tr(e.summary, lang)}</span></span>
+        </span>
+      </button>`)}`}
     </nav>
     <${UpdateNotice} update=${update} />
     <${LowBalance} account=${account} />

@@ -4,6 +4,23 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.19 - 2026-11-03
+
+### Important changes
+
+- **Sign-in is now required:** Pasting an API key is no longer supported; everyone signs in with a Modelflare account. After you update, any key you entered earlier is removed from this device and the app asks you to sign in. Your bots and conversations keep working once you do.
+- **Sign-in now works in Docker and remote deployments:** Sign in from a browser on any device, then paste the link from the address bar back into the app. During command-line setup, enter `remote`.
+
+### New
+
+- **Reasoning effort:** Choose Auto, Low, Medium or High. Higher settings think harder and reply more slowly. With Auto the model decides, and models that can't adjust aren't affected.
+- **More detail when testing a model:** Troubleshooting now shows results for the built-in gateway and the direct endpoint separately, with status code, time taken and the original error.
+
+### Improvements and fixes
+
+- If the model list endpoint doesn't respond, the app stops waiting after 30 seconds, so "Test model" no longer spins forever.
+- Updated the website's partner page, home page and download page.
+
 ## 0.1.18 - 2026-11-03
 
 ### New

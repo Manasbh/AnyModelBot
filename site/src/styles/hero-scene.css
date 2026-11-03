@@ -1,7 +1,7 @@
 @layer tokens, base, components, app, utilities;
 /* Hero 的背景：取色（.hero-scene）+ 顶光 → 天空 → 光晕 → 地平线。首页 Hero（sections/Hero.astro）和下载页页头（views/DownloadView.astro）共用；
    外框和磨砂颗粒各自写（首页 .hero__bg，下载页 .dl-top），各层的用意见 home.css 的"1 Hero"。
-   这里只有静止的样子：星闪、云飘、流星、地平线升起都写在 home.css，只有首页有——背景动画的例外只给首页 Hero（README"动效的硬规矩"）。 */
+   动画也写在这里（文件末尾），两处一样：背景动画的例外只给这两处（README"动效的硬规矩"；下载页是用户 2026-11-03 要求的）。 */
 @layer app {
   .hero-scene {
     --hero-top: clamp(40px, 7vw, 104px);
@@ -116,4 +116,28 @@
     -webkit-mask-image: radial-gradient(min(680px, 28%) 140px at 50% 0, #000, transparent); mask-image: radial-gradient(min(680px, 28%) 140px at 50% 0, #000, transparent);
   }
   [data-theme="light"] .hero__horizon::before { box-shadow: inset 0 1px 0 var(--hero-rim), inset 0 4px 12px -4px color-mix(in srgb, var(--hz-glow) 14%, transparent); }
+
+  /* 动画：入场时地平线从下面升起、光晕亮起来，之后静止不循环；天空的说明见上面 .hero__sky。"减少动态效果"时都不放 */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero__horizon { animation: hero-sunrise 2s var(--ease-out) 100ms backwards; }
+    .hero__glow { animation: hero-glow-in 2.2s var(--ease-out) 250ms backwards; }
+    /* 星空：少数星星慢慢闪、流星偶尔划过（见 .hero__sky 的说明） */
+    .hero__dots .tw { animation: star-twinkle var(--d) ease-in-out var(--t) infinite; }
+    .hero__glints .tw { animation: glint-sparkle var(--d) ease-in-out var(--t) infinite; }
+    .hero__cloud { animation: cloud-drift var(--c) linear var(--t) infinite; }
+    .hero__meteor { animation: hero-meteor var(--c) linear var(--w) infinite; }
+  }
+  @keyframes star-twinkle { 50% { opacity: var(--dim); } }
+  /* 闪光：几乎看不见（小、淡）→ 亮起来、转 45° → 再隐去；大半时间停在"几乎看不见"，偶尔一闪 */
+  @keyframes glint-sparkle {
+    0%, 100% { opacity: calc(var(--o) * .12); scale: calc(var(--s) * .35); rotate: 0deg; }
+    45% { opacity: calc(var(--o) * .12); scale: calc(var(--s) * .35); rotate: 0deg; }
+    65% { opacity: var(--o); scale: calc(var(--s) * 1.15); rotate: 45deg; }
+    85% { opacity: calc(var(--o) * .12); scale: calc(var(--s) * .35); rotate: 90deg; }
+  }
+  /* 白云：从卡片左外侧飘到右外侧（cqw 是 .hero__sky 的宽度） */
+  @keyframes cloud-drift { from { translate: calc(-1 * var(--w)) 0; } to { translate: 100cqw 0; } }
+  @keyframes hero-meteor { 0% { opacity: 0; translate: 0 0; } 1% { opacity: .8; } 4.5% { opacity: 0; translate: 285px 93px; } 100% { opacity: 0; translate: 285px 93px; } }
+  @keyframes hero-sunrise { from { opacity: 0; translate: -50% 220px; } }
+  @keyframes hero-glow-in { from { opacity: 0; scale: .6 .4; } }
 }

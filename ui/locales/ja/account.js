@@ -1,8 +1,4 @@
 export default {
-  "login": {
-    "title": "Modelflare にログイン",
-    "hint": "ログインすると、入力済みの API キーが置き換わります。"
-  },
   "usage": {
     "title": "利用状況",
     "days": "{n} 日間",

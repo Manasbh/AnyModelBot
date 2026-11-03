@@ -9,8 +9,6 @@ export const zh = {
   unavailable: "Modelflare 暂时不可用（HTTP {status}）{retry}",
   retry_after: "，{s} 秒后重试",
   bad_models: "Modelflare 返回了无法识别的模型列表",
-  balance_failed: "读取余额失败（HTTP {status}）",
-  bad_balance: "Modelflare 返回了无法识别的余额",
 } satisfies Catalog;
 
 export const en: Catalog<typeof zh> = {
@@ -21,6 +19,4 @@ export const en: Catalog<typeof zh> = {
   unavailable: "Modelflare is temporarily unavailable (HTTP {status}){retry}",
   retry_after: "; retry in {s}s",
   bad_models: "Modelflare returned a model list we couldn't read",
-  balance_failed: "Couldn't read the balance (HTTP {status})",
-  bad_balance: "Modelflare returned a balance we couldn't read",
 };

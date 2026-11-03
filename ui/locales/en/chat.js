@@ -54,8 +54,8 @@ export default {
   },
   error: {
     stopFailed: "Couldn't stop: {error}",
-    fixKey: "Update key",
-    authInvalid: "Your Modelflare key is invalid or has been revoked.",
+    fixKey: "Sign in",
+    authInvalid: "Your Modelflare access has expired or been revoked. Please sign in again.",
     loadHistory: "Couldn't load message history: {error}",
   },
   menu: {

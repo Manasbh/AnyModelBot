@@ -11,7 +11,7 @@ export default {
     },
     {
       "title": "Modelflare 로그인",
-      "caption": "처음 실행할 때 브라우저에서 Modelflare에 한 번 로그인하면 자동으로 연결됩니다. Docker나 원격 환경에서는 API 키를 붙여 넣을 수 있습니다."
+      "caption": "처음 실행할 때 브라우저에서 Modelflare에 한 번 로그인하면 자동으로 연결됩니다. Docker나 원격 환경에서는 로그인 후의 링크를 붙여 넣으면 됩니다."
     },
     {
       "title": "기본 모델 선택",

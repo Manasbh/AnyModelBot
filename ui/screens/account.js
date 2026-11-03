@@ -1,7 +1,6 @@
-// Modelflare 账户相关的弹层：登录、近 N 天用量、通知。设置页「Modelflare」分页里的行会打开它们。
+// Modelflare 账户相关的弹层：近 N 天用量、通知。设置页「Modelflare」分页里的行会打开它们。
 import { useEffect, useState } from "preact/hooks";
 import { html, Seg, Sheet, Skeleton } from "../components/ui.js";
-import { AccountLogin } from "./onboarding.js";
 import { api } from "../lib/api.js";
 import { MF_SITE, tagLink, usd } from "../lib/links.js";
 import { t } from "../lib/i18n.js";
@@ -12,13 +11,6 @@ const notifLink = (link) => {
   const raw = !link ? "" : link.startsWith("/") && !link.startsWith("//") ? MF_SITE + link : /^https:\/\//.test(link) ? link : "";
   return raw && tagLink(raw, "amb_notice");
 };
-
-export function LoginSheet({ onClose, onSignedIn }) {
-  return html`<${Sheet} title=${t("account.login.title")} onClose=${onClose}>
-    <p class="hint">${t("account.login.hint")}</p>
-    <${AccountLogin} onSignedIn=${(s) => { onSignedIn(s); onClose(); }} />
-  <//>`;
-}
 
 const RANGES = () => [7, 30].map((n) => [n, t("account.usage.days", { n })]);
 

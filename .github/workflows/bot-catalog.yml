@@ -1,0 +1,42 @@
+# Catalog bots: check every bot and build the signed catalog when bots change (docs/bot-framework_en.md).
+# The output is kept as an artifact; how it reaches production is decided by the release environment.
+# Static checks only: the rendering and real-model checks (check --full) run before proposing a bot.
+name: Bot catalog
+
+on:
+  pull_request:
+    paths: ["bots/**", "catalog.json", "src/botkit/**", "assets/bot-template/**"]
+  push:
+    branches: [master]
+    paths: ["bots/**", "catalog.json"]
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Check every bot
+        run: |
+          shopt -s nullglob
+          for d in bots/*/; do npm run --silent bot -- check "$d"; done
+      - name: Pack and sign
+        if: github.event_name == 'push'
+        env:
+          AMB_CATALOG_PRIVATE_KEY: ${{ secrets.AMB_CATALOG_PRIVATE_KEY }}
+        run: npm run --silent bot -- pack --root . --out dist-catalog
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        with:
+          name: bot-catalog
+          path: dist-catalog

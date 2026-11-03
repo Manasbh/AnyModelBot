@@ -11,7 +11,7 @@ export default {
     },
     {
       "title": "Sign in to Modelflare",
-      "caption": "On first launch, sign in to Modelflare once in your browser and it connects by itself. Docker or remote setups can paste an API key instead."
+      "caption": "On first launch, sign in to Modelflare once in your browser and it connects by itself. On Docker or remote setups, paste the link you land on after signing in."
     },
     {
       "title": "Pick a default model",

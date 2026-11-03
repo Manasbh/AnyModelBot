@@ -1,3 +1,4 @@
+import type { ReasoningEffort } from "../config.js";
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -14,6 +15,7 @@ import { cuaConfig, cuaMcpEnv, discoverAppsCached, type CuaApp } from "./cua-dri
 import { pwshPatchLines, pwshProbe } from "./pwsh.js";
 import { hasEnvProxy, networkEnv, systemProxyEnv } from "./proxy-env.js";
 import { DEFAULT_SETTINGS, permissionMode, type BotSettings } from "./settings.js";
+import type { BotPermission } from "../botkit/format.js";
 import type { AccountService } from "./accounts.js";
 import { acceptsImages } from "../llm/client.js";
 import { CUA_SKILL, MEDIA_SKILL, TASK_RULES, agentPersona, botPrompt } from "./prompts/index.js";
@@ -213,6 +215,8 @@ export interface AgentHostOptions {
   contextWindow?: (model: string) => Promise<number | undefined>;
   /** 模型支持的接口与是否推理（Modelflare 模型资料），用来选对话接口；不知道时 undefined，走 Chat Completions */
   apiInfo?: (model: string) => Promise<ModelApiInfo | undefined>;
+  /** 用户选的推理强度（全局）；每一轮开始时读，改了下一轮生效，不用重启代理进程 */
+  effort?: () => ReasoningEffort;
   /** 被上游拒绝过的模型 → 改走 Chat Completions（所有机器人共用，存在数据目录）；不给时只在本进程内记 */
   apiFallbacks?: ApiFallbacks;
   /** 代理自己醒来开了一轮（后台命令结束）：调用方用 followTurn 跟踪它，把回复发到会话里 */
@@ -329,6 +333,35 @@ export function providerFor(api: AgentApi, reasoning?: boolean): string {
   return "magpie";
 }
 
+/**
+ * 这条路线上推理强度能不能调。Responses 上不知道是不是推理模型时按推理算（和 providerProfiles 的默认一致）；
+ * Chat、Anthropic 只认模型资料明确标了推理的：给不推理的模型发推理参数会被上游拒绝。
+ */
+export function effortApplies(api: AgentApi, reasoning?: boolean): boolean {
+  return api === "openai-responses" ? reasoning !== false : reasoning === true;
+}
+
+/**
+ * Claude 4.6 起（以及 Fable、Mythos）用 adaptive 思考加 output_config.effort，较新的型号收到 budget_tokens 直接 400；
+ * 更早的型号只有 budget_tokens。pi-ai 对不在它目录里的模型 id 默认走 budget，所以要明确告诉它。
+ */
+export function claudeAdaptive(model: string): boolean {
+  if (/claude-(?:fable|mythos)/i.test(model)) return true;
+  const m = /claude-(?:opus|sonnet|haiku)-(\d+)(?:[-.](\d{1,2})(?!\d))?/i.exec(model);
+  if (!m) return false;
+  const major = Number(m[1]);
+  return major > 4 || (major === 4 && Number(m[2] ?? 0) >= 6);
+}
+
+/** 补丁里模型的 compat：只放和以前不一样、不写就会出错的那几项 */
+function profileCompat(api: AgentApi, model: string, reasoning?: boolean): Record<string, boolean> | undefined {
+  if (api === "openai-responses") return { supportsDeveloperRole: false, supportsStrictMode: true };
+  if (!effortApplies(api, reasoning)) return undefined;
+  // Chat：声明推理后 pi-ai 默认把系统提示改成 developer 角色，网关转给非 OpenAI 模型时不一定认
+  if (api === "openai-completions") return { supportsDeveloperRole: false };
+  return claudeAdaptive(model) ? { forceAdaptiveThinking: true } : undefined;
+}
+
 /** llm-pi-ai 的一个 provider（补丁和运行时更新共用这份结构） */
 export interface ProviderProfile {
   displayName: string;
@@ -353,7 +386,8 @@ export interface ProviderProfile {
  * - Responses：store:false 下推理条目要带 encrypted_content 才能回放，而 DSH 只在指定了推理强度时才要它，
  *   所以推理模型（或不知道是不是）声明 low/medium/high、默认 medium；明确不推理的不发推理参数。
  *   系统提示用 system 角色（网关转给非 OpenAI 模型时不一定认 developer）；工具显式 strict:false。
- * - Anthropic、Chat 不声明推理（和以前一样，用模型默认）。
+ * - Anthropic、Chat 上模型资料标了推理的也声明 low/medium/high，但 provider 不设默认强度：用户没选（自动）时什么都不发，
+ *   和以前一样用模型默认；选了才由 amb-control 按会话带上（AgentHost.useRoute）。没声明的模型收到强度会被 pi-ai 拒绝。
  */
 export function providerProfiles(routes: ModelRoute[], bridgeUrl: string, botId: string): Record<string, ProviderProfile> {
   const out: Record<string, ProviderProfile> = {};
@@ -369,6 +403,7 @@ export function providerProfiles(routes: ModelRoute[], bridgeUrl: string, botId:
       models: [],
     });
     if (p.models.some((m) => m.id === r.model)) return;
+    const compat = profileCompat(api, r.model, reasoning);
     p.models.push({
       id: r.model,
       name: r.model.split("/").pop() || r.model,
@@ -376,17 +411,13 @@ export function providerProfiles(routes: ModelRoute[], bridgeUrl: string, botId:
       maxTokens: r.limits.maxTokens,
       // 默认只收文字；能看图的模型声明图片输入，用户发来的图片才会作为图片交给它
       ...(acceptsImages(r.model) ? { input: ["text", "image"] } : {}),
-      ...(api === "openai-responses"
-        ? {
-            ...(reasoning !== false ? { reasoningEfforts: { low: "low", medium: "medium", high: "high" } } : {}),
-            compat: { supportsDeveloperRole: false, supportsStrictMode: true },
-          }
-        : {}),
+      ...(effortApplies(api, reasoning) ? { reasoningEfforts: { low: "low", medium: "medium", high: "high" } } : {}),
+      ...(compat ? { compat } : {}),
     });
   };
   for (const r of routes) {
     if (r.api !== "openai-completions") add(r.provider, r.api, r, r.reasoning);
-    add("magpie", "openai-completions", r);
+    add("magpie", "openai-completions", r, r.reasoning);
   }
   return out;
 }
@@ -756,11 +787,11 @@ export class AgentHost {
       "    - id: amb-media",
       `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-media.mjs"))}`,
       // 联网搜索：默认免费（Exa MCP、必应、DuckDuckGo），设置里可换成带 Key 的接口（search.ts）
-      "    - id: amb-web-search",
-      `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-web-search.mjs"))}`,
+      ...(this.allows("network") ? ["    - id: amb-web-search", `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-web-search.mjs"))}`] : []),
       // 已授权账号（Notion、飞书）：有账号才注册工具（AMB_CONNECTIONS），令牌只在宿主这边（accounts.ts）
-      "    - id: amb-connections",
-      `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-connections.mjs"))}`,
+      ...(this.allows("accounts") ? ["    - id: amb-connections", `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-connections.mjs"))}`] : []),
+      // 目录 Bot：没声明的权限一律拒绝，声明了的第一次用时问用户（amb-bot-gate.mjs）
+      ...(this.o.store.getBot(this.o.botId)?.app ? ["    - id: amb-bot-gate", `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-bot-gate.mjs"))}`] : []),
       // sdk 配置默认不带这两个工具：ask_user_question 走 user-questions → 插件 → 审批中心；
       // present 只声明交付文件，由宿主在回合结束后经渠道发送。
       "    - id: amb-tool-ask-user",
@@ -802,6 +833,22 @@ export class AgentHost {
       "      workspace-write: { sandbox: workspace-write, approval: ask }",
       "      danger-full-access: { sandbox: danger-full-access, approval: ask }",
     ];
+  }
+
+  /** 目录 Bot 是否声明了这项权限；用户自建的机器人不受限 */
+  private allows(p: BotPermission): boolean {
+    const app = this.o.store.getBot(this.o.botId)?.app;
+    return !app || app.permissions.includes(p);
+  }
+  /** 目录 Bot 没声明权限时不能用的工具 */
+  private deniedTools(): string[] {
+    return [...(this.allows("network") ? [] : ["web_search", "web_fetch"]), ...(this.allows("channel-send") ? [] : ["task_start", "task_message"])];
+  }
+
+  /** 目录 Bot 声明了、但会走出自己文件夹的工具：第一次用时问用户 */
+  private askTools(): string[] {
+    if (!this.o.store.getBot(this.o.botId)?.app) return [];
+    return [...(this.allows("network") ? ["web_search", "web_fetch"] : []), ...(this.allows("channel-send") ? ["task_start"] : [])];
   }
 
   /** media 技能：怎么挑模型、读文档、写请求体、交付结果。没有连接 Modelflare 时删掉。 */
@@ -917,7 +964,7 @@ first=1
 for a do
   if [ $first = 1 ]; then set --; first=0; fi
   if [ $injected = 0 ] && [ "$a" = "--" ]; then
-    set -- "$@" --tmpfs "$DATA"
+    set -- "$@" --tmpfs "$DATA"${this.allows("network") ? "" : ' --unshare-net'}
     if [ $rw = 1 ]; then set -- "$@" --bind "$WS" "$WS"; else set -- "$@" --ro-bind-try "$WS" "$WS"; fi
     set -- "$@" --ro-bind-try "$DHOME" "$DHOME"
     injected=1
@@ -959,6 +1006,8 @@ exec "$REAL" "$@"
       AMB_CONTROL_TOKEN: this.control.id,
       // 任务会话的系统提示词段（amb-tasks 插件加在机器人段之后）
       AMB_TASK_RULES: TASK_RULES,
+      AMB_BOT_DENY_TOOLS: JSON.stringify(this.deniedTools()),
+      AMB_BOT_ASK_TOOLS: JSON.stringify(this.askTools()),
     };
     // 时区：本进程设了 TZ 才传下去；没设就不设，子进程用系统时区（各平台都是，Windows 上 TZ 也只认 POSIX 写法）
     if (process.env.TZ) env.TZ = process.env.TZ;
@@ -1037,7 +1086,8 @@ exec "$REAL" "$@"
    */
   syncPrompt(force = false): void {
     const bot = this.o.store.getBot(this.o.botId);
-    const others = this.o.store.listBots().filter((b) => b.id !== this.o.botId).map((b) => ({ name: b.name, persona: b.systemPrompt }));
+    // 目录 Bot 不进同伴名单：增删它们不打破其他机器人的提示缓存（/bot 列表另外读，用过的仍能切过去）
+    const others = this.o.store.listBots().filter((b) => b.id !== this.o.botId && b.origin !== "catalog").map((b) => ({ name: b.name, persona: b.systemPrompt }));
     const text = botPrompt({ name: bot?.name ?? "", persona: bot?.systemPrompt ?? "", memory: this.settings().memory.enabled, others });
     if (!force && text === this.promptText) return;
     try {
@@ -1154,6 +1204,16 @@ exec "$REAL" "$@"
    * 没有在跑或收尾的 run、没有等批准的、没有在压缩的会话），子进程里每个代理都空着、没有排着的输入、没有在跑的后台命令。
    * 问子进程要一来一回，回来之后再看一遍这边。
    */
+  /** 完全空闲时退出代理进程（下一条消息再拉起）：常驻的目录 Bot 不占内存。没退出返回 false */
+  async exitIfIdle(): Promise<boolean> {
+    if (this.state !== "running" || !(await this.fullyIdle())) return false;
+    log.info("dsh idle; exiting until the next message", { bot: this.o.botId, pid: this.pid });
+    this.recycledPid = this.pid;
+    await this.closeHarness();
+    this.state = "stopped";
+    return true;
+  }
+
   private async fullyIdle(): Promise<boolean> {
     const here = () =>
       !!this.harness &&
@@ -1456,7 +1516,9 @@ exec "$REAL" "$@"
     }
     if (ready) {
       try {
-        await this.control.send("select", { sessionId, provider: route.provider, model: route.model }, 10_000);
+        const setting = this.o.effort?.() ?? "auto";
+        const effort = setting !== "auto" && effortApplies(route.api, route.reasoning) ? setting : undefined;
+        await this.control.send("select", { sessionId, provider: route.provider, model: route.model, effort }, 10_000);
         return true;
       } catch (e) {
         log.warn("model selection failed", { bot: this.o.botId, model: route.model, message: (e as Error).message.slice(0, 200) });

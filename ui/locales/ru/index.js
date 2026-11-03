@@ -7,6 +7,7 @@ import botSettings from "./botSettings.js";
 import chat from "./chat.js";
 import common from "./common.js";
 import group from "./group.js";
+import botapp from "./botapp.js";
 import guide from "./guide.js";
 import info from "./info.js";
 import markdown from "./markdown.js";
@@ -33,6 +34,7 @@ export default {
   botSettings,
   chat,
   common,
+  botapp,
   group,
   guide,
   info,

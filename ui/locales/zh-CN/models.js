@@ -16,7 +16,14 @@ export default {
   loadFailed: "获取模型列表失败：{error}",
   useCustom: "使用「{id}」",
   customId: "自定义模型 ID",
-  none: "没有可用模型：这个 Key 所在的分组还没有开放模型",
+  none: "没有可用模型：你的账户还没有开放模型",
+  effort: {
+    name: "推理强度",
+    auto: "自动",
+    low: "低",
+    medium: "中",
+    high: "高",
+  },
   /** 选择器的两个滑块 */
   tiers: {
     value: "性价比",

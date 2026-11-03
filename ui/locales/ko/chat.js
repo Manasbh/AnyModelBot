@@ -53,8 +53,8 @@ export default {
   },
   "error": {
     "stopFailed": "중지하지 못했습니다: {error}",
-    "fixKey": "키 변경",
-    "authInvalid": "Modelflare 키가 올바르지 않거나 폐기되었습니다.",
+    "fixKey": "로그인",
+    "authInvalid": "Modelflare 접근 권한이 만료되었거나 취소되었습니다. 다시 로그인하세요.",
     "loadHistory": "메시지 기록을 불러오지 못했습니다: {error}"
   },
   "menu": {

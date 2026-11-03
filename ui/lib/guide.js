@@ -32,7 +32,7 @@ export function stepHow(s) {
 
 /** loaded：读到了后端进度；media：账户有可用的图片 / 视频模型（只决定演示完了说什么、要不要给开通链接）；
  *  focus：引导卡片正指着的步骤；armed：从清单卡里直接发出了这一步的示例，做完时引导卡片接着出来说「做好了 → 下一步」 */
-export const guide = createStore({ loaded: false, done: [], hidden: false, seen: [], media: false, focus: null, armed: null });
+export const guide = createStore({ loaded: false, done: [], hidden: false, seen: [], media: false, focus: null, armed: null, trim: false });
 /** 刚完成一步：{ id, n, total, all, at }，对话页的头像、左下角的清单据此动一下 */
 export const completed = createStore(null);
 /** 往对话输入框里填一句（引导卡片的「填入」） */
@@ -40,15 +40,21 @@ export const fill = createStore(null);
 /** 在对话里放一遍生图的预置演示（对话页订阅它） */
 export const demo = createStore(null);
 
-/** 六步都在；生图那一步不管有没有可用模型都走预置演示 */
-export const visibleSteps = () => STEPS;
+/**
+ * 六步都在；生图那一步不管有没有可用模型都走预置演示。
+ * 目录里有 Bot 时（trim）新用户先走 Bot：打招呼和动手在用 Bot 时就学会了，换模型有默认档位，只留三步。
+ */
+const TRIMMED = ["weixin", "memory", "media"];
+export const visibleSteps = (g = guide.get()) => (g.trim ? STEPS.filter((s) => TRIMMED.includes(s.id)) : STEPS);
+export const setGuideTrim = (on) => guide.set((g) => (g.trim === on ? g : { ...g, trim: on }));
 export const currentStep = (g = guide.get()) => visibleSteps(g).find((s) => !g.done.includes(s.id)) || null;
 export const nextStep = (id, g = guide.get()) => {
   const list = visibleSteps(g);
   const i = list.findIndex((s) => s.id === id);
   return list.slice(i + 1).find((s) => !g.done.includes(s.id)) || list.find((s) => !g.done.includes(s.id) && s.id !== id) || null;
 };
-export const isActive = (g = guide.get()) => g.loaded && !g.hidden;
+/** 目录里有 Bot 时，清单等用完第一个 Bot 才出现 */
+export const isActive = (g = guide.get()) => g.loaded && !g.hidden && (!g.trim || g.seen.includes("first-bot"));
 
 const ORDER = STEPS.map((s) => s.id);
 

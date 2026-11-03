@@ -28,6 +28,9 @@ export default {
   "not_done": "인증이 완료되지 않았습니다",
   "login_timeout": "로그인 대기 시간이 초과되었습니다. 다시 시작하세요",
   "login_cancelled": "로그인을 취소했습니다",
+  "login_ended": "이 로그인은 이미 종료되었습니다. 다시 시작하세요",
+  "login_link_invalid": "이번 로그인의 링크가 아닙니다. 로그인 후 주소창에 표시된 전체 링크를 복사하세요",
+  "pasted_key_retired": "AnyModelBot은 이제 로그인해서 사용합니다. 이전에 입력한 API 키는 이 기기에서 제거했습니다. Modelflare에 로그인하면 봇과 대화를 그대로 이어서 사용할 수 있습니다.",
   "vault_bad_version": "인식할 수 없는 계정 파일 버전입니다",
   "vault_encrypted": "데스크톱 앱에서 암호화한 계정 정보는 현재 실행 모드에서 읽을 수 없습니다",
   "vault_incomplete": "계정 파일이 불완전합니다"

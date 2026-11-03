@@ -28,6 +28,9 @@ export default {
   "not_done": "認可が完了していません",
   "login_timeout": "ログインの待機時間を超過しました。最初からやり直してください",
   "login_cancelled": "ログインをキャンセルしました",
+  "login_ended": "このログインは終了しています。最初からやり直してください",
+  "login_link_invalid": "このログインのリンクではありません。ログイン後にアドレスバーに表示される完全なリンクをコピーしてください",
+  "pasted_key_retired": "AnyModelBot はログインして使う方式になったため、以前入力した API キーをこの端末から削除しました。Modelflare にログインすると、ボットと会話はそのまま使えます。",
   "vault_bad_version": "アカウントファイルのバージョンを認識できません",
   "vault_encrypted": "認証情報はデスクトップ版で暗号化されており、この実行モードでは読み取れません",
   "vault_incomplete": "アカウントファイルが不完全です"

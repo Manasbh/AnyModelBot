@@ -7,7 +7,7 @@ import os from "node:os";
 import { logger } from "../log.js";
 import { t } from "../i18n/index.js";
 import type { Store } from "../store/db.js";
-import { MODELFLARE_CLIENT_ID, MODELFLARE_SCOPES, MODELFLARE_WEB, UTM, webUrl, type KeyBalance } from "../modelflare.js";
+import { MODELFLARE_CLIENT_ID, MODELFLARE_SCOPES, MODELFLARE_WEB, UTM, webUrl } from "../modelflare.js";
 import { discover, OAuthError, revokeToken, startLogin, type LoginAttempt, type OidcEndpoints } from "./oauth.js";
 import { AccountRevokedError, AccountSession, ApiError, ROUTING_STRATEGIES, type AppKey, type ConnectedAccount, type RoutingStrategy, type UsageRow } from "./client.js";
 import type { AccountRecord, AccountVault } from "./vault.js";
@@ -21,8 +21,6 @@ export interface AccountHooks {
   disconnect(): Promise<void>;
   setBotKey(botId: string, key: string): Promise<void>;
   removeBotKey(botId: string): Promise<void>;
-  /** 只有 API Key 时的余额；没有连接时 undefined */
-  keyBalance(): Promise<KeyBalance | undefined>;
   /** 内置网关共用连接当前那把 Key 的最后 4 位；没连接时为空 */
   sharedKeyTail(): string;
   /** 共用连接的 Key 已经不能用：没连接，或 Modelflare 说这把 Key 无效 */
@@ -50,7 +48,7 @@ export interface AccountStatus {
   /** 账户名称（登录后） */
   name: string;
   /** 余额来源：account = 登录账户；key = 只用 API Key；none = 未连接 */
-  source: "account" | "key" | "none";
+  source: "account" | "none";
   balanceUsd: number | null;
   usedUsd: number | null;
   billedToEnterprise: boolean;
@@ -213,6 +211,22 @@ export class AccountManager {
     this.login?.cancel();
   }
 
+  /** Docker、远程部署：浏览器回不到这台机器，用户把登录后地址栏里的链接贴回来 */
+  completeLoginFromLink(link: string): void {
+    if (this.state !== "signing_in" || !this.login) throw new ApiError(t("account.login_ended"), 409);
+    try {
+      this.login.complete(link);
+    } catch (e) {
+      if (e instanceof OAuthError) throw new ApiError(e.message, 400);
+      throw e;
+    }
+  }
+
+  /** 登录页要说明的原因（比如旧版本填的 Key 不再使用），登录成功后清掉 */
+  explainSignedOut(text: string): void {
+    this.snapshot.error = text;
+  }
+
   private async completeLogin(tokens: { accessToken: string; expiresAt: number; refreshToken: string; scope: string }): Promise<void> {
     const rec: AccountRecord = { issuer: this.o.issuer, refreshToken: tokens.refreshToken, scope: tokens.scope, deviceKeyId: 0, signedInAt: Date.now() };
     const session = this.newSession(rec, { token: tokens.accessToken, expiresAt: tokens.expiresAt });
@@ -322,15 +336,7 @@ export class AccountManager {
         // 启动后、之后每 5 分钟、切回窗口时都顺带核对一次 Key；不拖慢余额的返回
         void this.repairKeys(60_000);
       } else {
-        const b = await this.o.hooks.keyBalance();
-        this.snapshot = {
-          ...this.snapshot,
-          source: b ? "key" : "none",
-          balanceUsd: b ? b.available : null,
-          usedUsd: b ? b.used : null,
-          updatedAt: Date.now(),
-          error: "",
-        };
+        this.snapshot = { ...this.snapshot, source: "none", balanceUsd: null, usedUsd: null, updatedAt: Date.now() };
       }
       this.checkLowBalance();
     } catch (e) {
@@ -516,7 +522,7 @@ export class AccountManager {
 
   /**
    * 0.1.10 及更早的版本在令牌轮换时把本机 Key 的 id 写回了 0：按网关里那把 Key 的尾号把它认回来。
-   * 认不回来说明网关里用的不是这次授权签发的 Key（被删了，或者用户自己粘贴了一把）。
+   * 认不回来说明网关里用的不是这次授权签发的 Key（被删了，或者是旧版本里粘贴的）。
    */
   private adoptDeviceKey(session: AccountSession, keys: AppKey[], botKeys: Map<string, number>): boolean {
     const tail = this.o.hooks.sharedKeyTail();

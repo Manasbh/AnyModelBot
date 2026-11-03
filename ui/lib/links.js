@@ -12,7 +12,6 @@ export function mfLink(path, campaign) {
 }
 
 export const MF_CONSOLE = mfLink("/dashboard/overview", "amb_console");
-export const MF_KEYS = mfLink("/keys", "amb_keys");
 export const MF_SIGNUP = mfLink("/sign-up", "amb_signup");
 export const MF_TOPUP = mfLink("/billing", "amb_topup");
 export const MF_PRICING = mfLink("/pricing", "amb_pricing");

@@ -869,6 +869,60 @@ describe.skipIf(!runtime || !hasBwrap || process.platform !== "linux")("agent ho
     expect(r.steps[0].tokens).toEqual({ input: 10, output: 5 });
   }, 180_000);
 
+  it("reasoning effort reaches each API from the next turn; Auto sends what it always did", async () => {
+    const o = app.agent as any;
+    const apiInfo = o.o.apiInfo;
+    const hostOpts = (app.agent.host("default") as any).o;
+    const reasoningModels = new Set(["effort-claude-opus-5-5", "effort-claude-haiku-4-5", "effort-glm"]);
+    catalog["effort-gpt"] = ["openai", "openai-response"];
+    catalog["effort-claude-opus-5-5"] = ["anthropic", "openai"];
+    catalog["effort-claude-haiku-4-5"] = ["anthropic", "openai"];
+    catalog["effort-glm"] = ["openai"];
+    hostOpts.apiInfo = o.o.apiInfo = async (model: string) => (catalog[model] ? { endpoints: catalog[model], ...(reasoningModels.has(model) ? { reasoning: true } : {}) } : undefined);
+    try {
+      const firstCall = async (user: string, model: string) => {
+        const from = calls.length;
+        const r = await turnOn(user, model, `effort check ${rnd()}`);
+        expect(r.reply).toBeTruthy();
+        const mine = callsFor(model, from).filter((c) => c.body.tools);
+        expect(mine.map((c) => c.error ?? "ok")).toEqual(mine.map(() => "ok"));
+        return mine[0].body;
+      };
+      // 自动：和没有这个设置时一样
+      expect(app.config.llm.reasoningEffort).toBe("auto");
+      expect((await firstCall("eff-1", "effort-gpt")).reasoning.effort).toBe("medium");
+      const claudeAuto = await firstCall("eff-2", "effort-claude-opus-5-5");
+      expect(claudeAuto.thinking).toBeUndefined();
+      expect(claudeAuto.output_config).toBeUndefined();
+      const chatAuto = await firstCall("eff-3", "effort-glm");
+      expect(chatAuto.reasoning_effort).toBeUndefined();
+      expect(chatAuto.messages[0].role).toBe("system");
+
+      // 选了之后下一轮生效，不用重启代理进程
+      const pid = app.agent.host("default").pid;
+      app.setReasoningEffort("high");
+      expect((await firstCall("eff-1", "effort-gpt")).reasoning.effort).toBe("high");
+      const claude = await firstCall("eff-2", "effort-claude-opus-5-5");
+      expect(claude.thinking).toMatchObject({ type: "adaptive" });
+      expect(claude.thinking.budget_tokens).toBeUndefined();
+      expect(claude.output_config).toMatchObject({ effort: "high" });
+      const old = await firstCall("eff-4", "effort-claude-haiku-4-5");
+      expect(old.thinking).toMatchObject({ type: "enabled", budget_tokens: expect.any(Number) });
+      const chat = await firstCall("eff-3", "effort-glm");
+      expect(chat.reasoning_effort).toBe("high");
+      expect(chat.messages[0].role).toBe("system");
+      expect(app.agent.host("default").pid).toBe(pid);
+
+      // 改回自动：又什么都不发
+      app.setReasoningEffort("auto");
+      expect((await firstCall("eff-3", "effort-glm")).reasoning_effort).toBeUndefined();
+      expect((await firstCall("eff-2", "effort-claude-opus-5-5")).output_config).toBeUndefined();
+    } finally {
+      app.setReasoningEffort("auto");
+      hostOpts.apiInfo = o.o.apiInfo = apiInfo;
+    }
+  }, 240_000);
+
   it("Claude (Anthropic but no Responses) is driven over /v1/messages; the bridge swaps x-api-key for the real key", async () => {
     catalog["claude-mock"] = ["anthropic", "openai"];
     const from = calls.length;

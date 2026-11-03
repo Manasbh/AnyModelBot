@@ -1,9 +1,5 @@
 // account · zh-CN（screens/account.js）
 export default {
-  login: {
-    title: "登录 Modelflare 账户",
-    hint: "登录后会替换现在填的 API Key。",
-  },
   usage: {
     title: "用量",
     days: "{n} 天",

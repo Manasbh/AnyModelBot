@@ -8,6 +8,9 @@ import { normalizeLangPref, type LangPref } from "./i18n/index.js";
  * 配置：<dataDir>/config.json + 环境变量（环境变量优先）。
  * 机器人/渠道凭据存在 SQLite 中，由 UI 或 `npm run init` 写入。
  */
+export const REASONING_EFFORTS = ["auto", "low", "medium", "high"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
 export interface AppConfig {
   dataDir: string;
   ui: {
@@ -37,7 +40,8 @@ export interface AppConfig {
     externalBaseUrl: string;
     externalApiKey: string;
   };
-  llm: { defaultModel: string; contextMessages: number; contextChars: number };
+  /** reasoningEffort：推理强度，全局一个；auto = 模型默认（和没有这个设置时一样） */
+  llm: { defaultModel: string; contextMessages: number; contextChars: number; reasoningEffort: ReasoningEffort };
   /** 默认的图片 / 视频模型（生成前确认时默认选中）；空 = 按推荐顺序的第一个 */
   media: { imageModel: string; videoModel: string };
   feishu: { throttleMs: number };
@@ -101,6 +105,7 @@ export function loadConfig(overrides: { dataDir?: string; env?: NodeJS.ProcessEn
       defaultModel: env.AMB_DEFAULT_MODEL || file.llm?.defaultModel || "",
       contextMessages: num(env.AMB_CONTEXT_MESSAGES, file.llm?.contextMessages ?? 40),
       contextChars: num(env.AMB_CONTEXT_CHARS, file.llm?.contextChars ?? 24000),
+      reasoningEffort: REASONING_EFFORTS.find((x) => x === file.llm?.reasoningEffort) ?? "auto",
     },
     media: {
       imageModel: typeof file.media?.imageModel === "string" ? file.media.imageModel : "",

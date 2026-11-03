@@ -23,6 +23,8 @@ export interface ChatRequest {
   model: string;
   messages: ChatMessage[];
   signal?: AbortSignal;
+  /** 推理强度；没有就不发，用模型默认 */
+  reasoningEffort?: string;
 }
 
 export interface ModelClient {
@@ -36,6 +38,9 @@ export interface Endpoint {
   apiKey: string;
 }
 
+/** 端点不响应时别一直等：不设的话要等底层默认的 5 分钟，"测试模型"这类等它的操作会一直转圈 */
+const LIST_MODELS_TIMEOUT_MS = 30_000;
+
 export class OpenAICompatClient implements ModelClient {
   constructor(private endpoint: () => Endpoint, private fetchImpl: typeof fetch = fetch) {}
 
@@ -45,7 +50,7 @@ export class OpenAICompatClient implements ModelClient {
   }
 
   async listModels(): Promise<string[]> {
-    const res = await this.fetchImpl(`${this.endpoint().baseUrl}/models`, { headers: this.headers() });
+    const res = await this.fetchImpl(`${this.endpoint().baseUrl}/models`, { headers: this.headers(), signal: AbortSignal.timeout(LIST_MODELS_TIMEOUT_MS) });
     if (!res.ok) throw new Error(`GET /models -> HTTP ${res.status}`);
     const body = (await res.json()) as { data?: Array<{ id: string }> };
     return (body.data ?? []).map((m) => m.id).sort();
@@ -55,7 +60,7 @@ export class OpenAICompatClient implements ModelClient {
     const res = await this.fetchImpl(`${this.endpoint().baseUrl}/chat/completions`, {
       method: "POST",
       headers: { ...this.headers(), Accept: "text/event-stream" },
-      body: JSON.stringify({ model: req.model, messages: req.messages, stream: true }),
+      body: JSON.stringify({ model: req.model, messages: req.messages, stream: true, ...(req.reasoningEffort ? { reasoning_effort: req.reasoningEffort } : {}) }),
       signal: req.signal,
     });
     if (!res.ok || !res.body) {

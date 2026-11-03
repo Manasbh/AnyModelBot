@@ -95,6 +95,8 @@ export interface RuntimeOptions {
   defaultModel: () => string;
   contextMessages: number;
   contextChars: number;
+  /** 这个模型该带的推理强度（用户选了、模型也支持时）；纯对话路径用，代理路径由 AgentHost 自己带 */
+  reasoningEffort?: (model: string) => Promise<string | undefined>;
   /** DSH 代理宿主；缺省或不可用时走纯对话路径 */
   agent?: AgentManager;
   /**
@@ -427,8 +429,9 @@ export class BotRuntime {
     await out.apply({ type: "typing", on: true });
     await out.apply({ type: "stream.start" });
     let acc = "";
+    const reasoningEffort = await this.opts.reasoningEffort?.(routed).catch(() => undefined);
     const call = () =>
-      this.opts.models.streamChat({ model: routed, messages, signal }, (delta) => {
+      this.opts.models.streamChat({ model: routed, messages, signal, reasoningEffort }, (delta) => {
         acc += delta;
         void out.apply({ type: "stream.update", text: acc });
       });

@@ -5,7 +5,7 @@
 // bridge (POST /dsh/control/poll with AMB_CONTROL_TOKEN, a per-launch id; the bridge token is only ever sent to
 // AMB_BRIDGE_URL) and answers each command with POST /dsh/control/result. Commands:
 //
-//   select    {sessionId, provider, model}  per-conversation model: every Agent's prompt assembly and request
+//   select    {sessionId, provider, model, effort?}  per-conversation model: every Agent's prompt assembly and request
 //                                            config read this map (as DSH's installModelSelection does)
 //   providers {providers}                   replace llm-pi-ai's (volatile) provider profiles, so a model the
 //                                            launch patch did not list becomes routable without a restart
@@ -46,8 +46,9 @@ function installSelection(agentCtx, current) {
   const offRequest = agentCtx.on('agent/request', async (_payload, next) => {
     const resolved = await next()
     if (!assembled) return resolved
+    // The inherited effort belongs to the session's first model; the host's choice (if any) replaces it.
     const { reasoningEffort: _inherited, ...rest } = resolved
-    return { ...rest, provider: assembled.provider, model: assembled.model }
+    return { ...rest, provider: assembled.provider, model: assembled.model, ...(assembled.effort ? { reasoningEffort: assembled.effort } : {}) }
   })
   const offNotice = agentCtx.on('agent/pre-step', async ({ agent, messages, signal, step }, next) => {
     const decision = await next()
@@ -91,7 +92,7 @@ function bridge() {
 }
 
 export function apply(ctx) {
-  /** sessionId → { provider, model } chosen by the host for that conversation */
+  /** sessionId → { provider, model, effort? } chosen by the host for that conversation */
   const selections = new Map()
   /** agent id → ids of jobs its shell moved to the background (the model wanted their result) */
   const promoted = new Map()
@@ -208,8 +209,8 @@ export function apply(ctx) {
     async ping() {
       return {}
     },
-    async select({ sessionId, provider, model }) {
-      if (provider && model) selections.set(String(sessionId), { provider: String(provider), model: String(model) })
+    async select({ sessionId, provider, model, effort }) {
+      if (provider && model) selections.set(String(sessionId), { provider: String(provider), model: String(model), ...(effort ? { effort: String(effort) } : {}) })
       return {}
     },
     async providers({ providers }) {

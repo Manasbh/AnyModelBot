@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { saveConfigFile, type AppConfig } from "./config.js";
+import { saveConfigFile, type AppConfig, type ReasoningEffort } from "./config.js";
 import { Store, type Bot, type ChannelAccount } from "./store/db.js";
 import { OpenAICompatClient, type ModelClient } from "./llm/client.js";
 import { BotRuntime } from "./core/runtime.js";
@@ -27,12 +27,14 @@ import { normalizeSettings } from "./agent/settings.js";
 import { locateDshRuntime } from "./agent/host.js";
 import { pwshProbe } from "./agent/pwsh.js";
 import { findAppRoot } from "./magpie/supervisor.js";
+import { BotCatalog } from "./botkit/catalog.js";
+import { catalogConfig } from "./botkit/config.js";
+import { BotInstaller } from "./botkit/installer.js";
 import {
   MODELFLARE_LINES,
   MODELFLARE_PROVIDER,
   bareModel,
   botProviderId,
-  fetchKeyBalance,
   modelflareBaseUrl,
   modelflareIssuer,
   routeModel,
@@ -168,7 +170,11 @@ export class App {
   readonly connections: ConnectionService;
   /** 新版本提示：只有桌面版启动检查（src/update-check.ts） */
   readonly updates: UpdateChecker;
+  /** 目录 Bot：目录同步和实例（docs/bot-framework.md）。目录为空时对现有功能没有影响 */
+  readonly catalog: BotCatalog;
+  readonly botInstaller: BotInstaller;
   web: WebServer | undefined;
+  private catalogSweep: NodeJS.Timeout | undefined;
   desktop: DesktopHooks | undefined;
   /** Modelflare 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
   account!: AccountManager;
@@ -227,6 +233,15 @@ export class App {
     this.search = new SearchService({ settings: () => this.webSearch, fetch: () => this.desktop?.fetch });
     this.connections = new ConnectionService({ kv: this.store, fetch: () => this.desktop?.fetch });
     this.updates = new UpdateChecker({ current: appVersion(), fetch: () => this.desktop?.fetch });
+    this.catalog = new BotCatalog({ dataDir: config.dataDir, appVersion: appVersion(), ...catalogConfig(), fetch: () => this.desktop?.fetch });
+    this.botInstaller = new BotInstaller({
+      dataDir: config.dataDir,
+      store: this.store,
+      catalog: this.catalog,
+      stopAgent: (id) => this.agent.stopBot(id),
+      busy: (id) => this.runtime.busyBots().includes(id) || this.tasks.busy(id),
+      startBot: (id) => this.startBot(id),
+    });
     this.agent = new AgentManager({
       store: this.store,
       dataDir: config.dataDir,
@@ -246,6 +261,7 @@ export class App {
         const info = await this.infoOf(model);
         return info && { endpoints: info.endpoints, reasoning: info.reasoning };
       },
+      effort: () => this.config.llm.reasoningEffort,
       // 服务端压缩：价格目录列出压缩端点只是提示，bridge 用之前会探测
       serverCompaction: {
         listed: async (model) => {
@@ -317,6 +333,11 @@ export class App {
       defaultModel: () => this.config.llm.defaultModel,
       contextMessages: config.llm.contextMessages,
       contextChars: config.llm.contextChars,
+      // 纯对话路径的推理强度：用户选了、模型资料也标了推理才带（外部端点没有模型资料，不带）
+      reasoningEffort: async (model) => {
+        const effort = this.config.llm.reasoningEffort;
+        return effort !== "auto" && (await this.infoOf(model))?.reasoning === true ? effort : undefined;
+      },
       route: (botId, model) => this.routeModel(botId, model),
       access: this.access,
       // Key 可能在 Modelflare 控制台被删了：核对一下，重新签发了就让失败的那条消息再试一次
@@ -457,10 +478,6 @@ export class App {
         removeBotKey: async (botId) => {
           await this.magpie?.removeBotProvider(botId);
         },
-        keyBalance: async () => {
-          const key = this.magpie?.providerKey(this.magpie.modelflareProviderId ?? MODELFLARE_PROVIDER);
-          return key ? fetchKeyBalance(modelflareBaseUrl(this.config.modelflare.line), key) : undefined;
-        },
         sharedKeyTail: () => this.magpie?.modelflareInfo().keyTail ?? "",
         sharedKeyRejected: async () => {
           if (!this.magpie) return false;
@@ -549,7 +566,7 @@ export class App {
   }
 
   /** 删除机器人时一并删掉它的预算 Key */
-  async deleteBot(botId: string): Promise<void> {
+  async deleteBot(botId: string, opts: { keepData?: boolean } = {}): Promise<void> {
     const bot = this.store.getBot(botId);
     this.tasks.dropBot(botId);
     // 渠道账号是全局的，不跟着机器人停：之后它们的消息交给别的机器人（core/routes.ts）
@@ -558,6 +575,8 @@ export class App {
       await this.account.setBotBudget(botId, bot.name, { ...bot.settings.budget, enabled: false }).catch((e) => log.warn("remove bot key failed", { message: (e as Error).message }));
     }
     this.store.deleteBot(botId);
+    // 目录 Bot 移除时不留目录，用户选了保留数据时只留工作区。用户自建的机器人行为不变
+    if (bot?.origin === "catalog") this.botInstaller.cleanup(botId, !!opts.keepData);
   }
 
   /** 模型选择器里的能力与参考价（缓存一小时） */
@@ -608,6 +627,7 @@ export class App {
     }
     this.agent.start();
     this.ensureAccount();
+    await this.retirePastedKey();
     this.seedDefaultBot();
     // 上次退出或崩溃时没处理完的消息：渠道开始收新消息之前取走标记，渠道起来后告诉用户
     const interrupted = takeInterrupted(this.store);
@@ -641,10 +661,15 @@ export class App {
     }
     void this.prewarmAgent();
     if (this.desktop) this.updates.start();
+    this.catalog.on("changed", () => void this.botInstaller.applyTakedowns().catch((e) => log.warn("catalog takedown failed", { err: String(e) })));
+    this.catalog.start();
+    // 用过的目录 Bot 空闲够久就退出进程，下一条消息再拉起
+    this.catalogSweep = setInterval(() => void this.agent.sweepCatalogBots().catch(() => undefined), 60_000);
+    this.catalogSweep.unref();
     if (this.magpie && !this.opts.noWeb) {
       // 余额与低余额提醒：启动后读一次，之后每 5 分钟一次
       const tick = () => {
-        if (this.account.signedIn || this.magpie?.modelflareInfo().connected) void this.account.refresh();
+        if (this.account.signedIn) void this.account.refresh();
         void this.refreshBotBudgets();
       };
       setTimeout(tick, 3000).unref();
@@ -680,6 +705,8 @@ export class App {
   }
 
   async stop(): Promise<void> {
+    this.catalog.stop();
+    if (this.catalogSweep) clearInterval(this.catalogSweep);
     // 先告诉运行时：之后因为退出而失败的回合不回复、不改用纯对话，留给下次启动提醒
     this.runtime.shutdown();
     // 后台任务不再开始新的 run；跑着的留在库里，下次启动时恢复
@@ -722,6 +749,24 @@ export class App {
     return { mode: "managed", connected: info.connected, keyTail: info.keyTail, line, baseUrl: info.baseUrl || modelflareBaseUrl(line), gateway: this.magpie.state };
   }
 
+  /**
+   * 现在只能登录使用。旧版本填过 API Key、没有登录的：把 Key 从网关删掉，回到登录页并说明原因。
+   * 账户文件读不出来（unavailable）时不动：那把 Key 可能是登录时签发的，换回桌面版还要用。
+   */
+  async retirePastedKey(): Promise<void> {
+    const account = this.ensureAccount();
+    if (!this.magpie || this.magpie.state !== "running" || account.status().state !== "signed_out") return;
+    if (!this.magpie.modelflareInfo().connected) return;
+    try {
+      await this.disconnectModelflare();
+      account.explainSignedOut(t("account.pasted_key_retired"));
+      log.info("pasted API key retired: sign-in is now required");
+    } catch (e) {
+      // 这次没删掉就下次启动再试；不挡启动
+      log.warn("could not retire the pasted API key", { message: (e as Error).message });
+    }
+  }
+
   /** 先校验（GET /models），通过后才写入网关；失败时什么都不改 */
   async connectModelflare(apiKey: string, line: ModelflareLine): Promise<VerifyResult> {
     if (!this.magpie) throw new Error(t("app.external_mode"));
@@ -756,6 +801,11 @@ export class App {
   setDefaultModel(model: string): void {
     this.config.llm.defaultModel = model;
     saveConfigFile(this.config.dataDir, (f) => (f.llm = { ...(f.llm ?? {}), defaultModel: model }));
+  }
+
+  setReasoningEffort(effort: ReasoningEffort): void {
+    this.config.llm.reasoningEffort = effort;
+    saveConfigFile(this.config.dataDir, (f) => (f.llm = { ...(f.llm ?? {}), reasoningEffort: effort }));
   }
 
   /** 联网搜索设置（设置 › 网络）：Key 只给末 4 位 */

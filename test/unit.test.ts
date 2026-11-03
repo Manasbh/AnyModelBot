@@ -117,6 +117,28 @@ describe("SSE / OpenAI 兼容客户端", () => {
     await expect(bad.listModels()).rejects.toThrow();
     await m.close();
   });
+  it("对话请求只在选了推理强度时带 reasoning_effort", async () => {
+    const bodies: any[] = [];
+    const fetchImpl = (async (_url: unknown, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return new Response("data: [DONE]\n\n", { headers: { "content-type": "text/event-stream" } });
+    }) as typeof fetch;
+    const c = new OpenAICompatClient(() => ({ baseUrl: "http://127.0.0.1:9/v1", apiKey: "" }), fetchImpl);
+    await c.streamChat({ model: "m", messages: [] }, () => undefined);
+    await c.streamChat({ model: "m", messages: [], reasoningEffort: "high" }, () => undefined);
+    expect("reasoning_effort" in bodies[0]).toBe(false);
+    expect(bodies[1].reasoning_effort).toBe("high");
+  });
+  it("模型列表请求带超时，端点不响应时不会一直等", async () => {
+    let signal: AbortSignal | null | undefined;
+    const fetchImpl = (async (_url: unknown, init?: RequestInit) => {
+      signal = init?.signal;
+      return new Response(JSON.stringify({ data: [{ id: "m" }] }));
+    }) as typeof fetch;
+    const c = new OpenAICompatClient(() => ({ baseUrl: "http://127.0.0.1:9/v1", apiKey: "" }), fetchImpl);
+    expect(await c.listModels()).toEqual(["m"]);
+    expect(signal).toBeInstanceOf(AbortSignal);
+  });
 });
 
 describe("微信", () => {

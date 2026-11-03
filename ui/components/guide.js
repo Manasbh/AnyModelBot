@@ -33,7 +33,7 @@ function Progress({ steps, done }) {
 export function GuideChecklist({ bot, onSend }) {
   const g = useStore(guide);
   const [open, setOpen] = useState("");
-  if (!isActive(g) || g.seen.includes("intro")) return null;
+  if (!isActive(g) || g.seen.includes("intro") || g.trim) return null;
   const steps = visibleSteps(g);
   const cur = currentStep(g);
   if (!cur) return null;

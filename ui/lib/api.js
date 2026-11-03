@@ -109,6 +109,11 @@ export function streamChat(botId, text, handlers, signal) {
   );
 }
 
+/** 目录 Bot 的 app/ 文件变化：file（{ path }） */
+export function watchApp(botId, handlers, signal) {
+  return readEvents(fetch(`/amb/api/bots/${encodeURIComponent(botId)}/app/watch`, { headers: { "x-amb-lang": getLang() }, signal }), handlers);
+}
+
 /** 接着一个群聊：turn（轮到谁）、同 streamChat 的事件、turnEnd（这一轮答完），都答完了结束 */
 export function attachGroup(groupId, handlers, signal) {
   return readEvents(fetch(`/amb/api/groups/${encodeURIComponent(groupId)}/live`, { headers: { "x-amb-lang": getLang() }, signal }), handlers);

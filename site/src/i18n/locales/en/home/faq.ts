@@ -34,7 +34,7 @@ export default {
     },
     {
       "q": "I don't have a Modelflare account.",
-      "a": "At first launch, click Sign in / Sign up for Modelflare and sign up in your browser. The app connects itself when you come back, with no key to copy. On Docker or a remote server, paste an API key instead. All three API domains are available; compare response times and choose one in Settings."
+      "a": "At first launch, click Sign in / Sign up for Modelflare and sign up in your browser. The app connects itself when you come back, with no key to copy. On Docker or a remote server, paste the link you land on after signing in. All three API domains are available; compare response times and choose one in Settings."
     },
     {
       "q": "Is computer use safe?",

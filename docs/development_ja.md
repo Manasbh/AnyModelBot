@@ -5,7 +5,7 @@
 ソースからの実行、パッケージ作成、開発への参加を考えている方のためのガイドです。アプリを使うだけなら [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) からインストーラーを入手してください。[README](../README_ja.md#-ダウンロード) に手順があります。
 
 - ボットは役割、既定のモデル、記憶から構成されます。アカウントは設定 › 接続で全体管理し、全ボットで共有します。サービスごとにいくつでも追加できます。一人での個人利用を想定しています。
-- モデルは [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) が提供します。初回起動でログインまたは登録するとモデル一覧が自動表示されます。API キーを貼り付けても接続できます。リクエストは同梱の [magpie](https://github.com/yetone/magpie) ゲートウェイを通ります。
+- モデルは [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) が提供します。初回起動でログインまたは登録するとモデル一覧が自動表示されます。リクエストは同梱の [magpie](https://github.com/yetone/magpie) ゲートウェイを通ります。
 - 同じコードを **デスクトップ（Electron）**、**CLI `npm start`**、**Docker** の 3 通りで実行できます。
 
 ## リポジトリの構成
@@ -46,7 +46,7 @@ Node.js 22.13 以降と、magpie をコンパイルするための Go 1.26.8 以
 ```bash
 npm install
 npm run setup        # vendor/magpie を取得し build/bin/ にコンパイル
-npm run init         # 任意：ターミナルで初回設定（Modelflare ログインまたは API キー、Feishu 認証情報）
+npm run init         # 任意：ターミナルで初回設定（Modelflare ログイン、Feishu 認証情報）
 npm start            # ゲートウェイ、ボット、http://127.0.0.1:3600/ のコンソールを起動
 ```
 
@@ -88,10 +88,11 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> を�
 
 ## モデル（Modelflare）
 
-- 初回は Modelflare へのログイン・登録ボタンを表示します。標準ブラウザーでログインまたは登録して認可し、アプリに戻ると専用 API キーを発行・接続します。既定モデルを選べば会話を始められます。Docker・リモート環境はブラウザーのコールバックを受けられず、API キー入力を表示します（`GET https://modelflare.dev/v1/models` で検証）。
+- 初回は Modelflare へのログイン・登録ボタンを表示します。標準ブラウザーでログインまたは登録して認可し、アプリに戻ると専用 API キーを発行・接続します。既定モデルを選べば会話を始められます。Docker・リモート環境はブラウザーのコールバックを受けられないため、ログイン後に移動する開けない `127.0.0.1` アドレスのリンクを初回画面に貼り付けます（`POST /amb/api/account/login/complete`、state と PKCE の検証は同じ）。以前のバージョンで API キーを入力しログインしていない場合、アップグレード時にキーを端末から削除し、ログインが必要になります。
 - 認証方式：RFC 8252 に沿うネイティブアプリの OIDC 認可コード+PKCE（RFC 7636）。公開クライアント（`client_id` は `anymodel-bot`）で、クライアントシークレットは持たず不要です。結果は `127.0.0.1` の一時ポートへ返します。Modelflare プロフィールの認可済みアプリから取り消すと、アプリが検知してログイン画面に戻ります。
 - リフレッシュトークンはデータ内の `modelflare-account.json`（モード 600）に保存し、デスクトップでは OS キーチェーン（Electron safeStorage）で暗号化します。画面にはアカウント名だけを渡します。ログアウトは端末の認可を取り消し、ログイン時に端末とボットへ発行したキーを Modelflare が削除します。
-- 残高は常時表示せず、左下のアバターか設定 → Modelflare で確認します。いずれもウォレット残高を表示し、API キーだけの場合は `/v1/dashboard/billing/credit_grants` を読みます。チャージは Modelflare を開き、アプリへ戻ると残高を更新します。既定 1 米ドルの通知基準（変更・無効化可能）を下回ると一度知らせ、WeChat・Feishu にも送れます。
+- 残高は常時表示せず、左下のアバターか設定 → Modelflare で確認します。いずれもウォレット残高を表示します。チャージは Modelflare を開き、アプリへ戻ると残高を更新します。既定 1 米ドルの通知基準（変更・無効化可能）を下回ると一度知らせ、WeChat・Feishu にも送れます。
+- 推論の強さ：モデル選択パネルまたは設定 → Modelflare で選びます（自動 / 低 / 中 / 高）。全体で 1 つの設定で、次のターンから適用されます。自動ではパラメーターを送らず、モデルの既定値を使います。対応モデルにのみ適用されます。Responses API の推論モデルと、モデルプロファイルで推論対応とされた Chat と Claude です（Claude 4.6 以降は adaptive と `output_config.effort`、それ以前は `budget_tokens`）。
 - ログインすると設定 → Modelflare に日別・モデル別使用量、Modelflare の通知、招待リンクも出ます。
 - ボットの予算（ログイン必須）：ボット設定 → 予算で有効にすると、指定額を上限とする専用キー（ゲートウェイの別 provider）を使い、無効にすると共有キーへ戻ります。
 - 画像・動画：エージェントに `media_models`（モデル、既定値、引数範囲、参考価格）、`media_docs`（docs.modelflare.dev からリクエスト形式を取得）、`generate_image`、`generate_video` と内蔵スキルを提供します。モデル別の形式を文書で確認してリクエスト本文を作り、ワークスペースの参考画像は `workspace:path` と表します。キーはアプリから出さず、アプリがボットのキーで呼び出し、結果を `media/` に保存して会話へ届けます。
@@ -107,8 +108,8 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> を�
 - 知能（2 番目のスライダー）：利用可能かつ Artificial Analysis データのあるモデルから、知能指数（高いほど良い）とタスク単価（低いほど良い）のパレート境界を求めます。最大 5 段階で、最安と最高知能を必ず含めます。実際の推論強度に合わせ、Responses API の推論モデルは既定 medium なので AA の medium、ほかは既定行を使います（`src/account/model-quality.ts`）。費用は AA の公式価格でのタスク単価×現在の品質設定での価格係数（公開グループの倍率×販売倍率）です。低コストは最低、品質は最高、バランスは中間、企業専用グループは除外し、未ログイン・未対応時はバランスとみなします。スライダーでモデルを切り替え、名前を押すと全一覧が開き、段階にないモデルはカスタム表示です。2 段階未満なら一覧だけになります。計算は `ui/lib/frontier.js` です。
 - AA データは `assets/model-quality.json`（`updatedAt`、`source`、必要フィールドのみ、Modelflare ID に変換済み）で配布します。`node scripts/update-model-quality.mjs` は https://artificialanalysis.ai/leaderboards/models と Modelflare の公開料金表を取得します。`AA_API_KEY` があれば公式 API を使いますが、その応答フィールドはキー付きでは未検証です。`--html <file>`、`--pricing <file>` は保存済みデータ、`--dry-run` は表示のみです。列欠落、行形式変更、数値の解釈失敗、行数・対応モデル不足では理由を出して終了コード 1 で止まり、既存スナップショットを変更しません。規則で対応付けできないモデル名は `OVERRIDES` に入れます。出典は選択画面の下に表示します。
 - 出所表示：Modelflare のリクエストには `X-Modelflare-Skill: anymodel-bot/<version>`、リンクには `utm_source=anymodelbot&utm_campaign=amb_<placement>` を付けます。アプリ内は `amb_signup`、`amb_topup`、`amb_console` など、README・リポジトリ文書は `amb_readme`、サイトは `amb_homepage` です。形式を `test/utm.unit.test.ts` で固定します。
-- API ドメイン：キー設定の詳細、または設定 → Modelflare → API ドメインで `https://modelflare.dev/v1`、`https://origin.modelflare.dev/v1`、`https://cf.modelflare.dev/v1` を選べます。手動テストは実行中の端末から 3 ドメインの `/v1/models` に認証なしで 3 回ずつ接続し、中央値と成功数を表示します。HTTP 401 は応答として数えますが、キーの有効性や生成速度の証明ではありません。自動切り替えはありません。旧設定 `auto` / `global` はメイン、`cn` は origin、`cf` は cf を選びます。これらは互換値で、地域や品質の意味はありません。
-- 設定 → Modelflare ではアカウント、残高とチャージ、残高通知、使用量、通知、招待、接続状態（キー末尾のみ）、既定モデル、一覧更新を扱います。未ログイン時はキーの交換・接続解除ができます。解除してもボットとセッションを保持し、初回接続画面に戻ります。
+- API ドメイン：設定 → Modelflare → API ドメインで `https://modelflare.dev/v1`、`https://origin.modelflare.dev/v1`、`https://cf.modelflare.dev/v1` を選べます。手動テストは実行中の端末から 3 ドメインの `/v1/models` に認証なしで 3 回ずつ接続し、中央値と成功数を表示します。HTTP 401 は応答として数えますが、キーの有効性や生成速度の証明ではありません。自動切り替えはありません。旧設定 `auto` / `global` はメイン、`cn` は origin、`cf` は cf を選びます。これらは互換値で、地域や品質の意味はありません。
+- 設定 → Modelflare ではアカウント、残高とチャージ、残高通知、使用量、通知、招待、費用対効果、推論の強さ、既定モデル、一覧更新を扱います。
 - 入力欄の右側のモデルボタンで現在のセッションのモデルを変え、ボットの既定値にもできます。`/model`、`/reset`、`/new`、`/status`、`/stop`、`/help` も使えます。
 - アクティビティ：モデルのリクエスト（時間・トークン）、ツール（引数・結果）、再試行、サブエージェントなど全手順を返信上の時間表示に折りたたみ、クリックで開けます。WeChat・Feishu は情報パネルの最近のセッションから進行中の処理を見て中止できます。
 - 停滞したメッセージ：全チャネルの `/stop`、または情報パネルの停止で現在のターンを直ちに終えます。10 分進捗がない場合（モデル応答もツールもなく再試行だけ。承認・回答待ちは除外）や 1 ターン 30 分の上限で自動中止します（`AMB_AGENT_IDLE_TIMEOUT_MS`、`AMB_AGENT_TURN_TIMEOUT_MS`）。プロセス内の amb-control プラグインがそのターンだけを取り消し、同ボットの他の会話は続きます。10 秒（`AMB_STOP_GRACE_MS`）以内に止まらなければプロセスを再起動します。`/status` で現在の手順と最後の進捗からの時間を見られます。Web でボットを切り替えたり再読み込みしても進行中の処理は止まらず、戻ると送信内容、途中の返信、アクティビティを復元します。キュー待ち、エージェント起動中、承認待ち、通常会話でも停止できます。

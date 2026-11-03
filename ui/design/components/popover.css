@@ -49,6 +49,8 @@
 .tier-model .ic { color: var(--muted); }
 .tier-ticks { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--muted); }
 .tier-ticks .on { color: var(--fg); font-weight: var(--fw-medium); }
+.tier .seg { display: flex; width: 100%; }
+.tier .seg button { flex: 1; }
 .tier-foot { margin: 0; padding-top: var(--space-2-5); border-top: 1px solid var(--line-2); text-align: center; font-size: var(--fs-2xs); color: var(--muted); }
 .tier-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .tier-foot a:hover { color: var(--fg-2); }

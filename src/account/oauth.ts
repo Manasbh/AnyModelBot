@@ -110,6 +110,11 @@ export interface LoginAttempt {
   url: string;
   result: Promise<TokenSet>;
   cancel(): void;
+  /**
+   * 手动交回回调链接：Docker、远程部署时浏览器回不到这台机器，用户把登录后地址栏里的链接贴回来。
+   * 链接不属于这次登录时抛错，这次登录继续等，可以重新粘贴。
+   */
+  complete(link: string): void;
 }
 
 export interface LoginOptions {
@@ -142,29 +147,40 @@ export async function startLogin(ep: OidcEndpoints, o: LoginOptions): Promise<Lo
   result.catch(() => {});
   let done = false;
   let timer: NodeJS.Timeout | undefined;
-  const server = http.createServer((req, res) => {
-    const u = new URL(req.url || "/", "http://127.0.0.1");
-    const sameState = (v: string | null) => !!v && v.length === state.length && crypto.timingSafeEqual(Buffer.from(v), Buffer.from(state));
-    if (req.method !== "GET" || u.pathname !== "/callback" || done || !sameState(u.searchParams.get("state"))) {
-      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("not found");
-      return;
-    }
-    const error = u.searchParams.get("error");
-    const code = u.searchParams.get("code");
-    const html = (status: number, title: string, text: string) => {
-      res.writeHead(status, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }).end(PAGE(l, title, text));
-    };
+  const sameState = (v: string | null) => {
+    if (!v) return false;
+    const got = Buffer.from(v);
+    const want = Buffer.from(state);
+    return got.length === want.length && crypto.timingSafeEqual(got, want);
+  };
+  /** 收下一次合法回调（state 已核对）：有授权码就去换令牌，否则结束这次登录 */
+  const accept = (q: URLSearchParams) => {
+    const error = q.get("error");
+    const code = q.get("code");
     if (error || !code) {
-      html(400, tl(l, "account.page_not_done_title"), tl(l, error === "access_denied" ? "account.page_denied" : "account.page_not_done"));
-      finish(new OAuthError(error || "invalid_request", error === "access_denied" ? tl(l, "account.denied") : u.searchParams.get("error_description") || tl(l, "account.not_done")));
+      finish(new OAuthError(error || "invalid_request", error === "access_denied" ? tl(l, "account.denied") : q.get("error_description") || tl(l, "account.not_done")));
       return;
     }
-    html(200, tl(l, "account.page_done_title"), tl(l, "account.page_done"));
     done = true;
     tokenRequest(ep.token, { grant_type: "authorization_code", code, redirect_uri: redirectUri, client_id: o.clientId, code_verifier: verifier }, fetchImpl).then(
       (t) => finish(undefined, t),
       (e) => finish(e as Error),
     );
+  };
+  const server = http.createServer((req, res) => {
+    const u = new URL(req.url || "/", "http://127.0.0.1");
+    if (req.method !== "GET" || u.pathname !== "/callback" || done || !sameState(u.searchParams.get("state"))) {
+      res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("not found");
+      return;
+    }
+    const error = u.searchParams.get("error");
+    const html = (status: number, title: string, text: string) => {
+      res.writeHead(status, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }).end(PAGE(l, title, text));
+    };
+    // 先回页面：accept 结束登录时会断开所有连接
+    if (error || !u.searchParams.get("code")) html(400, tl(l, "account.page_not_done_title"), tl(l, error === "access_denied" ? "account.page_denied" : "account.page_not_done"));
+    else html(200, tl(l, "account.page_done_title"), tl(l, "account.page_done"));
+    accept(u.searchParams);
   });
   const finish = (err?: Error, tokens?: TokenSet) => {
     done = true;
@@ -199,6 +215,15 @@ export async function startLogin(ep: OidcEndpoints, o: LoginOptions): Promise<Lo
     result,
     cancel: () => {
       if (!done) finish(new OAuthError("cancelled", tl(l, "account.login_cancelled")));
+    },
+    complete: (link) => {
+      if (done) throw new OAuthError("expired", tl(l, "account.login_ended"));
+      // 只看查询串：地址栏复制出来可能没有 http://，结尾可能带 #
+      const raw = link.trim();
+      const i = raw.indexOf("?");
+      const q = new URLSearchParams(i >= 0 ? raw.slice(i + 1).split("#")[0] : "");
+      if (!sameState(q.get("state"))) throw new OAuthError("invalid_link", tl(l, "account.login_link_invalid"));
+      accept(q);
     },
   };
 }

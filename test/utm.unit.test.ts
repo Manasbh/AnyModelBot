@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { UTM, webUrl, SIGNUP_URL, TOPUP_URL, CONSOLE_URL } from "../src/modelflare.js";
 // @ts-expect-error 前端模块是无类型的原生 ES 模块
-import { mfLink, tagLink, MF_CONSOLE, MF_DOCS_LINK, MF_KEYS, MF_PRICING, MF_SIGNUP, MF_TOPUP } from "../ui/lib/links.js";
+import { mfLink, tagLink, MF_CONSOLE, MF_DOCS_LINK, MF_PRICING, MF_SIGNUP, MF_TOPUP } from "../ui/lib/links.js";
 
 const params = (url: string) => Object.fromEntries(new URL(url).searchParams);
 
@@ -19,7 +19,7 @@ describe("UTM 来源参数", () => {
   });
 
   it("界面：所有固定链接都是 amb_ 开头，没有 utm_medium", () => {
-    for (const url of [MF_CONSOLE, MF_KEYS, MF_SIGNUP, MF_TOPUP, MF_PRICING, MF_DOCS_LINK]) {
+    for (const url of [MF_CONSOLE, MF_SIGNUP, MF_TOPUP, MF_PRICING, MF_DOCS_LINK]) {
       const p = params(url);
       expect(p.utm_source).toBe("anymodelbot");
       expect(p.utm_campaign).toMatch(/^amb_[a-z_]+$/);

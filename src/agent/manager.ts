@@ -1,3 +1,4 @@
+import type { ReasoningEffort } from "../config.js";
 import crypto from "node:crypto";
 import { resolveComputerUse } from "./computer-use.js";
 import type { Store } from "../store/db.js";
@@ -62,6 +63,8 @@ export interface AgentManagerOptions {
   contextWindow?: (model: string) => Promise<number | undefined>;
   /** 模型支持的接口与是否推理（Modelflare 模型资料），DSH 按它选对话接口 */
   apiInfo?: (model: string) => Promise<ModelApiInfo | undefined>;
+  /** 用户选的推理强度（全局） */
+  effort?: () => ReasoningEffort;
   /** 桌面版：系统给这个地址用的代理（PAC 写法）；代理进程的环境里没设代理时用它 */
   systemProxy?: (url: string) => Promise<string | undefined>;
   /**
@@ -247,6 +250,7 @@ export class AgentManager {
         connections: () => this.o.connections?.available() ?? {},
         contextWindow: this.o.contextWindow,
         apiInfo: this.o.apiInfo,
+        effort: this.o.effort,
         apiFallbacks: this.apiFallbacks,
         onWake: (conv) => this.onWake?.(botId, conv),
         onTaskEvent: (root, n) => this.tasks?.onEvent(botId, root, n),
@@ -269,6 +273,21 @@ export class AgentManager {
    * 换代理进程之前宿主这边的检查（聊天回合由代理宿主自己看）：没有在跑或收尾的任务、规则 run，没有等批准的（阻塞的），
    * 没有在等管家判定或原地压缩的会话
    */
+  /** 目录 Bot 一多，用过的不能都常驻：空闲够久的退出进程，下一条消息再拉起。用户自建的机器人行为不变 */
+  private catalogIdleSince = new Map<string, number>();
+  async sweepCatalogBots(idleMs = 10 * 60_000, now = Date.now()): Promise<void> {
+    for (const [botId, h] of this.hosts) {
+      if (this.o.store.getBot(botId)?.origin !== "catalog") continue;
+      if (!this.idle(botId) || Number(h.status().activeTurns) > 0) {
+        this.catalogIdleSince.delete(botId);
+        continue;
+      }
+      const since = this.catalogIdleSince.get(botId) ?? now;
+      this.catalogIdleSince.set(botId, since);
+      if (now - since >= idleMs && (await h.exitIfIdle().catch(() => false))) this.catalogIdleSince.delete(botId);
+    }
+  }
+
   private idle(botId: string): boolean {
     if (this.tasks?.busy(botId)) return false;
     if (this.approvals.pendingAll().some((a) => a.botId === botId && a.blocking)) return false;

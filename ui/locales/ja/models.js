@@ -13,7 +13,14 @@ export default {
   "loadFailed": "モデルを読み込めませんでした：{error}",
   "useCustom": "「{id}」を使用",
   "customId": "カスタムモデル ID",
-  "none": "利用できるモデルがありません。このキーのグループでモデルがまだ有効になっていません",
+  "none": "利用できるモデルがありません。アカウントでモデルがまだ有効になっていません",
+  "effort": {
+    "name": "推論の強さ",
+    "auto": "自動",
+    "low": "低",
+    "medium": "中",
+    "high": "高"
+  },
   "tiers": {
     "value": "費用対効果",
     "strategy": {

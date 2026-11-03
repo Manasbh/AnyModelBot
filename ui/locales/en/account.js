@@ -1,9 +1,5 @@
 // account · en
 export default {
-  login: {
-    title: "Sign in to Modelflare",
-    hint: "Signing in replaces the API key you entered.",
-  },
   usage: {
     title: "Usage",
     days: "{n} days",

@@ -103,18 +103,9 @@ export default {
     "ask": "이 요청을 async / await로 다시 작성해 줘",
     "reply": "좋아요. 오류 처리도 더 명확해집니다. {b}을(를) 켜면 아래 줄이 자동으로 줄바꿈됩니다:"
   },
-  "rekey": {
-    "title": "Modelflare 키 변경",
-    "submit": "확인 후 저장"
-  },
-  "disconnect": {
-    "title": "Modelflare 연결을 해제할까요?",
-    "body": "이 컴퓨터에서 API 키가 삭제됩니다. 봇과 대화는 그대로 유지되며 다시 연결하면 사용할 수 있습니다.",
-    "confirm": "연결 해제"
-  },
   "logout": {
     "title": "Modelflare에서 로그아웃할까요?",
-    "body": "이 컴퓨터의 접근 권한을 취소하고 로그인 시 컴퓨터와 봇에 발급된 API 키를 삭제합니다. 봇과 대화는 유지됩니다.",
+    "body": "이 컴퓨터의 접근 권한을 취소합니다. 봇과 대화는 유지되며 다시 로그인하면 계속 사용할 수 있습니다.",
     "confirm": "로그아웃",
     "notRevoked": "서버에서 권한 취소를 확인하지 못했습니다. 이 기기에서는 로그아웃했습니다. Modelflare 웹사이트의 인증된 앱 메뉴에서 접근 권한을 다시 취소할 수 있습니다"
   },
@@ -227,23 +218,14 @@ export default {
       "signedOut": "로그인하면 사용량, 알림, 초대 링크를 확인하고 봇별 예산을 설정할 수 있습니다",
       "keys": "계정 로그인 회원가입 로그아웃",
       "logout": "로그아웃",
-      "noBrowserLogin": "Docker 및 원격 배포에서는 브라우저 로그인을 사용할 수 없습니다",
-      "login": "로그인 / 회원가입"
     },
     "connection": {
       "name": "연결",
-      "nameSignedIn": "이 컴퓨터의 키",
       "subExternal": "AMB_MAGPIE_BASE_URL 환경 변수로 지정한 엔드포인트입니다(개발/테스트용)",
-      "subSignedIn": "로그인할 때 이 컴퓨터에 발급되며 로그아웃하면 삭제됩니다",
-      "sub": "API 키는 이 컴퓨터에만 저장됩니다",
-      "keys": "키 API 연결 해제 변경 교체",
-      "rekey": "키 변경",
-      "disconnect": "연결 해제"
     },
     "balance": {
       "name": "잔액",
       "error": "불러오지 못했습니다: {error}",
-      "fromKey": "이 키가 속한 계정의 지갑 잔액",
       "updated": "{time} 업데이트",
       "keys": "잔액 충전 지갑 크레딧",
       "refresh": "잔액 새로고침",
@@ -300,14 +282,18 @@ export default {
     },
     "keyQuality": {
       "name": "가성비",
-      "sub": "앱의 키가 저렴한 경로와 안정적인 경로 중 어느 쪽을 먼저 시도할지 정합니다",
+      "sub": "저렴한 경로와 안정적인 경로 중 어느 쪽을 먼저 시도할지 정합니다",
       "keys": "저렴 균형 품질 라우팅 경로 그룹 비용"
+    },
+    "effort": {
+      "sub": "높을수록 더 깊이 생각하고 답변은 느려집니다. 자동이면 모델이 결정합니다. 조정을 지원하지 않는 모델에는 영향이 없습니다.",
+      "keys": "추론 강도 사고 effort reasoning"
     },
     "autoModel": "자동({model})",
     "models": {
       "name": "사용 가능한 모델",
       "error": "불러오지 못했습니다: {error}",
-      "sub": "이 키의 그룹에 허용된 모델",
+      "sub": "계정에서 사용할 수 있는 모델",
       "keys": "모델 목록 새로고침",
       "count": {
         "other": "모델 {count}개"
@@ -315,7 +301,7 @@ export default {
     },
     "console": {
       "name": "Modelflare 콘솔",
-      "sub": "청구, 청구서 및 API 키 관리",
+      "sub": "청구 및 청구서",
       "keys": "콘솔 대시보드 청구 청구서"
     },
     "cuStatus": {

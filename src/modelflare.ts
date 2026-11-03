@@ -177,27 +177,3 @@ function safeHost(url: string): string {
 export function keyTail(key: string): string {
   return key.length > 4 ? key.slice(-4) : "";
 }
-
-export interface KeyBalance {
-  available: number;
-  used: number;
-  /** USD（Modelflare 以美元计价）；站点改了显示单位时原样带回 */
-  unit: string;
-}
-
-/**
- * 只有 API Key（没有登录账户）时的余额：GET {base}/dashboard/billing/credit_grants。
- * 返回的是整个账户钱包，不是这一把 Key 的额度；origin 域名也开放这个 /v1 路径。
- */
-export async function fetchKeyBalance(baseUrl: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<KeyBalance> {
-  const res = await fetchImpl(`${baseUrl}/dashboard/billing/credit_grants`, {
-    headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) throw new Error(t("modelflare.balance_failed", { status: res.status }));
-  const body = (await res.json()) as { total_available?: unknown; total_used?: unknown; unit?: unknown };
-  const available = Number(body.total_available);
-  const used = Number(body.total_used);
-  if (!Number.isFinite(available)) throw new Error(t("modelflare.bad_balance"));
-  return { available, used: Number.isFinite(used) ? used : 0, unit: typeof body.unit === "string" && body.unit ? body.unit : "USD" };
-}

@@ -317,7 +317,7 @@ export function GroupScreen({ group, bots, onEdit, onOpenSettings, onChanged }) 
       const author = !isUser && !same && html`<div class="msg-author"><${BotAvatar} bot=${botOf(it.botId) || { id: it.botId }} size=${20} state=${it.live ? "working" : "idle"} /><span>${nameOf(it.botId)}</span></div>`;
       const cls = `msg-row ${isUser ? "user" : "assistant"}${same ? " cont" : ""}${it.live ? " live" : ""}`;
       if (it.kind === "error") {
-        out.push(html`<div class=${cls} key=${it.id}>${author}<${ErrorNotice} text=${it.text} onFixKey=${() => onOpenSettings("modelflare", "connection")} /></div>`);
+        out.push(html`<div class=${cls} key=${it.id}>${author}<${ErrorNotice} text=${it.text} onFixKey=${() => onOpenSettings("modelflare", "account")} /></div>`);
       } else if (isUser) {
         out.push(html`<div class=${cls} key=${it.id}><div class="msg"><${Linkified} text=${it.text} /></div><${MsgActions} text=${it.text} at=${it.at} /></div>`);
       } else {

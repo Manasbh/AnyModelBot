@@ -14,7 +14,14 @@ export default {
   loadFailed: "Couldn't load models: {error}",
   useCustom: "Use “{id}”",
   customId: "Custom model ID",
-  none: "No models available: this key's group doesn't have any models enabled yet",
+  none: "No models available: your account doesn't have any models enabled yet",
+  effort: {
+    name: "Reasoning effort",
+    auto: "Auto",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+  },
   tiers: {
     value: "Value",
     strategy: {

@@ -8,9 +8,10 @@ import type { InboundEvent, OutboundOp, ReplySession } from "../core/types.js";
 import { eventText, isMessenger, isPushChannel } from "../core/types.js";
 import type { PlatformError } from "../channels/messenger/transport.js";
 import { findAppRoot } from "../magpie/supervisor.js";
+import { botAppApi, serveBotAppStatic } from "./botapp.js";
 import { logFilePath, logger, readLogTail, registerSecret } from "../log.js";
 import { diagnosticsReport, safeStatus, testAgent, testModel } from "../diagnostics.js";
-import { ZOOMS, normalizeLowBalance, saveConfigFile } from "../config.js";
+import { REASONING_EFFORTS, ZOOMS, normalizeLowBalance, saveConfigFile } from "../config.js";
 import { ApiError, ROUTING_STRATEGIES } from "../account/client.js";
 import { OAuthError } from "../account/oauth.js";
 import { normalizeLine } from "../modelflare.js";
@@ -121,6 +122,8 @@ function publicBot(b: NonNullable<ReturnType<App["store"]["getBot"]>>) {
     systemPrompt: b.systemPrompt,
     defaultModel: b.defaultModel,
     settings: b.settings,
+    origin: b.origin,
+    app: b.app,
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
   };
@@ -214,11 +217,15 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
   const vendor = vendorFiles();
   // 非回环地址（如 Docker 0.0.0.0）必须带访问令牌；未配置则生成并写入数据目录（不打印到日志）
   let token = cfg.ui.token;
-  if (!isLoopback(host) && !token) {
+  // 用上目录 Bot 之后，命令行方式在非 Linux 的回环模式下也要令牌：技能脚本是外部代码，而进程来源检查只在 Linux 生效（agent/peer-guard.ts）。
+  // 目录没启用时没有外部代码，行为不变
+  const usesCatalog = app.catalog.remoteEnabled || app.store.listBots().some((b) => b.origin === "catalog");
+  const loopbackNeedsToken = isLoopback(host) && !app.desktop && process.platform !== "linux" && usesCatalog;
+  if ((!isLoopback(host) || loopbackNeedsToken) && !token) {
     const f = path.join(cfg.dataDir, "ui-token");
     token = fs.existsSync(f) ? fs.readFileSync(f, "utf8").trim() : crypto.randomBytes(18).toString("base64url");
     fs.writeFileSync(f, token, { mode: 0o600 });
-    log.warn(`UI 监听在非回环地址 ${host}，访问需带令牌：见 ${f}（打开 /?token=<令牌> 一次即可）`);
+    log.warn(`UI 监听在 ${host}，访问需带令牌：见 ${f}（打开 /?token=<令牌> 一次即可）`);
   }
   registerSecret(token);
 
@@ -326,6 +333,8 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       return false;
     }
     if (!token) return true;
+    // 目录 Bot 的界面跑在不透明来源的沙箱里，带不上 Cookie；这条路径下只有静态文件，没有用户数据（web/botapp.ts）
+    if (url.pathname.startsWith("/amb/botapp/") && (req.method === "GET" || req.method === "HEAD")) return true;
     const cookie = String(req.headers.cookie || "");
     const ok = cookie.split(/;\s*/).includes(`amb_token=${token}`) || req.headers["x-amb-token"] === token;
     if (ok) return true;
@@ -348,6 +357,20 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       throw new HttpError(415, t("web.needJson"));
     }
 
+    if (seg[0] === "catalog" || (seg[0] === "bots" && seg[2] === "app")) {
+      const handled = await botAppApi(req, res, url, seg, {
+        catalog: app.catalog,
+        installer: app.botInstaller,
+        getBot: (id) => app.store.getBot(id),
+        publicBot,
+        deleteBot: (id, keepData) => app.deleteBot(id, { keepData }),
+        send,
+        readJson,
+        appLang: () => String(req.headers["x-amb-lang"] || "en"),
+        loopback: isLoopback(host),
+      });
+      if (handled) return;
+    }
     if (p === "/status" && m === "GET") {
       const mp = app.magpie;
       return send(res, 200, {
@@ -370,27 +393,9 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       }
     }
     if (p === "/modelflare/domains/test" && m === "POST") return send(res, 200, { results: await testModelflareDomains() });
-    if (p === "/modelflare" || p === "/modelflare/line") {
-      if (m === "GET" && p === "/modelflare") return send(res, 200, app.modelflareStatus());
-      if (m !== "GET" && !app.magpie) throw new HttpError(409, t("web.externalNoConnection"));
-    }
-    if (p === "/modelflare") {
-      if (m === "PUT") {
-        const b = await readJson(req);
-        const apiKey = String(b.apiKey ?? "").trim();
-        if (!apiKey) throw new HttpError(400, t("web.missingApiKey"));
-        const r = await app.connectModelflare(apiKey, normalizeLine(b.line ?? cfg.modelflare.line));
-        if (!r.ok) return send(res, 400, { error: r.message, code: r.code, status: r.status });
-        return send(res, 200, { ...app.modelflareStatus(), models: r.models });
-      }
-      if (m === "DELETE") {
-        // 登录状态下断开 = 退出登录：先撤销授权，服务端会删除本机签发的 Key
-        if (app.account.signedIn) await app.account.logout();
-        else await app.disconnectModelflare();
-        return send(res, 200, app.modelflareStatus());
-      }
-    }
+    if (p === "/modelflare" && m === "GET") return send(res, 200, app.modelflareStatus());
     if (p === "/modelflare/line" && m === "PUT") {
+      if (!app.magpie) throw new HttpError(409, t("web.externalNoConnection"));
       const b = await readJson(req);
       await app.setModelflareLine(normalizeLine(b.line));
       return send(res, 200, app.modelflareStatus());
@@ -404,9 +409,9 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       const sub = seg.slice(1).join("/");
       if (m !== "GET" && !app.magpie) throw new HttpError(409, t("web.externalNoAccount"));
       // 浏览器登录的回调落在本程序所在机器的 127.0.0.1；界面监听在非本机地址（Docker、远程部署）时，
-      // 用户的浏览器访问不到它，只能粘贴 API Key
-      const loginAvailable = isLoopback(host);
-      const status = () => ({ ...app.account.status(), loginAvailable });
+      // 用户的浏览器回不到它：登录后把地址栏里的链接贴回来
+      const manualLogin = !isLoopback(host);
+      const status = () => ({ ...app.account.status(), manualLogin });
       if (sub === "" && m === "GET") return send(res, 200, status());
       if (sub === "refresh" && m === "POST") {
         // 切回窗口时界面会来刷新；20 秒内刚读过就直接返回
@@ -414,10 +419,14 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         return send(res, 200, status());
       }
       if (sub === "login" && m === "POST") {
-        if (!loginAvailable) throw new HttpError(409, t("web.noBrowserLogin"));
         const loginUrl = await accountCall(() => app.account.startLogin());
         app.desktop?.openExternal(loginUrl);
         return send(res, 200, { ...status(), loginUrl, opened: !!app.desktop });
+      }
+      if (sub === "login/complete" && m === "POST") {
+        const b = await readJson(req);
+        await accountCall(async () => app.account.completeLoginFromLink(String(b.link ?? "")));
+        return send(res, 200, status());
       }
       if (sub === "login/cancel" && m === "POST") {
         app.account.cancelLogin();
@@ -459,6 +468,11 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       if (m === "PUT") {
         const b = await readJson(req);
         if (b.defaultModel !== undefined) app.setDefaultModel(String(b.defaultModel));
+        if (b.reasoningEffort !== undefined) {
+          const effort = REASONING_EFFORTS.find((x) => x === b.reasoningEffort);
+          if (!effort) throw new HttpError(400, t("web.badReasoningEffort"));
+          app.setReasoningEffort(effort);
+        }
         if (b.imageModel !== undefined || b.videoModel !== undefined) {
           app.setMediaModels({
             ...(b.imageModel !== undefined ? { imageModel: String(b.imageModel) } : {}),
@@ -501,6 +515,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       } else if (m !== "GET") throw new HttpError(405, "method not allowed");
       return send(res, 200, {
         defaultModel: cfg.llm.defaultModel,
+        reasoningEffort: cfg.llm.reasoningEffort,
         imageModel: cfg.media.imageModel,
         videoModel: cfg.media.videoModel,
         closeToTray: cfg.ui.closeToTray,
@@ -1161,6 +1176,8 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         if (m === "GET") return send(res, 200, { bot: publicBot(bot) });
         if (m === "PUT") {
           const b = await readJson(req);
+          // 目录 Bot 的人设被用户改过：之后不再跟随目录升级
+          if (bot.app && b.systemPrompt !== undefined && String(b.systemPrompt) !== bot.systemPrompt) app.botInstaller.markCustomized(id);
           const next = app.store.updateBot(id, {
             ...(b.name !== undefined ? { name: String(b.name) } : {}),
             ...(b.systemPrompt !== undefined ? { systemPrompt: String(b.systemPrompt) } : {}),
@@ -1169,7 +1186,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
           return send(res, 200, { bot: publicBot(next) });
         }
         if (m === "DELETE") {
-          await app.deleteBot(id);
+          await app.deleteBot(id, { keepData: url.searchParams.get("keepData") === "1" });
           return send(res, 200, { ok: true });
         }
       }
@@ -1356,6 +1373,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       });
       return;
     }
+    if (serveBotAppStatic(req, res, url, { uiDir, vendor, catalog: app.catalog })) return;
     if (url.pathname === "/" || url.pathname === "/index.html") return serveFile(res, path.join(uiDir, "index.html"));
     if (url.pathname.startsWith("/amb/static/")) {
       const rel = path.normalize(url.pathname.slice("/amb/static/".length)).replace(/^(\.\.[/\\])+/, "");

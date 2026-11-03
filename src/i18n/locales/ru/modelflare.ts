@@ -7,6 +7,4 @@ export default {
   unavailable: "Modelflare временно недоступен (HTTP {status}){retry}",
   retry_after: "; повторите через {s} с",
   bad_models: "Не удалось прочитать список моделей, возвращённый Modelflare",
-  balance_failed: "Не удалось получить баланс (HTTP {status})",
-  bad_balance: "Не удалось прочитать баланс, возвращённый Modelflare",
 } satisfies TranslatedCatalog["modelflare"];

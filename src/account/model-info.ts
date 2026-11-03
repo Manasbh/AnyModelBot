@@ -8,6 +8,7 @@
  * - 模型智能与每次任务的花费（「模型智能」滑块）：Artificial Analysis 的快照（model-quality.ts），花费再乘上
  *   这个模型在三种性价比下的分组倍率（factors）。
  */
+import { agentApi, effortApplies } from "../agent/host.js";
 import { qualityFor, type QualitySnapshot } from "./model-quality.js";
 import type { RoutingStrategy } from "./client.js";
 
@@ -19,6 +20,8 @@ export interface ModelInfo {
   price?: { input?: number; output?: number; perCall?: number };
   /** 后台任务、规则估算花费用的单价（3e）：比 price 多了缓存命中 / 写入，阶梯计费的取基础那一档 */
   rates?: Rates;
+  /** 推理强度对这个模型有效（AgentHost 会带上）；界面据此决定显示不显示这个控件 */
+  effort?: boolean;
   /** 支持的接口（目录的 supported_endpoint_types：openai、openai-response、openai-response-compact、anthropic、gemini…） */
   endpoints?: string[];
   /** 三种性价比（Key 的路由策略）下实际付的比例：分组倍率 × 模型售价倍率（strategyFactors） */
@@ -190,6 +193,7 @@ export async function loadModelInfo(o: {
     const factors = strategyFactors(entry, catalog!);
     if (factors) out[entry.model_name] = { ...out[entry.model_name], factors };
   }
+  for (const m of Object.values(out)) if (effortApplies(agentApi(m.endpoints), m.reasoning)) m.effort = true;
   // 智能与花费：要知道走哪个接口、推理不推理（上面的 endpoints、reasoning），才知道取哪一档
   for (const [id, entry] of Object.entries(o.quality?.models ?? {})) {
     const q = out[id]?.factors ? qualityFor(entry, out[id]) : undefined;

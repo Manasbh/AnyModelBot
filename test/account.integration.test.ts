@@ -9,7 +9,7 @@ import path from "node:path";
 import { App } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { resolveMagpieBinary } from "../src/magpie/supervisor.js";
-import { FakeFeishu, approveInBrowser, mockModelflare, mockOpenAI, until } from "./helpers.js";
+import { FakeFeishu, approveInBrowser, callbackLink, mockModelflare, mockOpenAI, until } from "./helpers.js";
 
 const d = resolveMagpieBinary() ? describe : describe.skip;
 
@@ -22,8 +22,8 @@ d("账户登录（经管理接口，真实内置网关）", () => {
 
   beforeAll(async () => {
     mf = await mockModelflare();
-    // 设备 Key 与机器人预算 Key 由 mock 依次签发为 sk-key-1、sk-key-2
-    llm = await mockOpenAI({ key: ["sk-key-1", "sk-key-2"], models: ["up-model"] });
+    // 设备 Key 与机器人预算 Key 由 mock 依次签发为 sk-key-1、sk-key-2…；pasted-key 是旧版本填的
+    llm = await mockOpenAI({ key: ["sk-key-1", "sk-key-2", "sk-key-3", "pasted-key"], models: ["up-model"] });
     process.env.AMB_MODELFLARE_BASE_URL = llm.url + "/v1";
     process.env.AMB_MODELFLARE_ISSUER = mf.url;
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "amb-acct-int-"));
@@ -49,7 +49,7 @@ d("账户登录（经管理接口，真实内置网关）", () => {
   };
 
   it("未登录：可以登录；不能设预算", async () => {
-    expect((await api("/account")).json).toMatchObject({ state: "signed_out", loginAvailable: true, source: "none" });
+    expect((await api("/account")).json).toMatchObject({ state: "signed_out", manualLogin: false, source: "none" });
     const r = await api("/bots/default/budget", "PUT", { enabled: true, limitUsd: 5 });
     expect(r.status).toBe(409);
   });
@@ -102,5 +102,32 @@ d("账户登录（经管理接口，真实内置网关）", () => {
     expect((await api("/modelflare")).json.connected).toBe(false);
     expect(app.magpie!.listProviders()).toEqual([]);
     expect(fs.existsSync(path.join(dataDir, "modelflare-account.json"))).toBe(false);
+  }, 30_000);
+
+  it("贴回登录后的链接也能登录（Docker、远程部署）；已登录的不算旧 Key", async () => {
+    expect((await api("/account/login/complete", "POST", { link: "x" })).status).toBe(409);
+    const start = await api("/account/login", "POST", {});
+    expect((await api("/account/login/complete", "POST", { link: "http://127.0.0.1:1/callback?code=x&state=forged" })).status).toBe(400);
+    expect((await api("/account")).json.state).toBe("signing_in");
+    expect((await api("/account/login/complete", "POST", { link: callbackLink(mf, start.json.loginUrl) })).status).toBe(200);
+    await until(async () => (await api("/account")).json.state === "signed_in", 15_000, 100);
+    await app.retirePastedKey();
+    expect((await api("/modelflare")).json.connected).toBe(true);
+    await api("/account/logout", "POST", {});
+  }, 30_000);
+
+  it("旧版本填过 Key、没有登录：Key 从网关移除，回到登录页并说明原因", async () => {
+    expect(await app.connectModelflare("pasted-key", "auto")).toMatchObject({ ok: true });
+    expect((await api("/modelflare")).json.connected).toBe(true);
+    await app.retirePastedKey();
+    expect((await api("/modelflare")).json.connected).toBe(false);
+    expect(app.magpie!.listProviders()).toEqual([]);
+    expect((await api("/account")).json).toMatchObject({ state: "signed_out", error: expect.stringContaining("API Key") });
+    // 刷新状态不会把说明冲掉
+    await app.account.refresh();
+    expect((await api("/account")).json.error).toContain("API Key");
+    // 没有连接时什么都不做
+    await app.retirePastedKey();
+    expect((await api("/modelflare")).json.connected).toBe(false);
   }, 30_000);
 });

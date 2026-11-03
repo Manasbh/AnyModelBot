@@ -54,20 +54,17 @@ d("内置 magpie 集成", () => {
     expect(st.json).toMatchObject({ mode: "managed", connected: false, keyTail: "" });
   });
 
-  it("无效 Key：返回 401 文案，不创建任何连接", async () => {
-    expect((await api("/modelflare", "PUT", {})).status).toBe(400);
-    const r = await api("/modelflare", "PUT", { apiKey: "wrong-key" });
-    expect(r.status).toBe(400);
-    expect(r.json).toMatchObject({ code: "invalid_key", status: 401 });
+  it("无效 Key：返回 401 文案，不创建任何连接；接口上不能填 Key", async () => {
+    expect((await api("/modelflare", "PUT", { apiKey: "mf-upstream-key-a1b2" })).status).toBe(404);
+    expect(await app.connectModelflare("wrong-key", "auto")).toMatchObject({ ok: false, code: "invalid_key", status: 401 });
     expect(app.magpie!.listProviders()).toEqual([]);
   });
 
   it("连接 Modelflare → 模型可用 → 对话经网关转发；Key 不出现在参数、日志与接口里", async () => {
-    const r = await api("/modelflare", "PUT", { apiKey: "mf-upstream-key-a1b2" });
-    expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({ connected: true, keyTail: "a1b2", models: ["up-model"] });
-    expect(r.text).not.toContain("mf-upstream-key");
-    expect((await api("/modelflare")).text).not.toContain("mf-upstream-key");
+    expect(await app.connectModelflare("mf-upstream-key-a1b2", "auto")).toMatchObject({ ok: true, models: ["up-model"] });
+    const st = await api("/modelflare");
+    expect(st.json).toMatchObject({ connected: true, keyTail: "a1b2" });
+    expect(st.text).not.toContain("mf-upstream-key");
     expect(app.magpie!.recentLog.join("\n")).not.toContain("mf-upstream-key");
     const raw = JSON.parse(fs.readFileSync(path.join(dataDir, "magpie", "config", "magpie", "providers.json"), "utf8"));
     const arr: any[] = Array.isArray(raw) ? raw : raw.providers;
@@ -121,9 +118,8 @@ d("内置 magpie 集成", () => {
   }, 30_000);
 
   it("断开 Modelflare：回到未连接，机器人与会话保留", async () => {
-    const r = await api("/modelflare", "DELETE");
-    expect(r.status).toBe(200);
-    expect(r.json.connected).toBe(false);
+    await app.disconnectModelflare();
+    expect((await api("/modelflare")).json.connected).toBe(false);
     expect(app.magpie!.listProviders()).toEqual([]);
     expect((await api("/bots")).json.bots.length).toBeGreaterThan(0);
     expect((await api("/conversations?bot=default")).json.conversations.length).toBeGreaterThan(0);

@@ -9,13 +9,10 @@ export default {
     "Modelflare уже подключён (окончание ключа: {tail}{account}). Сохраняем текущее подключение.",
   accountSuffix: ", аккаунт: {name}",
   signedIn: "вход выполнен",
-  askHow:
-    "Подключение Modelflare: Enter — войти в браузере этого компьютера, key — вставить API-ключ, skip — подключить позже через интерфейс: ",
+  askHow: "Подключение Modelflare: Enter — войти в браузере этого компьютера, remote — войти на другом устройстве, skip — подключить позже в консоли: ",
+  askLoginLink: "Откройте ссылку выше в браузере и войдите. Когда страница перейдёт на адрес, который не открывается, вставьте сюда полную ссылку из адресной строки: ",
   askLine:
     "Домен API: Enter — modelflare.dev, origin — origin.modelflare.dev, cf — cf.modelflare.dev: ",
-  checkDomains:
-    " (проверьте и выберите домен API в настройках, затем повторите попытку)",
-  connected: "✓ Modelflare подключён. Найдено моделей: {count}",
   askFeishuId: "Feishu App ID (cli_xxx, оставьте пустым, чтобы пропустить): ",
   askFeishuSecret: "Feishu App Secret: ",
   savedToBot: "✓ Сохранено для бота «{name}»",

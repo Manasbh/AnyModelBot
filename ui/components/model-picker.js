@@ -1,9 +1,9 @@
 // 模型选择器（magpie picker 的样式；数据来自 Modelflare 的 /v1/models）。按模型族分组，组头可以展开收起。
 // 不做厂商图标栏：各厂商 logo 是第三方商标，未取得授权前不用。
-// 对话和机器人设置里打开时先是两个滑块（TierPanel）：性价比（账户级，Key 的路由策略）和模型智能（沿帕累托前沿的几档，
-// lib/frontier.js）；点模型名进完整列表，照样可以手动选。
+// 对话和机器人设置里打开时先是 TierPanel：性价比（账户级，Key 的路由策略）、模型智能（沿帕累托前沿的几档，
+// lib/frontier.js）和推理强度（全局）；点模型名进完整列表，照样可以手动选。
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { html, Popover, Icon, Stops } from "./ui.js";
+import { html, Popover, Icon, Seg, Stops } from "./ui.js";
 import { api } from "../lib/api.js";
 import { createStore, useStore, failed } from "../lib/store.js";
 import { t } from "../lib/i18n.js";
@@ -31,11 +31,48 @@ function useModelInfoRaw() {
   return info;
 }
 
+/** 模型资料按完整 id 查，查不到再按去掉前缀的名字查 */
+function infoFor(info, id) {
+  const n = normModel(id);
+  return info[n] || info[n.slice(n.lastIndexOf("/") + 1)];
+}
+
+// —— 推理强度：全局一个（/settings 的 reasoningEffort），选择器和设置页共用这份状态 ——
+const EFFORTS = ["auto", "low", "medium", "high"];
+const effortStore = createStore(null);
+let effortLoading = false;
+function loadEffort() {
+  if (effortStore.get() || effortLoading) return;
+  effortLoading = true;
+  api("/settings")
+    .then((d) => effortStore.set(d.reasoningEffort || "auto"))
+    .catch(() => {})
+    .finally(() => (effortLoading = false));
+}
+export function useEffort() {
+  const v = useStore(effortStore);
+  useEffect(loadEffort, []);
+  return v ?? "auto";
+}
+export const effortOptions = () => EFFORTS.map((e) => [e, t(`models.effort.${e}`)]);
+/** 先显示再保存，失败时退回去；返回是否保存成功 */
+export function setEffort(v) {
+  const prev = effortStore.get();
+  effortStore.set(v);
+  return api("/settings", { method: "PUT", body: { reasoningEffort: v } }).then(
+    () => true,
+    (e) => {
+      effortStore.set(prev);
+      failed(e);
+      return false;
+    },
+  );
+}
+
 const num = (n) => String(+Number(n).toFixed(n < 1 ? 3 : 2));
 /** 一行说明：上下文 · 视觉 工具 推理 · 每百万 tokens 输入/输出参考价（按次计费的模型是每次） */
 export function modelNote(info, id) {
-  const n = normModel(id);
-  const i = info[n] || info[n.slice(n.lastIndexOf("/") + 1)];
+  const i = infoFor(info, id);
   if (!i) return "";
   const parts = [];
   if (i.context) parts.push(i.context >= 1e6 ? `${num(i.context / 1e6)}M` : `${Math.round(i.context / 1000)}K`);
@@ -83,11 +120,12 @@ export const strategyOptions = () => STRATEGIES.map((s) => [s, strategyLabel(s)]
 export const levelLabel = (cur, n) => (cur >= 0 ? t(`models.tiers.level.${LEVELS[levelOf(cur, n)]}`) : t("models.tiers.custom"));
 
 /**
- * 两个滑块的面板（不带状态）。stops / cur / anchor 来自 frontier.js 的 tiers；model 是当前模型。
+ * 选择器的面板（不带状态）。stops / cur / anchor 来自 frontier.js 的 tiers；model 是当前模型。
+ * 推理强度只在当前模型支持时出现（showEffort）。
  * 没有第一个滑块时（没登录、Modelflare 不支持）只有模型智能；前沿不到两档时只剩模型名，点它进列表。
- * 右上角的恢复默认只在不是默认（均衡 + 居中那一档）时出现。
+ * 右上角的恢复默认只在不是默认（均衡 + 居中那一档 + 自动）时出现。
  */
-export function TierPanel({ strategy, showStrategy, stops, cur, anchor, model, canReset, onStrategy, onStop, onList, onReset }) {
+export function TierPanel({ strategy, showStrategy, stops, cur, anchor, model, canReset, onStrategy, onStop, onList, onReset, effort, showEffort, onEffort }) {
   const n = stops.length;
   const si = STRATEGIES.indexOf(strategy);
   const level = levelLabel(cur, n);
@@ -108,6 +146,10 @@ export function TierPanel({ strategy, showStrategy, stops, cur, anchor, model, c
           valueText=${cur >= 0 ? t("models.tiers.valueText", { level, model: shortModel(stops[cur].id) }) : level} onChange=${(i) => onStop(stops[i].id)} />
         <div class="tier-ticks ends"><span>${t("models.tiers.cheaper")}</span><span>${t("models.tiers.smarter")}</span></div>`}
     </section>
+    ${showEffort && html`<section class="tier">
+      <div class="tier-head"><span class="tier-name">${t("models.effort.name")}</span></div>
+      <${Seg} label=${t("models.effort.name")} options=${effortOptions()} value=${effort} onChange=${onEffort} />
+    </section>`}
     <p class="tier-foot">${t("models.tiers.foot", { aa: html`<a href=${AA_URL} target="_blank" rel="noopener noreferrer">Artificial Analysis</a>` })}</p>
   </div>`;
 }
@@ -137,6 +179,7 @@ export function ModelPicker({ anchor, models, error, current, onPick, onClose, r
   const [picked, setPicked] = useState(null);
   const [pendingStrategy, setPendingStrategy] = useState(null);
   const strategy = pendingStrategy ?? strategyOf(account);
+  const effort = useEffort();
   const shown = picked ?? (current || effective);
   const tier = useMemo(() => (panelWanted && models && infoRaw ? tiers(models, info, strategy, shown) : null), [panelWanted, models, infoRaw, strategy, shown]);
   // 打开时定下先看哪一面（数据还没到就等它到了再定），之后不再自己变
@@ -167,12 +210,16 @@ export function ModelPicker({ anchor, models, error, current, onPick, onClose, r
     const showStrategy = showsStrategy(account);
     const home = showStrategy && strategy !== DEFAULT_STRATEGY ? tiers(models, info, DEFAULT_STRATEGY, shown) : tier;
     const homeModel = home.stops.length ? home.stops[defaultStop(home.stops.length)].id : "";
+    const showEffort = !!infoFor(info, shown)?.effort;
+    const effortChanged = showEffort && effort !== "auto";
     const onReset = () => {
       if (showStrategy && strategy !== DEFAULT_STRATEGY) setStrategy(DEFAULT_STRATEGY);
+      if (effortChanged) setEffort("auto");
       if (homeModel) pickStop(homeModel);
     };
     body = html`<${TierPanel} strategy=${strategy} showStrategy=${showStrategy} stops=${tier.stops} cur=${tier.cur} anchor=${tier.anchor} model=${shown}
-      canReset=${(showStrategy && strategy !== DEFAULT_STRATEGY) || (!!homeModel && !sameModel(homeModel, shown))}
+      canReset=${(showStrategy && strategy !== DEFAULT_STRATEGY) || effortChanged || (!!homeModel && !sameModel(homeModel, shown))}
+      effort=${effort} showEffort=${showEffort} onEffort=${setEffort}
       onStrategy=${setStrategy} onStop=${pickStop} onList=${() => setView("list")} onReset=${onReset} />`;
   } else {
     body = html`<${ModelList} models=${models} error=${error} current=${current} onPick=${onPick} onClose=${onClose} reset=${reset} foot=${foot}

@@ -7,6 +7,4 @@ export default {
   "unavailable": "Modelflare를 일시적으로 사용할 수 없습니다(HTTP {status}){retry}",
   "retry_after": "; {s}초 후 재시도",
   "bad_models": "Modelflare가 반환한 모델 목록을 읽을 수 없습니다",
-  "balance_failed": "잔액을 읽지 못했습니다(HTTP {status})",
-  "bad_balance": "Modelflare가 반환한 잔액을 읽을 수 없습니다"
 } satisfies TranslatedCatalog["modelflare"];

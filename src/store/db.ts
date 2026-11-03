@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { normalizeSettings, type BotSettings } from "../agent/settings.js";
+import { normalizeAppRef, type BotAppRef } from "../botkit/format.js";
 import type { Schedule } from "../tasks/schedule.js";
 
 /**
@@ -19,6 +20,10 @@ export interface Bot {
   weixinEnabled: boolean;
   /** 身份与行为设置（权限预设、记忆、上下文管家） */
   settings: BotSettings;
+  /** user = 用户自己建的；catalog = 从目录来的（botkit/installer.ts） */
+  origin: "user" | "catalog";
+  /** 目录 Bot 的来源、版本和权限；用户自建的是 null */
+  app: BotAppRef | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -472,6 +477,15 @@ const RULE_COLS: Record<string, string> = {
   updatedAt: "updated_at",
 };
 
+function parseAppRef(raw: unknown): BotAppRef | null {
+  if (typeof raw !== "string" || !raw) return null;
+  try {
+    return normalizeAppRef(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS bots (
   id TEXT PRIMARY KEY, name TEXT NOT NULL, system_prompt TEXT NOT NULL DEFAULT '',
@@ -577,6 +591,9 @@ CREATE TABLE IF NOT EXISTS bot_groups (
 /** 旧库补列（CREATE TABLE IF NOT EXISTS 不会改已有表）。 */
 const COLUMNS: Array<[string, string, string]> = [
   ["bots", "settings", "TEXT NOT NULL DEFAULT '{}'"],
+  // 目录 Bot（botkit/）
+  ["bots", "origin", "TEXT NOT NULL DEFAULT 'user'"],
+  ["bots", "app", "TEXT NOT NULL DEFAULT ''"],
   ["conversations", "kind", "TEXT NOT NULL DEFAULT 'dm'"],
   // 全局渠道账号（core/routes.ts）
   ["conversations", "account", "TEXT NOT NULL DEFAULT ''"],
@@ -707,6 +724,8 @@ export class Store {
       feishuAppSecret: String(r.feishu_app_secret),
       weixinEnabled: Number(r.weixin_enabled) === 1,
       settings: parseSettings(r.settings),
+      origin: r.origin === "catalog" ? "catalog" : "user",
+      app: parseAppRef(r.app),
       createdAt: Number(r.created_at),
       updatedAt: Number(r.updated_at),
     };
@@ -723,10 +742,10 @@ export class Store {
     const id = input.id || randomUUID().slice(0, 8);
     this.db
       .prepare(
-        `INSERT INTO bots(id, name, system_prompt, default_model, feishu_app_id, feishu_app_secret, weixin_enabled, settings, created_at, updated_at)
-         VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bots(id, name, system_prompt, default_model, feishu_app_id, feishu_app_secret, weixin_enabled, settings, origin, app, created_at, updated_at)
+         VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .run(id, input.name, input.systemPrompt ?? "", input.defaultModel ?? "", input.feishuAppId ?? "", input.feishuAppSecret ?? "", input.weixinEnabled ? 1 : 0, JSON.stringify(normalizeSettings(input.settings)), now, now);
+      .run(id, input.name, input.systemPrompt ?? "", input.defaultModel ?? "", input.feishuAppId ?? "", input.feishuAppSecret ?? "", input.weixinEnabled ? 1 : 0, JSON.stringify(normalizeSettings(input.settings)), input.origin ?? "user", input.app ? JSON.stringify(input.app) : "", now, now);
     return this.getBot(id)!;
   }
   updateBot(id: string, patch: Partial<Omit<Bot, "id" | "createdAt" | "updatedAt">>): Bot | undefined {
@@ -735,9 +754,9 @@ export class Store {
     const next = { ...cur, ...patch };
     this.db
       .prepare(
-        `UPDATE bots SET name=?, system_prompt=?, default_model=?, feishu_app_id=?, feishu_app_secret=?, weixin_enabled=?, settings=?, updated_at=? WHERE id=?`,
+        `UPDATE bots SET name=?, system_prompt=?, default_model=?, feishu_app_id=?, feishu_app_secret=?, weixin_enabled=?, settings=?, app=?, updated_at=? WHERE id=?`,
       )
-      .run(next.name, next.systemPrompt, next.defaultModel, next.feishuAppId, next.feishuAppSecret, next.weixinEnabled ? 1 : 0, JSON.stringify(normalizeSettings(next.settings)), Date.now(), id);
+      .run(next.name, next.systemPrompt, next.defaultModel, next.feishuAppId, next.feishuAppSecret, next.weixinEnabled ? 1 : 0, JSON.stringify(normalizeSettings(next.settings)), next.app ? JSON.stringify(next.app) : "", Date.now(), id);
     return this.getBot(id);
   }
   deleteBot(id: string): void {

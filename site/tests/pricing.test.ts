@@ -95,7 +95,7 @@ describe("计算器（30 天，默认线路）", () => {
     const r = row(m);
     const run = (p: (typeof PRESETS)[keyof typeof PRESETS]) => estimate(r, { group: r.defaultGroup, ...p });
     // 页面显示的是两位小数（与 §6.5 D 的验收表逐格一致）
-    expect([run(PRESETS.light), run(PRESETS.everyday), run(PRESETS.heavy)].map((e) => fmtMoney(e.monthly))).toEqual([light, every, heavy].map(fmtMoney));
+    expect([run(PRESETS.light), run(PRESETS.everyday), run(PRESETS.heavy)].map((e) => fmtMoney(e.monthly))).toEqual([light, every, heavy].map((n) => fmtMoney(n)));
     const o = run(PRESETS.everyday).official;
     expect(fmtMoney(o)).toBe(fmtMoney(official!));
   });

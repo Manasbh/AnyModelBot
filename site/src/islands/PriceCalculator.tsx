@@ -6,7 +6,7 @@ import type { Dict } from "../i18n/zh";
 import ModelCombobox from "./ModelCombobox";
 
 type T = Dict["pricing"]["calc"];
-interface Props { rows: PriceRow[]; defaultModel: string; t: T; fetchedAt: string; fullHref: string }
+interface Props { lang: string; copied: string; rows: PriceRow[]; defaultModel: string; t: T; fetchedAt: string; fullHref: string }
 
 const f = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 const track = (n: string, p?: object) => { try { (window as any).umami?.track(n, p); } catch { /* 忽略 */ } };
@@ -40,7 +40,7 @@ function useRolling(target: number) {
   return v;
 }
 
-export default function PriceCalculator({ rows, defaultModel, t, fetchedAt, fullHref }: Props) {
+export default function PriceCalculator({ lang, copied, rows, defaultModel, t, fetchedAt, fullHref }: Props) {
   const def = { model: defaultModel, ...PRESETS.everyday };
   const [model, setModel] = useState(def.model);
   const [group, setGroup] = useState("");
@@ -79,10 +79,10 @@ export default function PriceCalculator({ rows, defaultModel, t, fetchedAt, full
     return () => clearTimeout(id);
   }, [row.model, g.id, msgs, inTok, outTok]);
 
-  const amount = fmtMoney(shown);
+  const amount = fmtMoney(shown, lang);
   const copy = async () => {
-    const text = f(t.copyText, { model: row.model, route: g.id, msgs, inTok: inTok.toLocaleString("en-US"), outTok: outTok.toLocaleString("en-US"), amount: fmtMoney(res.monthly), fetchedAt });
-    try { await navigator.clipboard.writeText(text); (window as any).ambToast?.(document.documentElement.lang.startsWith("zh") ? "已复制" : "Copied"); }
+    const text = f(t.copyText, { model: row.model, route: g.id, msgs, inTok: inTok.toLocaleString(lang), outTok: outTok.toLocaleString(lang), amount: fmtMoney(res.monthly, lang), fetchedAt });
+    try { await navigator.clipboard.writeText(text); (window as any).ambToast?.(copied); }
     catch { (window as any).ambToast?.(text); }
     track("pricing_calc_copy");
   };
@@ -130,13 +130,13 @@ export default function PriceCalculator({ rows, defaultModel, t, fetchedAt, full
       <div class={`calc__result${open ? " is-open" : ""}`}>
         <div class="calc__big">
           <span aria-hidden="true">{(() => { const [pre, post = ""] = t.result.split("{amount}"); return <>{pre && <span class="pcard__unit">{pre}</span>}<span class="mono">{amount}</span>{post && <span class="pcard__unit">{post}</span>}</>; })()}</span>
-          <span class="sr-only" aria-live="polite" aria-atomic="true">{f(t.result, { amount: fmtMoney(res.monthly) })}</span>
+          <span class="sr-only" aria-live="polite" aria-atomic="true">{f(t.result, { amount: fmtMoney(res.monthly, lang) })}</span>
         </div>
         <button type="button" class="calc__bar-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>{t.expandBar}</button>
         <dl class="calc__lines small">
-          <div><dd class="tnum">{f(t.split, { input: fmtMoney(res.input), output: fmtMoney(res.output) })}</dd></div>
-          <div><dd class="tnum">{f(t.perMsg, { amount: fmtSmall(res.perMsg) })}</dd></div>
-          <div><dd class="tnum muted">{f(t.official, { amount: fmtMoney(res.official) })}</dd></div>
+          <div><dd class="tnum">{f(t.split, { input: fmtMoney(res.input, lang), output: fmtMoney(res.output, lang) })}</dd></div>
+          <div><dd class="tnum">{f(t.perMsg, { amount: fmtSmall(res.perMsg, lang) })}</dd></div>
+          <div><dd class="tnum muted">{f(t.official, { amount: fmtMoney(res.official, lang) })}</dd></div>
         </dl>
         <p class="small muted calc__disclaimer">{t.disclaimer}</p>
         <div class="calc__actions">

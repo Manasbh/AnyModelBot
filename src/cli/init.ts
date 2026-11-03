@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import { stdin, stdout } from "node:process";
 import { loadConfig } from "../config.js";
 import { App } from "../app.js";
+import { normalizeLine } from "../modelflare.js";
 import { t as tr } from "../i18n/index.js";
 
 /** 行队列：兼容交互终端与管道输入（管道时所有行会一次性到达） */
@@ -73,11 +74,11 @@ async function setup(app: App, rl: ReturnType<typeof lineReader>, dataDir: strin
     } else {
       const how = (await rl.ask(tr("cli.askHow"))).toLowerCase();
       if (how !== "skip") {
-        const line = (await rl.ask(tr("cli.askLine"))).trim() === "cn" ? "cn" : "auto";
+        const line = normalizeLine((await rl.ask(tr("cli.askLine"))).trim().toLowerCase());
         if (how === "key") {
           const key = await rl.ask("Modelflare API Key：", true);
           const r = await app.connectModelflare(key, line);
-          if (!r.ok) throw new Error(r.message + (r.suggestLine === "cn" ? tr("cli.tryCn") : ""));
+          if (!r.ok) throw new Error(r.message + (r.code === "network" ? tr("cli.checkDomains") : ""));
           console.log(tr("cli.connected", { count: r.models.length }));
         } else {
           await app.setModelflareLine(line);

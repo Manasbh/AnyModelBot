@@ -10,7 +10,7 @@ import { StreamingMarkdownFilter } from "./markdown-filter.js";
 import { WeixinQuota } from "./quota.js";
 import type { Delivery } from "../../core/delivery.js";
 import { logger } from "../../log.js";
-import { t, t as tr, tl } from "../../i18n/index.js";
+import { t, t as tr, tl, TARGET_LANGS } from "../../i18n/index.js";
 
 export const WEIXIN_CAPS: ChannelCapabilities = {
   streaming: false,
@@ -111,7 +111,7 @@ function reachable(quota: WeixinQuota, userId: string, row: Pick<OutboxRow, "pur
 /** 合并发出的「你不在时」那条的开头（按当前语言）；去掉它时两种语言的都认 */
 export const awayPrefix = () => tr("channel.awayPrefix");
 const stripAway = (s: string) => {
-  for (const p of [tl("zh-CN", "channel.awayPrefix"), tl("en", "channel.awayPrefix")]) if (s.startsWith(p)) return s.slice(p.length);
+  for (const p of TARGET_LANGS.map((l) => tl(l, "channel.awayPrefix"))) if (s.startsWith(p)) return s.slice(p.length);
   return s;
 };
 

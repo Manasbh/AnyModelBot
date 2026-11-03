@@ -4,6 +4,8 @@
  */
 import { summarizeCall } from "./host.js";
 import { t as tr } from "../i18n/index.js";
+import { localProxyFailureHint } from "../network-error.js";
+import { redactText } from "../log.js";
 
 export interface ActivityStep {
   /** 同一步的更新沿用同一个 id（工具调用 id、m<回合>.<步>…） */
@@ -171,12 +173,14 @@ export class ActivityLog {
       case "llm/retry": {
         const f = data.failure ?? {};
         const why = String(f.message ?? f.code ?? tr("activity.requestFailed"));
+        const proxyHint = localProxyFailureHint(why);
         const of = data.maxRetries ? `${data.retry}/${data.maxRetries}` : String(data.retry ?? "");
         this.put({
           id: `r${data.retryId ?? data.turn}.${data.retry}`,
           kind: "retry",
           title: tr("activity.retryTitle"),
-          summary: oneLine(tr("activity.retrySummary", { n: of, s: Math.round((Number(data.delayMs) || 0) / 1000), why })),
+          summary: oneLine(tr("activity.retrySummary", { n: of, s: Math.round((Number(data.delayMs) || 0) / 1000), why: proxyHint || why })),
+          ...(proxyHint ? { output: clip(redactText(why), MAX_OUTPUT) } : {}),
           status: "error",
           at: time,
         });
@@ -225,7 +229,10 @@ export class ActivityLog {
         if (r.kind === "error") {
           // 还挂着的步骤（模型请求、工具）跟着这个错误结束
           for (const s of this.steps) if (s.status === "running") this.put({ ...s, status: "error", cut: true, ms: Math.max(0, time - s.at) });
-          this.put({ id: `e${data.turn}`, kind: "error", title: tr("activity.turnError"), summary: oneLine(String(r.error?.message ?? "unknown error"), 300), status: "error", at: time });
+          const error = String(r.error?.message ?? "unknown error");
+          const proxyHint = localProxyFailureHint(error);
+          this.put({ id: `e${data.turn}`, kind: "error", title: tr("activity.turnError"), summary: oneLine(proxyHint || error, 300),
+            ...(proxyHint ? { output: clip(redactText(error), MAX_OUTPUT) } : {}), status: "error", at: time });
         }
         return true;
       }

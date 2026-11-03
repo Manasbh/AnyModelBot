@@ -24,14 +24,14 @@ import { estimate, fmtMoney, PRESETS } from "../lib/calc";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
-const b = t.bots;
+const b = t.home.bots;
 const L = b.looks;
 const talk = (k: CharKey) => b.personas[CHAR_PERSONA[k]];
 const modelOf = (k: CharKey) => personaModels[CHAR_PERSONA[k]];
 const pricingPage = href(lang, "/pricing");
 const cost = (k: CharKey) => {
   const r = rowOf(modelOf(k));
-  return r ? fmtMoney(estimate(r, { group: r.defaultGroup, ...PRESETS.everyday }).monthly) : "—";
+  return r ? fmtMoney(estimate(r, { group: r.defaultGroup, ...PRESETS.everyday }).monthly, lang) : "—";
 };
 // 工牌底部的条形码：按角色名算出来的伪随机竖条，纯装饰
 const barcode = (k: string) => {
@@ -49,7 +49,7 @@ const perkIcons = ["doc", "layers", "plus"] as const;
 ---
 <section class="section" id="bots" aria-labelledby="bots-h2">
   <div class="container">
-    <SectionHead n={2} label={t.kicker.bots} id="bots-h2" title={b.h2} dim={b.h2dim} lead={b.lead} />
+    <SectionHead n={2} label={t.home.kicker.bots} id="bots-h2" title={b.h2} dim={b.h2dim} lead={b.lead} />
 
     <div class="crew fx-rise" data-crew data-char={CHAR_KEYS[0]} data-doze data-fx>
       <div class="lineup" role="tablist" aria-label={b.tabsLabel} data-bot-tabs>

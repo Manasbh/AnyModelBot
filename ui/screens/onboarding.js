@@ -2,21 +2,16 @@
 // 回来后自动签发本机 Key 并连接）。只有 Docker / 远程部署（浏览器登录的回调回不到这台机器）才显示粘贴 API Key。
 // 不是向导路由。
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { html, Icon, Menu, Notice, Seg, Spinner, CopyButton } from "../components/ui.js";
+import { html, Icon, Menu, Notice, Spinner, CopyButton } from "../components/ui.js";
 import { BotAvatar, MAIN_CHAR } from "../components/avatar.js";
 import { FamilyHead, PickModel, familyName, groupModels, useFamilies } from "../components/model-picker.js";
 import { api } from "../lib/api.js";
 import { failed } from "../lib/store.js";
-import { LANG_NAMES, changeLang, getLangPref, t, useLang } from "../lib/i18n.js";
+import { LANGS, LANG_NAMES, changeLang, getLangPref, t, useLang } from "../lib/i18n.js";
 import { MF_CONSOLE, MF_DOCS, MF_KEYS } from "../lib/links.js";
+import { DomainConnection } from "../components/domain-connection.js";
 
 export { MF_CONSOLE, MF_DOCS };
-/** Modelflare 线路的选项 [值, 显示名]（引导页"高级"和设置页共用；按当前语言，渲染时再调） */
-export const lineOptions = () => [
-  ["auto", t("common.auto")],
-  ["global", t("onboarding.line.global")],
-  ["cn", t("onboarding.line.cn")],
-];
 
 /** 粘贴 Key → 校验（GET /v1/models）→ 写入。onConnected(result) 收到 { models, keyTail, … } */
 /** onFace(state)：给旁边的头像用——"listening"（在输入）/ "thinking"（正在校验）/ "idle" / "error"（一次性） */
@@ -32,21 +27,19 @@ export function KeyForm({ line: initialLine = "auto", onConnected, onFace, showL
   useEffect(() => input.current?.focus(), []);
   useEffect(() => onFace?.(busy ? "thinking" : key.trim() ? "listening" : "idle"), [busy, !!key.trim()]);
 
-  const submit = async (lineOverride) => {
+  const submit = async () => {
     const k = key.trim();
     if (!k || busy) return;
-    const useLine = lineOverride || line;
-    if (lineOverride) setLine(lineOverride);
     setBusy(true);
     setErr(null);
     setSlow(false);
     const slowTimer = setTimeout(() => setSlow(true), 4000);
     try {
-      const r = await api("/modelflare", { method: "PUT", body: { apiKey: k, line: useLine } });
+      const r = await api("/modelflare", { method: "PUT", body: { apiKey: k, line } });
       setKey("");
       onConnected(r);
     } catch (e) {
-      setErr({ message: e.message, code: e.data?.code, suggestLine: e.data?.suggestLine });
+      setErr({ message: e.message, code: e.data?.code });
       onFace?.("error");
     } finally {
       clearTimeout(slowTimer);
@@ -88,8 +81,7 @@ export function KeyForm({ line: initialLine = "auto", onConnected, onFace, showL
       <span>${err.message}</span>
       ${err.code === "invalid_key" && html`<button type="button" class="text" onClick=${retype}>${t("onboarding.key.retype")}</button>`}
       ${err.code === "forbidden" && html`<a href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">${t("onboarding.key.checkGroup")}</a>`}
-      ${(err.code === "rate_limited" || err.code === "upstream" || err.code === "bad_response") && html`<button type="button" class="text" onClick=${() => submit()}>${t("common.retry")}</button>`}
-      ${err.code === "network" && err.suggestLine === "cn" && html`<button type="button" class="text accent" onClick=${() => submit("cn")}>${t("onboarding.key.useCn")}</button>`}
+      ${["rate_limited", "upstream", "bad_response", "network"].includes(err.code) && html`<button type="button" class="text" onClick=${() => submit()}>${t("common.retry")}</button>`}
     </div>`}
     <p class="hint" id="mf-key-note">${t("onboarding.key.note")}</p>
     <button type="submit" ref=${btn} class="btn primary lg block" disabled=${!key.trim() || busy}>
@@ -98,9 +90,9 @@ export function KeyForm({ line: initialLine = "auto", onConnected, onFace, showL
     ${slow && html`<p class="slow">${showLine ? t("onboarding.key.slowLine") : t("onboarding.key.slow")}</p>`}
     ${showLine && html`<details>
       <summary>${t("onboarding.key.advanced")} <${Icon} name="chevDown" size="xs" /></summary>
-      <div class="row compact">
+      <div class="row compact domain-row">
         <div class="who"><div class="name">${t("onboarding.line.label")}</div><div class="sub">${t("onboarding.line.sub")}</div></div>
-        <${Seg} label=${t("onboarding.line.label")} options=${lineOptions()} value=${line} onChange=${setLine} disabled=${busy} />
+        <${DomainConnection} value=${line} onChange=${setLine} disabled=${busy} />
       </div>
     </details>`}
   </form>`;
@@ -244,7 +236,7 @@ function LangSwitch() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const label = t("common.lang.label");
-  const opts = [["system", t("common.lang.system")], ["zh-CN", LANG_NAMES["zh-CN"]], ["en", LANG_NAMES.en]];
+  const opts = [["system", t("common.lang.system")], ...LANGS.map((l) => [l, LANG_NAMES[l]])];
   return html`<div class="onboard-lang">
     <button type="button" class="pick" ref=${ref} aria-haspopup="menu" aria-expanded=${open} aria-label=${label} title=${label} onClick=${() => setOpen((v) => !v)}>
       <${Icon} name="globe" size="sm" class="lead" /><span class="v">${LANG_NAMES[lang]}</span><${Icon} name="chevDown" />

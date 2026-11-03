@@ -48,6 +48,7 @@ import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
 import { ConnectionService } from "./agent/connections.js";
+import { UpdateChecker } from "./update-check.js";
 import { COMPACT_ENDPOINT, serverCompactionEnabled, type CompactEndpoint } from "./agent/server-compaction.js";
 import type { BotSettings } from "./agent/settings.js";
 import { TaskService } from "./tasks/service.js";
@@ -165,6 +166,8 @@ export class App {
   private webSearch: WebSearchSettings;
   /** 已授权账号：全局一份，所有机器人共用（设置 › 连接） */
   readonly connections: ConnectionService;
+  /** 新版本提示：只有桌面版启动检查（src/update-check.ts） */
+  readonly updates: UpdateChecker;
   web: WebServer | undefined;
   desktop: DesktopHooks | undefined;
   /** Modelflare 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
@@ -223,6 +226,7 @@ export class App {
     // 桌面版搜索走 Chromium 的网络栈（系统代理、PAC、系统证书）；命令行 / Docker 用 Node 的 fetch
     this.search = new SearchService({ settings: () => this.webSearch, fetch: () => this.desktop?.fetch });
     this.connections = new ConnectionService({ kv: this.store, fetch: () => this.desktop?.fetch });
+    this.updates = new UpdateChecker({ current: appVersion(), fetch: () => this.desktop?.fetch });
     this.agent = new AgentManager({
       store: this.store,
       dataDir: config.dataDir,
@@ -636,6 +640,7 @@ export class App {
       void pwshProbe.check();
     }
     void this.prewarmAgent();
+    if (this.desktop) this.updates.start();
     if (this.magpie && !this.opts.noWeb) {
       // 余额与低余额提醒：启动后读一次，之后每 5 分钟一次
       const tick = () => {
@@ -681,6 +686,7 @@ export class App {
     this.tasks.stop();
     this.attention.stop();
     this.offPwsh?.();
+    this.updates.stop();
     if (this.accountTimer) clearInterval(this.accountTimer);
     if (this.picksTimer) clearInterval(this.picksTimer);
     this.account?.cancelLogin();

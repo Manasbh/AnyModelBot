@@ -9,6 +9,8 @@ export default {
   balance: "余额",
   topUp: "充值 ↗",
   lowBalance: "余额只剩 {amount}，去充值 ↗",
+  update: "发现新版本 {version}，去下载 ↗",
+  updateDismiss: "不再提示这个版本",
   renamed: "已重命名",
   delete: {
     title: "删除「{name}」？",

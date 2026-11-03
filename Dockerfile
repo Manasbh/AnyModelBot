@@ -21,6 +21,7 @@ RUN npm ci --ignore-scripts
 COPY tsconfig.json tsconfig.build.json ./
 COPY src ./src
 COPY electron ./electron
+COPY ui/locales/manifest.json ./ui/locales/manifest.json
 RUN npx tsc -p tsconfig.build.json
 
 # ---- DSH 代理运行时（MIT，npm 固定版本）----
@@ -50,7 +51,7 @@ COPY --from=magpie /out/magpie ./bin/magpie
 COPY --from=dsh /app/dsh-runtime/node_modules ./dsh-runtime/node_modules
 COPY dsh-runtime/package.json ./dsh-runtime/
 COPY dsh-runtime/plugins ./dsh-runtime/plugins
-COPY LICENSE THIRD_PARTY_NOTICES.md ./
+COPY LICENSE THIRD_PARTY_NOTICES*.md ./
 RUN mkdir -p /data && chown node:node /data
 USER node
 VOLUME ["/data"]

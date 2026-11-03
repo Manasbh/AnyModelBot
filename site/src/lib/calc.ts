@@ -1,5 +1,6 @@
 // 计算器：每月费用估算（§6.5 D）。不含缓存折扣与请求级倍率；超过分档阈值的请求按更高档计价。
 import { tierFor, type PriceRow } from "./pricing";
+import { formatUSD } from "./locale-format";
 
 export interface CalcState { model: string; group: string; msgs: number; inTok: number; outTok: number }
 export interface CalcResult { monthly: number; input: number; output: number; perMsg: number; official: number }
@@ -32,15 +33,15 @@ export function calcGroups(row: PriceRow) {
 }
 
 /** 金额：两位小数；< $0.01 显示 "< $0.01"；千分位 */
-export function fmtMoney(n: number): string {
-  if (n > 0 && n < 0.01) return "< $0.01";
-  return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export function fmtMoney(n: number, locale = "en-US"): string {
+  if (n > 0 && n < 0.01) return `< ${formatUSD(0.01, locale, 2, 2, true)}`;
+  return formatUSD(n, locale, 2, 2, true);
 }
 
 /** 每条消息：最多 6 位小数，去掉末尾 0 */
-export function fmtSmall(n: number): string {
-  if (n > 0 && n < 0.000001) return "< $0.000001";
-  return "$" + Number(n.toFixed(6)).toString();
+export function fmtSmall(n: number, locale = "en-US"): string {
+  if (n > 0 && n < 0.000001) return `< ${formatUSD(0.000001, locale)}`;
+  return formatUSD(Number(n.toFixed(6)), locale);
 }
 
 export const clampInt = (v: unknown, [a, b]: readonly [number, number], d: number) => {

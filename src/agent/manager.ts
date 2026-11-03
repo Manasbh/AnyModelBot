@@ -17,7 +17,7 @@ import { MemoryError, MemoryStore, type Scope } from "./memory.js";
 import type { TaskHost, TaskService } from "../tasks/service.js";
 import { RULE_APPROVAL_TTL_MS } from "../tasks/rules.js";
 import { DEFAULT_SETTINGS, type BotSettings, type MediaConfirm } from "./settings.js";
-import { t, tl, t as tr } from "../i18n/index.js";
+import { t, tl, t as tr, TARGET_LANGS } from "../i18n/index.js";
 import {
   HANDOFF_SYSTEM,
   REVIEW_SYSTEM,
@@ -95,7 +95,7 @@ export interface TurnProgress {
 }
 
 /** 生成确认里"取消"那一项（问题建好后界面语言可能变了：两种语言的都认） */
-const CANCELS = [tl("zh-CN", "media.cancel"), tl("en", "media.cancel")];
+const CANCELS = TARGET_LANGS.map((l) => tl(l, "media.cancel"));
 
 /** 预计花费超过它（美元）就先问用户 */
 export const MEDIA_ASK_USD = 0.5;

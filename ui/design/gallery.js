@@ -121,8 +121,8 @@ function Replay({ cls, label }) {
 
 // —— 组件样例里有状态的小件 ——
 function SegDemo() {
-  const [v, setV] = useState("auto");
-  return html`<${Seg} label="线路" value=${v} onChange=${setV} options=${[["auto", "自动"], ["intl", "国际"], ["cn", "中国大陆优化"]]} />
+  const [v, setV] = useState("global");
+  return html`<${Seg} label="API 域名" value=${v} onChange=${setV} options=${[["global", "modelflare.dev"], ["cn", "origin.modelflare.dev"], ["cf", "cf.modelflare.dev"]]} />
     <${Seg} label="禁用" value="a" disabled onChange=${() => {}} options=${[["a", "开"], ["b", "关"]]} />`;
 }
 function SwitchDemo() {
@@ -140,7 +140,7 @@ function StopsDemo() {
   </div>`;
 }
 function MenuButtonDemo() {
-  const [v, setV] = useState("auto");
+  const [v, setV] = useState("global");
   return html`<${MenuButton} label="默认模型" value=${v} onChange=${setV}
     options=${[["auto", "自动（列表第一个）"], ["opus", "claude-opus-5-5", "最强"], ["sonnet", "claude-sonnet-5-5", "均衡"]]} />`;
 }
@@ -279,7 +279,7 @@ function SegState({ st, disabled }) {
   useLayoutEffect(() => {
     if (st) ref.current?.querySelectorAll(".seg button")[1]?.classList.add(st);
   }, []);
-  return html`<div ref=${ref}><${Seg} label="示例" value="a" disabled=${disabled} onChange=${noop} options=${[["a", "自动"], ["b", "国际"]]} /></div>`;
+  return html`<div ref=${ref}><${Seg} label="示例" value="a" disabled=${disabled} onChange=${noop} options=${[["a", "选项 A"], ["b", "选项 B"]]} /></div>`;
 }
 const thread = (c, { working } = {}) => html`<div class=${`thread-item ${c}`} style="width: 236px"><button type="button" class=${`thread ${c}`}>
   <span class="avatar-wrap"><${BotAvatar} id="a1f3c9d2" name="群聊日报" size=${38} working=${working} />${working && html`<span class="working-dot"></span>`}</span>
@@ -302,7 +302,7 @@ const STATE_ROWS = [
   { name: "图标按钮", note: ".icon-btn · 打开（on / aria-expanded）比悬停深一级", cells: [...basic((c) => html`<button type="button" class=${`icon-btn ${c}`} aria-label="信息面板"><${Icon} name="panel" /></button>`),
     ["打开", () => html`<button type="button" class="icon-btn on" aria-label="信息面板"><${Icon} name="panel" /></button>`], ["禁用", () => html`<button type="button" class="icon-btn" disabled aria-label="新对话"><${Icon} name="compose" /></button>`]] },
   { name: "文字按钮", note: ".text [accent | danger]", cells: [...basic((c) => html`<button type="button" class=${`text ${c}`}>更换密钥</button>`),
-    ["强调", () => html`<button type="button" class="text accent">改用大陆线路</button>`], ["危险 · 悬停", () => html`<button type="button" class="text danger is-hover">删除</button>`], ["禁用", () => html`<button type="button" class="text" disabled>更换密钥</button>`]] },
+    ["强调", () => html`<button type="button" class="text accent">域名测速</button>`], ["危险 · 悬停", () => html`<button type="button" class="text danger is-hover">删除</button>`], ["禁用", () => html`<button type="button" class="text" disabled>更换密钥</button>`]] },
   { name: "输入框", note: ".field · 错误状态聚焦时是红色光晕；只读聚焦不发光", cells: [
     ["默认", () => html`<input class="field" placeholder="App ID" style="width: 150px" />`], ["悬停", () => html`<input class="field is-hover" placeholder="App ID" style="width: 150px" />`],
     ["聚焦", () => html`<input class="field is-focus" value="cli_a1b2" style="width: 150px" />`], ["错误", () => html`<input class="field err" value="格式不对" style="width: 150px" />`],
@@ -348,9 +348,9 @@ const STATE_ROWS = [
     ["选中", () => html`<button type="button" class="tpl on" style="width: 190px"><span class="tpl-ic"><${Icon} name="chat" size="lg" /></span><span class="tpl-name">群聊日报</span><span class="tpl-desc">每天整理群消息</span></button>`]] },
   { name: "建议胶囊", note: ".chip", cells: basic((c) => html`<button type="button" class=${`chip ${c}`}>你能帮我做什么？</button>`) },
   { name: "问题选项", note: ".card .opt", cells: [
-    ...basic((c) => html`<div class="card gal-bare-card"><button type="button" class=${`opt ${c}`}><span class="letter">A</span><span>国内线路<span class="desc">延迟低</span></span></button></div>`),
-    ["已选", () => html`<div class="card gal-bare-card"><button type="button" class="opt picked"><span class="letter">A</span><span>国内线路<span class="desc">延迟低</span></span></button></div>`],
-    ["已结束", () => html`<div class="card done gal-bare-card"><button type="button" class="opt" disabled><span class="letter">B</span><span>海外线路<span class="desc">模型更全</span></span></button></div>`]] },
+    ...basic((c) => html`<div class="card gal-bare-card"><button type="button" class=${`opt ${c}`}><span class="letter">A</span><span>modelflare.dev<span class="desc">API 域名</span></span></button></div>`),
+    ["已选", () => html`<div class="card gal-bare-card"><button type="button" class="opt picked"><span class="letter">A</span><span>modelflare.dev<span class="desc">API 域名</span></span></button></div>`],
+    ["已结束", () => html`<div class="card done gal-bare-card"><button type="button" class="opt" disabled><span class="letter">B</span><span>origin.modelflare.dev<span class="desc">API 域名</span></span></button></div>`]] },
   { name: "列表行", note: ".row.clickable · 键盘焦点描边往里收（卡片会裁掉外描边）", cells: basic((c) => html`<div class="list" style="width: 220px"><div class=${`row compact clickable ${c}`} tabindex="0"><div class="who"><div class="name">最近会话</div><div class="sub">3 分钟前</div></div></div></div>`) },
 ];
 
@@ -685,9 +685,9 @@ const { mounted, leaving } = usePresence(open);   /* design/motion.js：退场�
             <div class="msg-row user"><div class="msg">再整理成日报</div></div>
             <div class="msg-row assistant"><div class="work-line live"><span class="shimmer">思考中 12 秒</span></div></div>
             <div class="msg-row assistant live"><div class="work-line live"><span class="shimmer">正在回复 4 秒</span></div><div class="msg"><${Markdown} text="好的，先按群把今天的消息分组，再挑出要你处理的" /></div></div>
-            <div class="msg-row assistant"><div class="card"><div class="q-block"><div class="q">要用哪条线路？</div>
-              <div class="opts"><button type="button" class="opt picked"><span class="letter">A</span><span>国内线路<span class="desc">延迟低</span></span></button>
-              <button type="button" class="opt"><span class="letter">B</span><span>海外线路<span class="desc">模型更全</span></span></button></div></div></div></div>
+            <div class="msg-row assistant"><div class="card"><div class="q-block"><div class="q">要用哪个 API 域名？</div>
+              <div class="opts"><button type="button" class="opt picked"><span class="letter">A</span><span>modelflare.dev<span class="desc">API 域名</span></span></button>
+              <button type="button" class="opt"><span class="letter">B</span><span>origin.modelflare.dev<span class="desc">API 域名</span></span></button></div></div></div></div>
             <div class="msg-row assistant"><div class="card"><div class="meta"><span>「竞品周报」想问你</span></div><div class="q-block"><div class="q">报告用中文还是英文？</div><div class="q-detail">不回复就按中文做</div>
               <div class="opts"><button type="button" class="opt"><span class="letter">A</span><span>中文</span></button>
               <button type="button" class="opt"><span class="letter">B</span><span>英文</span></button></div></div></div></div>

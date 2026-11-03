@@ -188,7 +188,7 @@ function browserHeaders(lang: Lang): Record<string, string> {
   return {
     "user-agent": BROWSER_UA,
     accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "accept-language": lang === "zh-CN" ? "zh-CN,zh;q=0.9,en;q=0.8" : "en-US,en;q=0.9",
+    "accept-language": lang === "zh-CN" ? "zh-CN,zh;q=0.9,en;q=0.8" : lang === "en" ? "en-US,en;q=0.9" : `${lang},en;q=0.8`,
   };
 }
 

@@ -1,6 +1,6 @@
 # Data and privacy
 
-[简体中文](./privacy.md) | English
+[简体中文](./privacy.md) | English | [日本語](./privacy_ja.md) | [한국어](./privacy_ko.md) | [Русский](./privacy_ru.md)
 
 **In one sentence:** conversations, memory, files and keys are stored on your device; whatever you send to a model goes through Modelflare to the model provider you chose. We do not claim your data is beyond all risk — anything sent to a model leaves your device.
 

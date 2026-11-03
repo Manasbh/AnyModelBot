@@ -20,6 +20,7 @@ import type { ApprovalRow, Conversation } from "../store/db.js";
 import type { AccessControl } from "./access.js";
 import { takeTaskNotes } from "../tasks/service.js";
 import { t } from "../i18n/index.js";
+import { localProxyFailureHint } from "../network-error.js";
 
 const log = logger("runtime");
 
@@ -970,5 +971,7 @@ export function turnFailedText(err: Error, steps: ActivityStep[]): string {
     return t("runtime.stoppedLimit", { d: fmtSecs(err.ms), restart, where });
   }
   if (/runtime (closed|exited)/i.test(err.message)) return t("runtime.runtimeRestarted");
+  const proxyHint = localProxyFailureHint(err.message);
+  if (proxyHint) return `⚠️ ${proxyHint}`;
   return t("runtime.agentFailed", { error: err.message.slice(0, 300) });
 }

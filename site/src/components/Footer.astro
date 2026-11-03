@@ -6,7 +6,7 @@
 import "../styles/footer.css";
 import EyesMark from "./EyesMark.astro";
 import Icon from "./Icon.astro";
-import { dict, fmt, href, altLang, switchHref, type Lang } from "../i18n";
+import { dict, fmt, href, READY_LANGS, LOCALES, switchHref, type Lang } from "../i18n";
 import { GITHUB_URL, MF, pricing } from "../lib/site";
 import { docsUrl } from "../lib/docs";
 import { pickModels } from "../lib/eyefield";
@@ -20,11 +20,10 @@ const h = (p: string) => href(lang, p);
 const home = h("/");
 const cols = [
   { title: c.product.title, links: [[c.product.links[0], `${home}#features`], [c.product.links[1], h("/pricing")], [c.product.links[2], h("/download")], [c.product.links[3], h("/changelog")]] },
-  { title: c.resources.title, links: [[c.resources.links[0], docsUrl(lang)], [c.resources.links[1], h("/security")], [c.resources.links[2], GITHUB_URL], [c.resources.links[3], MF.home]] },
+  { title: c.resources.title, links: [[c.resources.links[0], docsUrl(lang)], [c.resources.links[1], h("/security")], [c.resources.links[2], GITHUB_URL], [c.resources.links[3], MF.home], [t.partners.footer, h("/partners")]] },
   { title: c.legal.title, links: [[c.legal.links[0], h("/privacy")], [c.legal.links[1], h("/licenses")]] },
 ];
 const ext = (u: string) => /^https?:/.test(u);
-const other = altLang(lang);
 // 眼睛田"换脑"时轮流显示的模型：价格快照里每家厂商取一个
 const models = pickModels(pricing.rows);
 // 图片懒加载：被隐藏的那个主题款不会发请求，页面也只在快到页脚时才请求这些外部图片
@@ -78,7 +77,7 @@ const badges = [...BADGES.filter((b) => b.dark), ...BADGES.filter((b) => !b.dark
     <span>{t.footer.copyright}</span>
     <span>{t.footer.art}</span>
     <span class="footer__switch">
-      <a href={switchHref(lang, path)} hreflang={other === "en" ? "en" : "zh-CN"} data-lang-switch>{t.nav.lang}</a>
+      <span class="language-options" aria-label={t.nav.langLabel}>{READY_LANGS.map((l) => <a href={switchHref(l, path)} hreflang={LOCALES[l].tag} lang={l === "zh" && lang === "en" ? "en" : LOCALES[l].tag} aria-current={l === lang ? "page" : undefined} data-lang-switch={l}>{l === "zh" && lang === "en" ? "Simplified Chinese" : LOCALES[l].name}</a>)}</span>
       <button type="button" data-theme-cycle aria-label={t.nav.theme}>{t.nav.theme}</button>
     </span>
   </div>

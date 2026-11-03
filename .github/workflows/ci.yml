@@ -48,6 +48,7 @@ jobs:
       - run: npm run build
       # README 自检（scripts/check-readme.mjs）：素材是否存在与体积、中英结构一致、链接与锚点、禁用词、alt
       - run: npm run docs:check
+      - run: npm run i18n:status
 
   # Does this change touch the agent host, the gateway or the desktop shell? Only then run the
   # Windows end-to-end job below (it needs a Windows runner and ~6 minutes).

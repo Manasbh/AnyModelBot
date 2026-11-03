@@ -14,14 +14,14 @@ import { dict, type Lang } from "../i18n";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
-const h = t.handson;
-const w = t.window;
-const m = t.memory;
+const h = t.home.handson;
+const w = t.home.window;
+const m = t.home.memory;
 const handsonIcons = ["shield", "lock", "pointer"] as const;
 const memoryIcons = ["doc", "shield", "layers"] as const;
-// 两章下面"还有这些"的六格：生图生视频、三档权限、斜杠命令、用量与预算、两条线路、微信收发图片和文件
+// 两章下面"还有这些"的六格：生图生视频、三档权限、斜杠命令、用量与预算、三个 API 域名、微信收发图片和文件
 const moreIcons = ["play", "shield", "terminal", "card", "globe", "chat"] as const;
-const more = t.features.more;
+const more = t.home.features.more;
 const lineAt = (i: number) => String(500 + i * 650);
 const secretAt = 500 + m.lines.length * 650 + 300;
 const chapters = [
@@ -31,7 +31,7 @@ const chapters = [
 ---
 <section class="section" id="features" aria-labelledby="features-h2">
   <div class="container">
-    <SectionHead n={3} label={t.kicker.features} id="features-h2" title={t.features.h2} dim={t.features.h2dim} lead={t.features.lead} host="orange" />
+    <SectionHead n={3} label={t.home.kicker.features} id="features-h2" title={t.home.features.h2} dim={t.home.features.h2dim} lead={t.home.features.lead} host="orange" />
     <div class="story" data-story>
       <article class="story__ch" data-ch="0" aria-labelledby="handson-h2" style="--tint:var(--bot-orange-glow)">
         <p class="story__no"><span class="story__n mono">01</span><span class="badge badge--neutral">{h.badge}</span><span class="badge badge--warn">{h.status}</span></p>
@@ -75,7 +75,7 @@ const chapters = [
               <span class="file-chip desk__out on-rise" data-at="9000"><Icon name="doc" />{h.file}</span>
             </div>
           </div>
-          <p class="sr-only">{lang === "en"
+          <p class="sr-only">{lang !== "zh" && lang !== "ja"
             ? `${h.demoSteps.join(", ")}, ${w.approvalTitle}: ${h.approvalBody}, ${w.allow}, ${h.file}`
             : `${h.demoSteps.join("，")}，${w.approvalTitle}：${h.approvalBody}，${w.allow}，${h.file}`}</p>
         </div>

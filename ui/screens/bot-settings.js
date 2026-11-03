@@ -170,7 +170,7 @@ export function BotSettingsScreen({ bot, section, models, modelsError, reloadMod
       <label class="set-field" id="bot-name">
         <span class="k">${t("botSettings.name")}</span>
         <input class="field" value=${name} maxlength="60" onInput=${(e) => setName(e.target.value)} onBlur=${commitName}
-          onKeyDown=${(e) => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") { e.stopPropagation(); setName(bot.name); requestAnimationFrame(() => e.target.blur()); } }} />
+          onKeyDown=${(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) e.target.blur(); if (e.key === "Escape") { e.stopPropagation(); setName(bot.name); requestAnimationFrame(() => e.target.blur()); } }} />
       </label>
       <label class="set-field" id="bot-prompt">
         <span class="k">${t("botSettings.prompt")}<span class="hint">${t("botSettings.promptHint")}</span></span>

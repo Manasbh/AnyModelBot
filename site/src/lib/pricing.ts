@@ -1,3 +1,4 @@
+import { formatUSD } from "./locale-format";
 // 价格数据：把 modelflare.dev/api/pricing 的原始数据整理成页面用的行。
 // 构建脚本（scripts/fetch-pricing.ts）、价格表、计算器和单测共用这一份规则，页面上不手写任何价格。
 import { z } from "zod";
@@ -103,7 +104,7 @@ export const isText = (m: RawModel) => m.billing_unit == null;
 
 /** 6 位小数以内、去掉末尾 0：0.0315 / 0.257143 / 1.26 */
 export const round6 = (n: number) => Number(n.toFixed(6));
-export const fmtPrice = (n: number) => "$" + round6(n).toString();
+export const fmtPrice = (n: number, locale = "en-US") => formatUSD(round6(n), locale);
 
 function kindOf(id: string, def?: { kind?: string }): GroupKind {
   if (id.endsWith("-enterprise")) return "enterprise";

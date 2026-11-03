@@ -262,11 +262,7 @@ export default {
       keys: "邀请 返利 推广 invite",
       copy: "复制邀请链接",
     },
-    line: {
-      name: "线路",
-      sub: "中国大陆访问更稳定可选优化线路；切换后新请求生效",
-      keys: "大陆 国际 origin 网络",
-    },
+    line: {"name": "API 域名", "sub": "自行选择或先测速；切换后对新请求生效", "keys": "域名 测速 延迟 modelflare origin cf 网络 线路"},
     defaultModel: {
       name: "默认模型",
       sub: "机器人没有单独指定时使用",
@@ -374,7 +370,11 @@ export default {
     },
     version: {
       name: "版本",
-      keys: "version",
+      keys: "version 更新 升级 update",
+      available: "有新版本 {version}",
+      latest: "已是最新版本",
+      download: "下载 ↗",
+      notes: "更新内容 ↗",
     },
     licenses: {
       name: "许可与第三方声明",

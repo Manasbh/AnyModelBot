@@ -5,12 +5,18 @@ export default {
   unknownReason: "未知原因",
   keyOnly: "Docker 或远程部署无法用浏览器登录，请填写 API Key",
   createKey: "在 Modelflare 控制台创建 Key ↗",
-  /** Modelflare 线路（"自动"用 common.auto） */
   line: {
-    label: "线路",
-    sub: "中国大陆访问可选优化线路",
-    global: "国际",
-    cn: "中国大陆优化",
+    "label": "API 域名",
+    "sub": "自行选择域名，也可先测速；不会自动切换。",
+    "global": "modelflare.dev",
+    "cn": "origin.modelflare.dev",
+    "cf": "cf.modelflare.dev",
+    "test": "域名测速",
+    "testing": "测速中…",
+    "testNote": "从运行 AnyModelBot 的设备测量：显示三次探测的响应时间中位数和成功次数。不携带 API Key、不调用模型，不代表生成速度。",
+    "result": "{ms} ms · 成功 {count}/{total}",
+    "timeout": "超时",
+    "unreachable": "无法连接"
   },
   key: {
     label: "API Key",
@@ -22,12 +28,11 @@ export default {
     hideKey: "隐藏 Key",
     retype: "重新输入",
     checkGroup: "去控制台检查分组 ↗",
-    useCn: "改用大陆优化线路并重试",
     note: "密钥只保存在本机，不会写入日志或命令行参数。",
     connecting: "正在连接…",
     submit: "连接 Modelflare",
     slow: "网络较慢。",
-    slowLine: "网络较慢，可在「高级」里切换线路。",
+    slowLine: "网络较慢，可在「高级」里测速并选择 API 域名。",
     advanced: "高级",
   },
   login: {

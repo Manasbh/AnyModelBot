@@ -24,7 +24,8 @@ Astro 5 静态站，Preact 只用在价格表、计算器（含可搜索的模�
   - **换脑**：每 7 秒一道斜波扫过，扫到的脸眨一下眼、睁开就换成另一个机器人的眼睛色；右上角同时换成下一个真实模型 ID（价格快照里每家厂商取一个）。讲的是"任意模型，还是这群机器人"（内容切换）。
   - **打瞌睡**：9 秒没人动，慢慢闭眼、目光耷拉；指针一动，从指针那里一圈圈醒过来（机器人的状态，同 `[data-doze]`）。睡着时不换脑。
   - 只在页脚进视口、标签页可见时跑；"减少动态效果"时画一张静止的字标；无 JS 时整块不显示。配色：深色是灰面罩 + 发光的眼睛；浅色是淡彩面罩 + 墨色眼睛——每张脸的面罩用它那个角色的辉光色调进底色、从字标顶到底由浅变深，一圈极细的边，整块像一片粉彩马赛克，"换脑"时整片换色调（不用整块墨色，也不出现白底上的荧光色）。字标盒子贴着字形（宽屏 7.4:1、手机 1.3:1），画布上下各出血 16px 给探头的脸，不额外留白。
-- **附属页**：`/pricing`（价格卡、订阅制对照、价格表、计算器）、`/download`（页头一个按系统识别的主按钮；Windows、macOS、Linux 三张卡；Docker、CLI 两张卡；校验）、`/security`、`/changelog`、`/privacy`、`/licenses`。
+- **附属页**：`/pricing`（价格卡、订阅制对照、价格表、计算器）、`/download`（页头一个按系统识别的主按钮，和平台卡一起落在背景同首页 Hero 的圆角大卡片里，背景静止；Windows、macOS、Linux 三张卡；Docker、CLI 两张卡；校验）、`/security`、`/changelog`、`/privacy`、`/licenses`，以及 `/partners`（合作伙伴：适合谁、为什么好卖、怎么合作、申请表。不写分成比例和价格，这些一对一谈）。
+- **合作申请表**（`views/PartnersView.astro`，逻辑在 `lib/partner-form.ts`、`scripts/partner-form.ts`）：构建时配了 `PARTNER_APPLY_URL` 就向它 POST JSON（`type`、`name`、`company`、`contact`、`audience`、`message`、`lang`、`source`，跨域要放行 `anymodel.bot`，返回 2xx 才算成功）；没配时不假装提交成功，而是把填好的内容变成一封邮件，让申请人发到 `support@anymodel.bot`。地址加 `?apply=preview` 可以走一遍成功流程但不发送。
 - **导航**（`components/Nav.astro`）：通栏，和正文同一个容器——logo、下载按钮分别对齐内容的左右边线，链接居中：机器人 · 功能 · 模型 · 数据（首页锚点）· 价格（独立页）· 文档。停在顶上时透明，滚动后铺半透明底色和一根底线。一套尺寸到底：所有控件（含下载按钮）都是 32 高的胶囊，文字 14、图标 16，控件之间 2px、工具组和下载之间 12px。
 - **顶部公告条**（`components/SiteBanner.astro`，内容在 `src/data/announcements.ts`）：发版条（版本取自 `releases.json`，按访客系统直接下载对应安装包，发布后显示 30 天）+ 宣传 / 公告，多条时轮播、可翻页；支持时间窗、截止倒计时、按 id 记住关闭；浏览器语言和页面不一致时附带语言切换。地址加 `?banner=preview` 可预览全部条目。埋点 `banner_view` / `banner_click` / `banner_dismiss`。
 
@@ -36,11 +37,12 @@ Astro 5 静态站，Preact 只用在价格表、计算器（含可搜索的模�
 |---|---|---|
 | `tokens.css`、`base.css`、`components.css`、`eyes.css` | `layouts/Base.astro`（每页） | token、重置、按钮 / 卡片 / 表格 / 对话框 / 价格卡等共用组件、导航、附属页骨架、Eyes 标记 |
 | `footer.css` | `components/Footer.astro`（每页） | 页脚与眼睛田 |
+| `hero-scene.css` | `components/HeroSky.astro`（首页 Hero、下载页页头） | Hero 背景的取色和静止的层：顶光、天空、光晕、地平线 |
 | `models-key.css` | `components/ModelsHeadArt.astro`（首页第 4 节） | 章节头两侧的厂商图标砖、公式胶囊 |
 | `home.css` | `views/Home.astro` | 首屏、第 2 节，以及小窗口标题栏、聊天、手机 mock、电脑操作示意和动画时间线状态（这些演示导览也在用） |
 | `sections.css` | `views/Home.astro` | 第 3–8 节的版式与动效（两章故事、换脑舞台、价格面板、数据去向、切换台、问答、收尾） |
 | `pricing.css` | `views/PricingView.astro` | 对照表、价格表岛、计算器岛 |
-| `pages.css` | 下载、安全、许可、404 | 各附属页专用版式 |
+| `pages.css` | 下载、合作伙伴、安全、许可、404 | 各附属页专用版式 |
 | `bots.css` | `components/BotFace.astro` | 毛绒机器人头像（移植自 App） |
 | `tour.css` | `components/DemoTour.astro` | 演示导览 |
 
@@ -90,7 +92,7 @@ Astro 5 静态站，Preact 只用在价格表、计算器（含可搜索的模�
 **字体只有两种。**
 - Geist（中文回退到苹方 / 微软雅黑）：所有标题、正文和标签。
 - Geist Mono：只用在机器读得懂的内容上——模型 ID、命令、路径、文件名、价格数字、编号。
-- 英文页面整页不出现中文：角色不写中文名，语言切换写 ZH / Simplified Chinese，提示条写 "This page is also available in Chinese"，第三方声明用 `THIRD_PARTY_NOTICES_en.md`，读屏文字用英文标点。
+- 英文正文不混入中文：角色不写中文名，第三方声明用 `THIRD_PARTY_NOTICES_en.md`，读屏文字用英文标点。语言菜单使用各语言自称（英文页中的中文入口仍写 Simplified Chinese）；语言提示用目标语言，方便访客识别。
 - 中文页面里写着中文句子的标签一律用无衬线，包括 `.eyebrow`、`.badge`、步骤、连线说明。Hero 要点两种语言都用无衬线。
 - 等宽字体栈末尾带了中文黑体，混进等宽元素的中文不会落到 Windows 的新宋体。
 
@@ -137,7 +139,7 @@ Astro 5 静态站，Preact 只用在价格表、计算器（含可搜索的模�
   - 沿边框巡游的扫光；
   - 漂浮的光斑、粒子；
   - 跟随指针的点阵、聚光灯。
-- **唯一的例外**：Hero 顶部的天空（用户 2026-10-31 明确要求）——深色：一条静止的银河和一千多颗亮度悬殊的星（用户 2026-11-01 要求更像星空，生成规则见 `sections/Hero.astro`），其中约七十颗星慢慢明暗闪烁（3–7 秒一周期、各自错开），两颗流星隔十几、二十秒才划过一次、每次不到一秒；浅色：三朵白云极慢地从左往右飘（横穿一次 3–5 分钟），约六成四角形细小闪光偶尔亮起、转一下再隐去；"减少动态效果"时全部静止。保持"极其简单"，不要加量、不要扩展到别处。
+- **唯一的例外**：Hero 顶部的天空（用户 2026-10-31 明确要求）——深色：一条静止的银河和一千多颗亮度悬殊的星（用户 2026-11-01 要求更像星空，生成规则见 `components/HeroSky.astro`），其中约七十颗星慢慢明暗闪烁（3–7 秒一周期、各自错开），两颗流星隔十几、二十秒才划过一次、每次不到一秒；浅色：三朵白云极慢地从左往右飘（横穿一次 3–5 分钟），约六成四角形细小闪光偶尔亮起、转一下再隐去；"减少动态效果"时全部静止。保持"极其简单"，不要加量、不要扩展到别处。下载页页头用同一片天空和地平线（`components/HeroSky.astro`、`styles/hero-scene.css`），但不放这些动画：例外只给首页 Hero。
 - **第二个例外**：首页第 4 节章节头两侧的厂商图标砖（用户 2026-10-31 明确要求"logo 有微弱的浮动效果"）——每块砖上下浮动 ±3px，周期 6–10 秒、起点各不相同；"减少动态效果"时静止。不要加大幅度，也不要套到别的图标上。
 - **第三个例外**：Hero 背景里的模型厂商标志（`components/HeroLogos.astro` + `styles/hero-logos.css`，用户 2026-10-31 明确要求"logo 做微弱浮动、尽量淡化"）——标题两侧各五枚单色标志，最清楚的一枚是正文色的 12%（浅色 11%；压到 7% 时用户说看不到，更早的版本又嫌明显），远的更小更淡、略虚；各自轻轻漂（上下 8px、左右 3px、转 ±1.5°），5–8.5 秒一个来回、起点错开；只在文字两侧的空白里，不压标题、按钮和舞台；中等宽度只留外侧几枚，窄屏不放；"减少动态效果"时静止。不要加量、不要加颜色、不要扩展到 Hero 以外。
 - 说不出含义、只是"让画面动起来"的效果，一律不加。App 端同一条规矩，见 `ui/design/README.md` 的「动效」。
@@ -155,7 +157,7 @@ Astro 5 静态站，Preact 只用在价格表、计算器（含可搜索的模�
 
 **各块用到的效果。**
 - **Hero**（`sections/Hero.astro`，样式在 `home.css` 的"1 Hero"）：
-  - 四周留 8px 的圆角大卡片（手机 6px）。背景要克制、除顶部天空外全部静止，颜色只有很弱的变化（舞台换机器人时跟着微微变色，`--hero-hue` / `--hz-glow`），不用品牌黄绿、不加装饰图形：底色渐变（深色下顶上偏一点点夜空蓝）→ 一层很淡的中性顶光（顶上 160px 淡入，不在卡片顶边切出亮带）+ 顶部的天空（`Hero.astro` 里伪随机生成，标题背后稀一些，往下渐隐）：深色是星空——约 340 颗冷白小星（少数偏蓝 / 偏暖，几颗亮星带一圈光），约五分之一慢慢闪，偶尔划过一颗流星；浅色是晴空——顶上一片清透的浅天蓝（往下渐淡，到说明文字附近回到卡片的白；这是浅色"只用中性白灰"的例外，用户 2026-11-01 要的）+ 三朵很软的白云（纯 CSS，底下压一层极淡的中性灰影子，极慢地飘）+ 四十来个四角形的细小闪光（颜色跟着当前机器人的色调），约六成偶尔亮起、转一下再隐去，不放流星（见上面的例外）→ 舞台后面一层极淡的机器人色 → 一道巨大的弧形地平线托住窗口（整圈一线淡亮边、正中稍亮），上方一层很淡的光晕 → App 同款磨砂颗粒。不画线框、网格、点阵、放射光束。
+  - 四周留 8px 的圆角大卡片（手机 6px）。背景要克制、除顶部天空外全部静止，颜色只有很弱的变化（舞台换机器人时跟着微微变色，`--hero-hue` / `--hz-glow`），不用品牌黄绿、不加装饰图形：底色渐变（深色下顶上偏一点点夜空蓝）→ 一层很淡的中性顶光（顶上 160px 淡入，不在卡片顶边切出亮带）+ 顶部的天空（`components/HeroSky.astro` 里伪随机生成，标题背后稀一些，往下渐隐）：深色是星空——约 340 颗冷白小星（少数偏蓝 / 偏暖，几颗亮星带一圈光），约五分之一慢慢闪，偶尔划过一颗流星；浅色是晴空——顶上一片清透的浅天蓝（往下渐淡，到说明文字附近回到卡片的白；这是浅色"只用中性白灰"的例外，用户 2026-11-01 要的）+ 三朵很软的白云（纯 CSS，底下压一层极淡的中性灰影子，极慢地飘）+ 四十来个四角形的细小闪光（颜色跟着当前机器人的色调），约六成偶尔亮起、转一下再隐去，不放流星（见上面的例外）→ 舞台后面一层极淡的机器人色 → 一道巨大的弧形地平线托住窗口（整圈一线淡亮边、正中稍亮），上方一层很淡的光晕 → App 同款磨砂颗粒。不画线框、网格、点阵、放射光束。
   - 舞台的遮罩只负责把底边淡进地面；遮罩会裁掉盒子外的一切，所以 `.hstage` 往上多留了 `--bleed`（220px），窗口四周的光晕不会在舞台顶边被切平。倾斜的滚动进度挂在 `.hstage__devices` 上。
   - 文字居中一列：小胶囊（六个角色头像 + 一句话，链到"认识你的机器人"）→ 标题 → 一句说明（两行以内）→ 下载 / 演示 / GitHub（带星数）→ 三条要点（每条前面一个勾，颜色跟着当前机器人）。
   - 标题在 Hero 里放大一档（英 46–88、中 42–84）。中文逐字、英文逐词由虚变实升起；第一行是渐隐的渐变字，行尾蹲着会看指针、能戳的天天；关键词深色下是黄绿渐变字，浅色下改用当前机器人的颜色（深一档，跟着换幕渐变；黄绿在浅底上发脏），底下垫一团同色的光，字出齐后一道亮光从左到右扫过。不铺荧光底、不加下划线。
@@ -189,12 +191,15 @@ npm test               # 单测：价格规则与计算器验收值、Eyes 目�
 npm run check          # zh / en 文案 key 一致、禁词扫描、图片与字体体积
 npx astro check        # 类型检查
 npm run build:draft    # 草稿构建：部署占位符只警告
+node node_modules/playwright-core/cli.js install chromium --only-shell
+npm run test:locales:browser  # 构建后检查所有语言页面、移动端、语言切换与应用模拟接口；不接数据库
 npm run build          # 生产构建：同步素材 → 抓价格 → 构建 → 禁词 → 站内链接 → 占位符（有残留即失败）
 npm run fetch:pricing  # 只更新价格快照（失败即退出码 1）
 npm run fetch:github   # 只更新 GitHub 星数（取不到就沿用上一个值）
 npm run releases       # 从 GITHUB_URL 的最新 Release 生成 src/data/releases.json（下载直达 GitHub）
 npm run releases:dir   # 改为从 DOWNLOADS_DIR 里的安装包生成（自己提供下载时用）
-npm run og             # 重新生成 favicon / App 图标 / OG 图（Python + Pillow + Noto Sans SC）
+npm run og             # 重新生成 favicon / App 图标 / 五语言 OG 图（Python + Pillow；Noto Sans SC/JP/KR）
+# 可单独生成：AMB_OG_FONT_JA=/path/NotoSansJP.ttf AMB_OG_FONT_KO=/path/NotoSansKR.ttf npm run og -- ja ko ru
 npm run bots:avif      # 从原图重新编码机器人精灵图的 AVIF 版（精灵图更新后跑；Python + numpy + Pillow）
 npx tsx scripts/vendor-logos.ts <icons 目录>   # 从 @lobehub/icons-static-svg 重新生成厂商标志（新厂商时跑，用法见脚本开头）
 python3 -I scripts/preview-serve.py --port 18600 --directory <目录>   # 预览用静态服务：gzip + 长连接 + 缓存头，同线上 nginx
@@ -219,7 +224,7 @@ docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
 
 | 值 | 来源 |
 |---|---|
-| `SITE_DOMAIN`、`GITHUB_URL`、`SECURITY_EMAIL`、`ANALYTICS_SCRIPT_URL`、`ANALYTICS_SITE_ID`、`DOCKER_IMAGE` | `deploy/.env` |
+| `SITE_DOMAIN`、`GITHUB_URL`、`SECURITY_EMAIL`、`PARTNER_APPLY_URL`（可选）、`ANALYTICS_SCRIPT_URL`、`ANALYTICS_SITE_ID`、`DOCKER_IMAGE` | `deploy/.env` |
 | 版本、发布日期、各平台下载地址 / SHA-256 / 大小 | GitHub 最新 Release 自动生成（`scripts/releases-from-github.ts`；也可以手改 `src/data/releases.json`） |
 
 统计用自托管的 Umami（无 Cookie、`data-do-not-track`）；开发模式不加载统计脚本。
@@ -231,4 +236,4 @@ docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
 - **机器人**：`scripts/sync-from-app.ts` 从 `../ui/design/bots/*.webp` 复制精灵图、从 `../THIRD_PARTY_NOTICES.md` 同步许可（Docker 构建上下文里没有应用目录，用已提交的副本）；几何（`src/lib/bots.ts`）与 `../ui/components/avatar.js` 的 `BOT_CHARS` 不一致时会警告。头像样式 `src/styles/bots.css` 移植自 `../ui/design/components/avatar.css`。
   - 精灵图另有同分辨率的 AVIF 版（`public/bots/*.avif`，约为 WebP 的一半），支持的浏览器经 `image-set()` 优先用它，其他照旧用 WebP。AVIF 必须从原图编码（`npm run bots:avif`：重跑 `../scripts/build-bot-avatars.py --png` 拿无损精灵图，q58 的画质按 PSNR 不低于 WebP q86），不能拿 WebP 再转。生成时把对应 WebP 的哈希记在 `src/data/bots-avif.json`；WebP 更新了而 AVIF 没重做，`check-images` 会失败。
 - **演示**：Hero 的"看演示"和"它能动手"都是动画（`src/components/DemoTour.astro`、`src/scripts/tour.ts`），不依赖视频文件。"看演示"点开就自动轮播、播完从头循环，没有播放 / 暂停 / 翻页按钮，底部进度条可点跳步。
-- **文案**：`src/i18n/zh.ts`（源语言）与 `en.ts`，页面里不写死文案。例外是两种语言内容本来就不同的：聊天渠道（`src/data/channels.ts`）和公告（`src/data/announcements.ts`），各写各的，禁词扫描同样覆盖 `src/data`。
+- **文案**：`src/i18n/locales/<语言>/`，页面里不写死文案。首页使用 `home.hero.*`、`home.features.*` 等多级键；各语言入口文件只组装模块。新增译文由维护者逐条撰写和本土化，不使用翻译接口。`manifest.json` 的 `ready` 标识控制正式语言入口，生产构建检查全部目标语言的原始词典，不能用回退文案冒充翻译完成。例外是两种语言内容本来就不同的：聊天渠道（`src/data/channels.ts`）和公告（`src/data/announcements.ts`），各写各的，禁词扫描同样覆盖 `src/data`。

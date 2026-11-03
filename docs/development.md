@@ -1,6 +1,6 @@
 # 开发文档
 
-简体中文 | [English](./development_en.md)
+简体中文 | [English](./development_en.md) | [日本語](./development_ja.md) | [한국어](./development_ko.md) | [Русский](./development_ru.md)
 
 这份文档给想从源码运行、打包或参与开发的人看。普通用户直接从 [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) 下载安装包即可，见 [README](../README.md#-下载)。
 
@@ -107,7 +107,7 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 模型智能（模型选择器的第二个滑块）：在这个账户能用、又有 Artificial Analysis 数据的模型里，按智能指数（越高越好）和每次任务的花费（越低越好）取帕累托前沿，最多 5 档，最便宜的和最强的总在。智能取应用实际用的那一档：走 Responses 接口的推理模型默认发 medium，就用 AA 的 medium 那一行，其余用 AA 的默认那一行（`src/account/model-quality.ts`）。花费 = AA 的每次任务花费（官方定价）× 这个模型在当前性价比下的价格比例（可用公开分组的倍率 × 售价倍率：省钱取最低，质量取最高，均衡取居中；企业专用分组不算；没登录或不支持时按均衡估）。拖到哪一档就把模型换成那个；点模型名进完整列表，照样手动选，选了不在档上的模型时滑块显示「自定义」。前沿不到两档时选择器直接是列表。算法在 `ui/lib/frontier.js`。
 - AA 数据在仓库里：`assets/model-quality.json`（`updatedAt`、`source`、只留用得到的字段，已经按 Modelflare 的模型 ID 对应好）。刷新：`node scripts/update-model-quality.mjs`，默认抓公开排行榜页面 https://artificialanalysis.ai/leaderboards/models 和 Modelflare 的公开价格目录；设了 `AA_API_KEY` 时改用官方 API（字段还没有拿 Key 核对过）。`--html <文件>`、`--pricing <文件>` 用保存下来的页面和目录，`--dry-run` 只打印。页面结构变了（找不到列、行的形状不对、数字解析不出来、行数太少、对上的模型太少）时退出码为 1 并说明是哪一项，原来的快照不动。名字按规则对不上的模型写在脚本的 `OVERRIDES` 里。数据来自 Artificial Analysis，选择器底部注明出处。
 - 调用归因：经 Modelflare 的请求都带 `X-Modelflare-Skill: anymodel-bot/<版本>`，链接都带 `utm_source=anymodelbot&utm_campaign=amb_<位置>`（应用内 `amb_signup`、`amb_topup`、`amb_console` 等，README 与仓库文档 `amb_readme`，官网 `amb_homepage`；格式由 `test/utm.unit.test.ts` 固定）。
-- 线路：默认国际线路 `https://modelflare.dev/v1`；中国大陆可在「高级」或 设置 → Modelflare → 线路 选「中国大陆优化」（`https://origin.modelflare.dev/v1`）。线路由你选定，不自动切换。
+- API 域名：`https://modelflare.dev/v1`、`https://origin.modelflare.dev/v1` 和 `https://cf.modelflare.dev/v1` 均可选择。在 API Key 引导页的「高级」或 设置 → Modelflare → API 域名 中选择，也可手动测速。测速从运行 AnyModelBot 的设备发起，不带密钥访问三个域名的 `/v1/models`，显示三次探测的响应时间中位数和成功次数；401 表示已收到 API 响应，不代表密钥有效或模型生成速度。域名不会自动切换；历史配置 `auto` / `global` 仍指向主域名，`cn` 指向 origin，`cf` 指向 cf，兼容值不代表地域或质量差异。
 - 设置 → Modelflare：账户、余额与充值、余额提醒、用量、通知、邀请；连接状态（只显示 Key 尾号）；未登录时可更换密钥或断开（机器人与会话保留，断开后回到首次连接页）；默认模型、刷新模型列表。
 - 对话中输入框右侧的模型按钮可为当前会话切换模型（也可设为机器人默认）；`/model`、`/reset`、`/new`、`/status`、`/stop`、`/help` 照常可用。
 - 处理过程：代理回合的每一步（模型请求及用时与 tokens、工具调用及参数与输出、重试、子代理）折叠在回复上方的"用时"一行里，点开查看；微信 / 飞书会话在信息面板 → 最近会话里看，正在处理的那一轮实时显示并可中止。
@@ -117,7 +117,7 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 每个会话用自己的模型：同一个代理进程里各会话各走各的模型和接口（每种接口一个 provider，上下文窗口、最大输出按模型），换模型不重启代理进程；补丁里没列出的模型在运行中补上。
 - 换新的代理进程：DSH 的 SDK 关不掉会话，后台任务和每次规则运行的会话都留在代理进程里，直到它重启（实测一个跑完、空闲的会话多占约 0.25–0.45 MB）。一个代理进程开过 100 个以上这样的会话后，等它完全空闲（没有聊天回合、没有在跑或收尾的任务和规则、没有等批准的、没有在压缩的会话、进程里没有后台命令）就在后台换一个新的；会话照常接着用，不中断任何东西，用户看不到。故障排查的代理状态里有 `taskSessions` 和 `recycles`；`AMB_DSH_RECYCLE_SESSIONS` 可改门槛。
 - 重启后的提醒：应用退出或崩溃时还没处理完的消息（每个会话在数据库里留一个处理中的标记，处理完就删），下次启动时在原会话里说一次「上次的消息「…」因为应用重启没有处理完，请重新发送」，不会自动重发。网页对话记进会话历史；微信用存下的 context_token 发送、占用同一份回复配额，超过 24 小时窗口或配额用完时等你在那个会话里发下一条消息时先说；飞书发到原单聊。
-- 代理的对话接口：代理按 Modelflare 公开目录里该模型支持的接口选——有 Responses API 的（GPT-5.4 及以后、Grok 4.5 及以后、DeepSeek V4、GLM-5、Kimi K3 等）走 `/v1/responses`（推理模型默认推理强度 medium，加密推理随历史回放）；没有 Responses、有 Anthropic Messages 的（Claude）走 `/v1/messages`；其余模型、拿不到目录时（离线、中国大陆线路）以及外部端点走 Chat Completions。接口按模型在代理进程里第一次用到它时选定（故障排查的代理状态里显示最近一轮的 `api` 和进程里的模型）；`AMB_AGENT_API=chat` 强制全部走 Chat Completions（排查用）。纯对话（非代理）仍走 Chat Completions。安全网：某个模型在 Responses / Messages 上的请求被上游拒绝（HTTP 400/404/405/415/422 或“不支持的参数 / 接口”，限流、余额、权限、上游故障、上下文过长不算）时，这个模型 24 小时内改走 Chat Completions（记在数据目录的 `dsh/api-fallback.json`，日志有警告，代理状态显示 `openai-completions (fallback: 原因)`）；这一轮如果还没调用过工具，这个会话换到 Chat 上自动重做一遍（不重启代理进程），用户照常收到回复，已经调用过工具的则照常报错、下一轮起走 Chat。
+- 代理的对话接口：代理按 Modelflare 公开目录里该模型支持的接口选——有 Responses API 的（GPT-5.4 及以后、Grok 4.5 及以后、DeepSeek V4、GLM-5、Kimi K3 等）走 `/v1/responses`（推理模型默认推理强度 medium，加密推理随历史回放）；没有 Responses、有 Anthropic Messages 的（Claude）走 `/v1/messages`；其余模型、拿不到目录时（例如离线）以及外部端点走 Chat Completions。接口按模型在代理进程里第一次用到它时选定（故障排查的代理状态里显示最近一轮的 `api` 和进程里的模型）；`AMB_AGENT_API=chat` 强制全部走 Chat Completions（排查用）。纯对话（非代理）仍走 Chat Completions。安全网：某个模型在 Responses / Messages 上的请求被上游拒绝（HTTP 400/404/405/415/422 或“不支持的参数 / 接口”，限流、余额、权限、上游故障、上下文过长不算）时，这个模型 24 小时内改走 Chat Completions（记在数据目录的 `dsh/api-fallback.json`，日志有警告，代理状态显示 `openai-completions (fallback: 原因)`）；这一轮如果还没调用过工具，这个会话换到 Chat 上自动重做一遍（不重启代理进程），用户照常收到回复，已经调用过工具的则照常报错、下一轮起走 Chat。
 - 内置网关：magpie 以 `--gateway` 模式运行，使用本程序数据目录内独立的 HOME/配置目录；**不读取**你电脑上已有的 Claude/Codex 等订阅凭据，**不改写**任何 agent 配置，关闭自动更新与账户发现。它只供本进程内部调用，界面不再反代它的页面或 `/v1`。
 - API Key 只保存在内置网关的隔离配置中，不经过命令行参数、不写日志，前端只拿到尾号。
 - 开发/测试：设置 `AMB_MAGPIE_BASE_URL` 可直接使用一个 OpenAI 兼容端点（不启动内置网关，界面视为已连接，账户功能不可用）；`AMB_MODELFLARE_BASE_URL` 可把 Modelflare 基址指向本地 mock，`AMB_MODELFLARE_ISSUER` 把登录与账户接口指向本地 mock。
@@ -128,11 +128,22 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 群聊（`src/core/groups.ts`、`ui/screens/group.js`）：有两个以上机器人时，＋ 菜单里可以建群。每个成员在群里有自己的会话 `<机器人>:web:group:<群>`，模型、权限、记忆、审批、花费都和单聊走同一条路；用户的话存在会话 `group:<群>`，时间线由这些消息按 id 合并。@ 谁谁答（`@所有人` 全员），没 @ 时上一个回答的接着答；机器人回复里 @ 别的成员就接力，一条用户消息最多接力 6 次。同一个群一次只有一个机器人在答。
 - 对话页：顶部悬浮的机器人名称胶囊打开信息面板（`⌘/Ctrl+⇧+I`：默认由它回复的渠道账号、待审批、任务和规则、记忆、最近会话，⚙ 进机器人设置）；回复流式显示（Markdown、代码块一键复制），可随时停止（`Esc`）；审批与提问以卡片形式出现在对话里；向上翻阅时不会被拉回底部。
 - 命令面板 `⌘/Ctrl+K`；外观（跟随系统 / 浅色 / 深色）在 设置 → 常规。
-- 语言：简体中文 / English，设置 → 常规 → 语言（引导页右上角、命令面板里也能切），默认跟随系统（系统语言不是中文也不是英文时用英文）。偏好存在 config.json 的 `ui.lang`，托盘菜单、服务端报错和状态文字、机器人发到微信 / 飞书的系统消息（`/help`、审批提示等）都跟着它；命令行 / Docker 下"跟随系统"看 `AMB_LANG`，再看 `LC_ALL` / `LANG`，都没有时用简体中文。日志、发给模型的提示词和用户自己起的机器人名不翻译。
+- 语言：简体中文 / English / 日本語 / 한국어 / Русский，设置 → 常规 → 语言（引导页右上角、命令面板里也能切），默认跟随系统（系统语言不在已支持语言中时用英文）。偏好存在 config.json 的 `ui.lang`，托盘菜单、服务端报错和状态文字、机器人发到微信 / 飞书的系统消息（`/help`、审批提示等）都跟着它；命令行 / Docker 下"跟随系统"看 `AMB_LANG`，再看 `LC_ALL` / `LC_MESSAGES` / `LANG`，都没有时用简体中文。日志、发给模型的提示词和用户自己起的机器人名不翻译。
   - 界面文案在 `ui/locales/<语言>/<命名空间>.js`，代码里写 `t("命名空间.键", { 参数 })`（`ui/lib/i18n.js`）；服务端在 `src/i18n/messages/<命名空间>.ts`，键有类型检查。每个界面请求带 `x-amb-lang`，服务端在这个请求里用同一种语言回话。
-  - 新增文案两种语言都要写；`node scripts/i18n-check.mjs [文件…]` 检查界面代码里有没有漏掉的中文、用到的键在不在、中英词典是否对齐（`npm test` 里的 `test/i18n.unit.test.ts` 也会查）。确需留在代码里的中文（字体名、匹配中文输入的正则）在那一行写 `// i18n-ignore`。
+  - 新增文案须补齐本次发布的所有目标语言；`node scripts/i18n-check.mjs [文件…]` 检查界面代码里有没有漏掉的中文、用到的键在不在、全部语言词典是否对齐（`npm test` 里的 `test/i18n.unit.test.ts` 也会查）。确需留在代码里的中文（字体名、匹配中文输入的正则）在那一行写 `// i18n-ignore`。
 - 上手清单（新手引导）：对话空状态里是 6 步清单——打招呼、换模型、接到微信、让它动手、让它记住你、生成一张图。最后一步在引导里只放预置演示，不管账户有没有图片 / 视频模型都一样：和真的默认流程一样直接生成、图片显示在对话里，但不发给机器人、不调用模型、不扣费，图是客户端自带的 `ui/assets/guide-demo.svg`。目的是教会怎么操作，不替用户花钱；之后真的让它画图、收到图片也会算完成这一步。点「发送这句」直接试，点「带我去」或侧栏左下角的清单入口，会有一张引导卡片指着要点的地方（那里亮一圈）。做完自动打勾：对话里有了回复、换了模型、收到文件 / 图片、渠道连上、记忆写入；进度存在 config.json 的 `ui.guide`（接口 `/amb/api/guide`），老用户已经做过的步骤会自动算完成。清单可以收起到左下角或「不再显示」，设置 → 常规 → 上手清单 可以重新开始。
 - 视觉：中性色与组件改编自 magpie 的界面（MIT），强调色为 Modelflare 荧光黄绿 `#d7ff00`。设计系统说明见 `ui/design/README.md`。
+
+### 多语言文案与发布检查
+
+译文由维护者逐项撰写和本土化，不使用翻译接口。产品名、模型 ID、命令、URL 和 `{placeholder}` 参数保留原样。
+
+- 应用：`ui/locales/<语言>/<模块>.js`；服务端新增语言：`src/i18n/locales/<语言>/<模块>.ts`。
+- 官网：`site/src/i18n/locales/<语言>/`，例如 `home/hero.ts` 对应 `home.hero.*`。页面从词典读取文案。
+- `ui/locales/manifest.json` 登记目标语言及 `ready` 状态；官网保存同内容的 `site/src/i18n/manifest.json`，检查会验证两份一致。未完成的语言保持 `ready: false`，不加入正式菜单和搜索引擎语言标记。
+- `npm run i18n:status` 查看逐语言、逐模块进度；`npm run i18n:check` 检查全部目标语言的原始词典及关联文档。缺键、空译文、多余键、参数损坏或缺少复数形式都会阻止发布；开发时的英文回退不算完成。
+- 俄语复数使用 `one / few / many / other`；日语、韩语使用 `other`。只本地化显示方式，不更改货币、时区和金额。
+- 官网 `npm run build` 检查全部目标语言和同步的文档、分享图片；`build:draft` 仅供本地预览，不能替代发布检查。
 
 ## 人设与提示词
 

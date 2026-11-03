@@ -14,15 +14,15 @@ const v = buildVars(lang);
 ---
 <section class="section" id="faq" aria-labelledby="faq-h2">
   <div class="container">
-    <SectionHead n={7} label={t.kicker.faq} id="faq-h2" title={t.faq.h2} dim={t.faq.h2dim} />
+    <SectionHead n={7} label={t.home.kicker.faq} id="faq-h2" title={t.home.faq.h2} dim={t.home.faq.h2dim} />
     <div class="faq-wrap">
       <div class="faq-wrap__aside" data-doze>
-        <p class="faq-wrap__bubble">{t.faq.ask}</p>
+        <p class="faq-wrap__bubble">{t.home.faq.ask}</p>
         <BotFace char="yellow" size={120} lively pokeable class="faq-wrap__bot" />
-        <a class="faq-wrap__more" href={docsUrl(lang)} target="_blank" rel="noopener">{t.faq.more}<Icon name="arrow" size={16} /></a>
+        <a class="faq-wrap__more" href={docsUrl(lang)} target="_blank" rel="noopener">{t.home.faq.more}<Icon name="arrow" size={16} /></a>
       </div>
       <div class="faq">
-        {t.faq.items.map((it, i) => (
+        {t.home.faq.items.map((it, i) => (
           <details data-faq={i + 1}>
             <summary><span class="faq__n mono" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span><span class="faq__q">{it.q}</span><Icon name="plus" /></summary>
             <div><p>{fmt(it.a, v)}</p></div>

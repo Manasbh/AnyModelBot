@@ -16,7 +16,9 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-export const LANGS = ["zh-CN", "en"];
+const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "ui/locales/manifest.json"), "utf8"));
+export const TARGET_LANGS = manifest.locales.map((l) => l.code);
+export const LANGS = manifest.locales.filter((l) => l.ready).map((l) => l.code);
 const CJK = /[　-〿㐀-䶿一-鿿＀-￯]/;
 /** 只给开发者看的页面（设计库展示页），不进多语言 */
 const SKIP = new Set(["ui/design/gallery.js"]);
@@ -157,9 +159,9 @@ export function usedKeys(rel) {
   return keys;
 }
 
-export async function loadDicts() {
+export async function loadDicts(languages = LANGS) {
   const dicts = {};
-  for (const l of LANGS) dicts[l] = (await import(pathToFileURL(path.join(ROOT, "ui/locales", l, "index.js")).href)).default;
+  for (const l of languages) dicts[l] = (await import(pathToFileURL(path.join(ROOT, "ui/locales", l, "index.js")).href)).default;
   return dicts;
 }
 
@@ -186,20 +188,26 @@ const placeholders = (v) => {
 /** 两种语言的词典是否对齐；返回问题列表 */
 export function checkDicts(dicts) {
   const errs = [];
-  const flat = Object.fromEntries(LANGS.map((l) => [l, flatten(dicts[l])]));
-  const [a, b] = LANGS;
-  for (const l of LANGS)
+  const languages = Object.keys(dicts);
+  const flat = Object.fromEntries(languages.map((l) => [l, flatten(dicts[l])]));
+  const [a] = languages;
+  for (const l of languages)
     for (const [k, v] of Object.entries(flat[l])) {
-      if (typeof v !== "string" && !isPlural(v)) errs.push(`${l}: ${k} 的值不是字符串或 { one, other }`);
-      else if ((typeof v === "string" ? v : v.other).trim() === "") errs.push(`${l}: ${k} 是空文案`);
+      if (typeof v !== "string" && !isPlural(v)) errs.push(`${l}: ${k} is not a message`);
+      else if ((typeof v === "string" ? v : v.other).trim() === "") errs.push(`${l}: ${k} is empty`);
+      if (isPlural(v)) {
+        for (const category of new Intl.PluralRules(l).resolvedOptions().pluralCategories)
+          if (typeof v[category] !== "string" || !v[category].trim()) errs.push(`${l}: ${k} is missing plural ${category}`);
+      }
     }
-  for (const k of Object.keys(flat[a])) if (!(k in flat[b])) errs.push(`${b} 缺少 ${k}`);
-  for (const k of Object.keys(flat[b])) if (!(k in flat[a])) errs.push(`${a} 缺少 ${k}`);
-  for (const k of Object.keys(flat[a])) {
-    if (!(k in flat[b])) continue;
-    const pa = placeholders(flat[a][k]);
-    const pb = placeholders(flat[b][k]);
-    if (pa !== pb) errs.push(`${k} 的占位符不一致：${a} {${pa}} / ${b} {${pb}}`);
+  for (const b of languages.slice(1)) {
+    for (const k of Object.keys(flat[a])) if (!(k in flat[b])) errs.push(`${b} missing ${k}`);
+    for (const k of Object.keys(flat[b])) if (!(k in flat[a])) errs.push(`${a} missing ${k}`);
+    for (const k of Object.keys(flat[a])) {
+      if (!(k in flat[b])) continue;
+      const pa = placeholders(flat[a][k]), pb = placeholders(flat[b][k]);
+      if (pa !== pb) errs.push(`${k}: placeholders differ: ${a} {${pa}} / ${b} {${pb}}`);
+    }
   }
   return errs;
 }

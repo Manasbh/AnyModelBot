@@ -64,6 +64,7 @@ export const zh = {
   agentStartingFirst: "首次启动可能需要几分钟。",
   doneNoText: "（已完成，没有文字回复）",
   agentFailed: "⚠️ 代理执行失败：{error}",
+  localProxyRefused: "本机网络代理 {address} 拒绝连接。请启动代理软件并确认端口；若已不使用代理，请清除系统或环境变量中的对应代理设置，然后彻底退出并重开 AnyModelBot 后重试。",
   // 命令
   resetDone: "✅ 已清空本会话上下文",
   newAgentOnly: "⚠️ /new 只在代理模式下可用；纯对话模式请用 /reset",
@@ -167,6 +168,7 @@ export const en: Catalog<typeof zh> = {
   agentStartingFirst: " The first start can take a few minutes.",
   doneNoText: "(Done, no text reply)",
   agentFailed: "⚠️ Agent run failed: {error}",
+  localProxyRefused: "The local network proxy at {address} refused the connection. Start your proxy app and check its port, or remove the unused proxy from system settings or environment variables. Then fully quit and reopen AnyModelBot to retry.",
   resetDone: "✅ Cleared this conversation's context",
   newAgentOnly: "⚠️ /new only works in agent mode; in chat-only mode use /reset",
   alreadyNew: "This is already a new conversation",

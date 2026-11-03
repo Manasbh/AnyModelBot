@@ -1,0 +1,20 @@
+export default {
+  "main": "Main",
+  "bots": "Bots",
+  "features": "Features",
+  "data": "Data",
+  "models": "Models",
+  "pricing": "Pricing",
+  "docs": "Docs",
+  "skip": "Skip to main content",
+  "home": "AnyModelBot home",
+  "menu": "Menu",
+  "close": "Close",
+  "github": "GitHub",
+  "lang": "ZH / EN",
+  "langLabel": "Change language",
+  "theme": "Appearance",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "themeSystem": "System"
+};

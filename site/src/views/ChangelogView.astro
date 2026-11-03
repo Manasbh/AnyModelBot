@@ -6,12 +6,13 @@ import { parseChangelog } from "../lib/changelog";
 import changelogZh from "../data/changelog.md?raw";
 import changelogEn from "../data/changelog.en.md?raw";
 import "../styles/pages.css";
+const localized = import.meta.glob("../data/changelog.*.md", { query: "?raw", import: "default", eager: true });
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
 const c = t.changelog;
 // 内容来自仓库根目录的 CHANGELOG.md、CHANGELOG_en.md（sync-from-app 同步过来）；发版前写好，发版流程会检查
-const list = parseChangelog(lang === "en" ? changelogEn : changelogZh);
+const list = parseChangelog(lang === "zh" ? changelogZh : String(localized[`../data/changelog.${lang}.md`] ?? changelogEn));
 ---
 <Base lang={lang} path="/changelog" title={c.title} description={c.description}>
   <article class="container page prose">

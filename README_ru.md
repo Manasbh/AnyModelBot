@@ -1,0 +1,427 @@
+<p align="center">
+  <a href="https://github.com/modelflare-ai/AnyModelBot/releases">
+    <img src="docs/assets/brand/logo-eyes.webp" width="120" height="120" alt="Знак AnyModelBot Eyes: два вытянутых глаза, смотрящих влево и вправо">
+  </a>
+</p>
+
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/wordmark-dark.svg">
+    <img src="docs/assets/brand/wordmark-light.svg" height="40" alt="AnyModelBot">
+  </picture>
+</h1>
+
+<p align="center"><b>Ваш ИИ-бот на вашем компьютере. Любая модель, оплата по использованию.</b></p>
+
+<p align="center">
+  <a href="https://anymodel.bot/ru/">Сайт</a> |
+  <a href="https://github.com/modelflare-ai/AnyModelBot/releases">Скачать</a> |
+  <a href="./README.md">简体中文</a> |
+  <a href="./README_en.md">English</a> |
+  <a href="./README_ja.md">日本語</a> |
+  <a href="./README_ko.md">한국어</a> |
+  Русский |
+  <a href="https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme">Modelflare</a> |
+  <a href="https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme">Цены</a> |
+  <a href="./docs/development_ru.md">Разработка</a> |
+  <a href="https://github.com/modelflare-ai/AnyModelBot/issues">Обратная связь</a>
+</p>
+
+<div align="center">
+
+[![Версия][release-shield]][releases-link]
+[![Загрузки][downloads-shield]][releases-link]
+[![Звёзды][stars-shield]][stars-link]
+[![Лицензия][license-shield]][license-link]
+[![CI][ci-shield]][ci-link]
+
+[![Платформы][platform-shield]][releases-link]
+[![Цены][pricing-shield]][pricing-link]
+[![Modelflare][modelflare-shield]][modelflare-link]
+[![X][x-shield]][x-link]
+
+</div>
+
+<p align="center">
+  <img src="docs/assets/hero/hero-demo.gif" alt="AnyModelBot в работе: вход в Modelflare, выбор модели, просьба упорядочить папку и подтверждение перемещения файлов" width="100%">
+</p>
+
+# 🤖 AnyModelBot
+
+AnyModelBot — приложение с ИИ-агентами для Windows, macOS и Linux, в котором данные прежде всего хранятся локально. У каждого бота свои характер, модель по умолчанию, рабочая папка и память. Общайтесь в приложении или через WeChat, Feishu, Telegram, Slack и Discord. Поручайте ему читать и записывать файлы, выполнять команды и управлять рабочим столом: при выходе за пределы рабочей папки он запросит разрешение.
+
+Разговоры, память, файлы и API-ключи хранятся на вашем устройстве. Модели предоставляет [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme): один аккаунт, любые модели, оплата по токенам. У самого AnyModelBot нет подписки.
+
+Как Grok Bot от xAI, dots от OpenAI и Claude Duet от Anthropic, это постоянно доступный личный ИИ-агент: он работает в фоне и обращается к вам, когда нужно ваше решение. Отличие AnyModelBot — открытый код под MIT, работа на вашем компьютере или сервере, любые модели — GPT, Claude, Gemini, Grok и другие — и оплата по использованию без подписки одного поставщика ([полное сравнение](#-anymodelbot-и-grok-bot-openai-dots-и-claude-duet)).
+
+Возможности суперагента доступны сразу: фоновые задачи, правила по расписанию и раздел «Требует внимания» не требуют дополнительной настройки. Архитектура опирается на [прототип суперагента DeepSeek](https://github.com/deepseek-ai/dsh-superagent-prototype), а агент работает на [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) ([подробная статья на китайском](./docs/blog/superagent.md)).
+
+📥 [Скачать](#-скачать) · 🌠 [Снимки экрана](#-снимки-экрана) · 🌟 [Возможности](#-основные-возможности) · 🆚 [Сравнение](#-anymodelbot-и-grok-bot-openai-dots-и-claude-duet) · 🔐 [Приватность](#-как-это-работает-и-приватность)
+
+⭐ Нравится AnyModelBot? Поставьте звезду репозиторию, чтобы следить за новыми выпусками.
+
+---
+
+<a href="https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme">
+  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare: стабильный и более доступный шлюз языковых моделей, изображений и видео; группа GPT со множителем цены 0,015 и Claude — 0,03; гарантии доли попаданий в кэш 65%, 75% и 85% в группах OpenAI с компенсацией недостачи">
+</a>
+
+Все модели в AnyModelBot доступны через **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**: полноценные стабильные модели без урезания возможностей и передовые мировые модели по более низким ценам. Modelflare управляет американская компания Havenbyte LLC; сервисом пользуются более 200 000 зарегистрированных разработчиков. Один API-ключ открывает свыше 70 текстовых моделей и моделей изображений и видео от 13 поставщиков, включая GPT, Claude, Gemini, Grok, DeepSeek, Kimi и GLM, через форматы API OpenAI, Anthropic, Gemini и другие распространённые протоколы. Запросы распределяются между поставщиками с автоматическим резервным переключением; каждый запрос учитывается вместе с использованием и стоимостью. Цены открыты, оплата — по токенам.
+
+Особое преимущество — **компенсация за кэш**: группы OpenAI с приоритетом цены, стабильная и премиальная гарантируют суточную долю попаданий в кэш 65%, 75% и 85% соответственно. Если соответствующие условиям запросы не достигают этого уровня, Modelflare компенсирует разницу.
+
+**Специальные предложения:** разовое пополнение на установленную сумму открывает группу GPT со множителем цены 0,015 и группу Claude со множителем 0,03 — для личных проектов, проверки функций и небольшой нагрузки. Предложения ограничены по времени; пороги и условия указаны на сайте Modelflare. Для участия зарегистрируйтесь по [этой ссылке](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme).
+
+**[Зарегистрироваться в Modelflare →](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme)** ·
+[Цены](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme) ·
+[Документация API](https://docs.modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) ·
+[Центр доверия](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) ·
+[X](https://x.com/modelflare_dev)
+
+**Как AnyModelBot использует Modelflare**
+
+- **Один вход.** При первом запуске откроется браузер для входа или регистрации в Modelflare. Приложение само подключит устройство — копировать ключ не нужно. В Docker или на сервере вставьте API-ключ.
+- **Все модели в одном списке.** Модели Modelflare появляются автоматически; рядом указаны размер контекста, возможности и ориентировочные цены.
+- **Оплата по использованию.** Баланс, уведомления о его снижении и расходы по дням видны в приложении. Перед выбором модели можно свериться с открытым прайс-листом и официальными ценами.
+- **Понятные границы.** Запросы проходят через Modelflare к выбранному поставщику, а Modelflare хранит журналы запросов. Что именно и как долго хранится, описано в [Центре доверия](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme). Остальные данные остаются на устройстве ([подробнее](#-как-это-работает-и-приватность)).
+
+---
+
+# 📥 Скачать
+
+Выберите платформу. На странице каждого выпуска есть все установщики и файл `SHA256SUMS`.
+
+| Платформа | Архитектура | Установщик | |
+| :--- | :--- | :--- | :--- |
+| ![Windows][win-badge] | x64 | `anymodel-bot-<version>-win-x64.exe` | [Скачать][releases-link] |
+| ![Windows][win-badge] | arm64 | `anymodel-bot-<version>-win-arm64.exe` | [Скачать][releases-link] |
+| ![macOS][mac-badge] | Apple silicon | `anymodel-bot-<version>-mac-arm64.dmg` | [Скачать][releases-link] |
+| ![macOS][mac-badge] | Intel | `anymodel-bot-<version>-mac-x64.dmg` | [Скачать][releases-link] |
+| ![Linux][linux-badge] | x64 | `anymodel-bot-<version>-linux-x86_64.AppImage` | [Скачать][releases-link] |
+| ![Linux][linux-badge] | arm64 | `anymodel-bot-<version>-linux-arm64.AppImage` | [Скачать][releases-link] |
+
+<p align="center">
+  <img src="docs/assets/download/install-windows.gif" alt="Установка AnyModelBot в Windows: запуск установщика, открытие приложения и экран входа в Modelflare" width="100%">
+</p>
+
+**Первый запуск.** Если система предупреждает о приложении из интернета, в Windows выберите *«Подробнее → Выполнить в любом случае»*, а в macOS — *«Системные настройки → Конфиденциальность и безопасность → Всё равно открыть»*. В Linux разрешите выполнение AppImage (`chmod +x`) и запустите его. Закрытие окна прячет AnyModelBot в трей; выйти можно из меню трея или настроек.
+
+**Проверка загрузки.**
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+В macOS используйте `shasum -a 256 <file>`, в Windows PowerShell — `Get-FileHash <file>`. Сравните результат со строкой в `SHA256SUMS`.
+
+**Запуск в Docker на NAS или сервере** — образ поддерживает x64 и arm64.
+
+```bash
+docker run -d --name amb -p 3600:3600 -v amb-data:/data ghcr.io/modelflare-ai/anymodel-bot
+docker exec amb cat /data/ui-token   # затем откройте http://<host>:3600/?token=<token>
+```
+
+Не открывайте порт 3600 напрямую в интернет.
+
+**Запуск из исходников**
+
+```bash
+git clone https://github.com/modelflare-ai/AnyModelBot.git
+cd AnyModelBot
+npm install
+npm run setup      # загружает и собирает встроенный шлюз
+npm start          # запускает локальную консоль на http://127.0.0.1:3600/
+```
+
+Для сборки из исходников нужны Node.js 22.13+ и Go 1.26.8+. Сборка своего Docker-образа описана в [руководстве разработчика](./docs/development_ru.md).
+
+# 🌠 Снимки экрана
+
+На снимках показан интерфейс на упрощённом китайском. Приложение также поддерживает английский, японский, корейский и русский; язык переключается в настройках.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/chat-dark.webp">
+  <img src="docs/assets/screenshots/chat-light.webp" alt="Экран чата: ответ со списком Markdown и блоком кода, выбор модели в поле ввода и список ботов слева" width="100%">
+</picture>
+
+<p align="center"><i>Разговор с ботом. Ответы поддерживают Markdown и код; в поле ввода видна текущая модель.</i></p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/agent-dark.webp">
+  <img src="docs/assets/screenshots/agent-light.webp" alt="Работа агента: пошаговый список действий с файлами и карточка разрешения записи за пределами рабочей папки" width="100%">
+</picture>
+
+<p align="center"><i>Каждый шаг агента виден. Действия за пределами рабочей папки ждут вашего разрешения.</i></p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/models-dark.webp">
+  <img src="docs/assets/screenshots/models-light.webp" alt="Выбор модели: поиск по моделям Modelflare, размер контекста, метки возможностей и ориентировочные цены" width="100%">
+</picture>
+
+<p align="center"><i>Выбирайте модель Modelflare отдельно для каждого разговора. Рядом указаны контекст, возможности и ориентировочные цены.</i></p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/memory-dark.webp">
+  <img src="docs/assets/screenshots/memory-light.webp" alt="Панель сведений: записи памяти бота, подключённые каналы и недавние сеансы" width="100%">
+</picture>
+
+<p align="center"><i>Память, каналы и сеансы каждого бота на одной панели.</i></p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/modelflare-dark.webp">
+  <img src="docs/assets/screenshots/modelflare-light.webp" alt="Вкладка Modelflare в настройках с расходами за последние 7 дней, строкой модели по умолчанию и балансом на кнопке аккаунта" width="100%">
+</picture>
+
+<p align="center"><i>Аккаунт Modelflare в приложении: баланс, расходы и настройки по умолчанию.</i></p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/bots-dark.webp">
+  <img src="docs/assets/screenshots/bots-light.webp" alt="Шесть персонажей AnyModelBot в ряд, каждый своего цвета" width="100%">
+</picture>
+
+<p align="center"><i>Шесть персонажей помогают различать ботов. Их глаза следят за указателем.</i></p>
+
+# 🌟 Основные возможности
+
+## 🤖 Боты, которые делают работу
+
+Бот — больше, чем окно чата: у него есть характер, модель по умолчанию, собственные рабочая папка и память.
+
+- **Создавайте сколько угодно ботов**, каждому задавая характер, модель, рабочую папку и аватар.
+- **Вы определяете его личность.** Описание роли — обычный текст, а шаблоны служат отправной точкой. Шесть аватаров меняют внешность, но не возможности.
+- **Настоящая работа с файлами.** Боты читают и записывают файлы, выполняют команды в песочнице и отправляют результаты файлами в чат.
+- **Три режима разрешений для каждого бота.** *Только чтение*, *Запись в рабочую папку* (по умолчанию: запись в собственную папку, остальное — с разрешения) и *Полный доступ* (без песочницы; рекурсивное удаление всё ещё требует подтверждения).
+- **Карточки подтверждения.** Действия за разрешёнными границами останавливаются до вашего ответа.
+- **Уведомление после перезапуска.** Если приложение закрыли или оно завершилось с ошибкой во время обработки, при следующем запуске в разговоре появится уведомление. Запрос можно отправить заново; автоматически он не повторяется.
+- **Групповые чаты.** Создайте группу и добавьте ботов. Отвечает тот, кого вы упомянули через @; без упоминания продолжает последний ответивший. Боты тоже могут передавать слово другим участникам через @. У каждого остаются свои модель, папка и память; расходы учитываются отдельно.
+- **Команды со слешем**, например `/model` и `/reset`, работают в приложении и всех каналах. В мессенджерах `/bot` переключает бота.
+
+<p align="center">
+  <img src="docs/assets/features/agent-files.gif" alt="Бот упорядочивает папку: перечисляет файлы, предлагает план и запрашивает разрешение перед перемещением вне своей рабочей папки" width="100%">
+</p>
+
+## ⏳ Работает в фоне и обращается только по делу
+
+- **Фоновые задачи.** Долгую работу — исследование, отчёт, сортировку файлов — или прямую просьбу «сделай в фоне» бот превращает в фоновую задачу, а вы продолжаете общаться. Результат приходит в исходный разговор.
+- **Дополнения к задачам.** Процитируйте результат в WeChat или ответьте на него в Feishu, чтобы продолжить работу над той же задачей.
+- **Правила.** Просьба «каждое утро в 8 проверяй цену X и сообщай, если она ниже 200» создаёт правило с проверкой по расписанию и уведомлениями только о важном. Чтобы сначала оценить поведение, скажите «сначала наблюдай»: бот запишет предполагаемые сообщения, ничего не отправляя и не меняя файлы. Когда результат устроит, включите выполнение.
+- **Требует внимания.** Ответы, разрешения и повторные попытки, которых боты ждут от вас, собраны в одной строке боковой панели. Она появляется только при необходимости. В разделе «Задачи» панели сведений видны задачи, правила и каждый шаг их работы.
+- **Тишина по умолчанию.** Отправляются только результаты, вопросы для решения и ошибки, без промежуточного прогресса. Тихие часы — с 22:00 до 08:00. Самостоятельные сообщения ограничены за день: 3 в WeChat, 5 в других каналах; остальные объединяются в одно.
+- **Бюджеты.** У каждой задачи и правила есть бюджет: 1 доллар США на задачу, 0,10 на запуск правила и 3 в месяц. При исчерпании бот останавливается и спрашивает вас. Значения меняются в сведениях о задаче и редакторе правила.
+- **Пауза в любой момент.** Переключатель в настройках бота › «Инициативные сообщения» приостанавливает фоновую работу; чат продолжает работать.
+- **Уборка за собой.** Задачи и журналы запусков хранятся 30 дней. Папка задачи, не использовавшаяся 30 дней, удаляется без подтверждения. Дата видна в сведениях о задаче; кнопка «Сохранить» предотвращает удаление. Журналы экспортируются в Markdown.
+
+Подробная статья на китайском: [Суперагент AnyModelBot](./docs/blog/superagent.md).
+
+## 🖥️ Управляет компьютером, создаёт изображения и видео
+
+- **Управление компьютером** работает через встроенный [Cua Driver](https://github.com/trycua/cua). По умолчанию действия автоматические. Включите у бота *подтверждение изменений интерфейса*, и каждый клик и ввод будут ждать вас. Чтение экрана не требует подтверждения. В macOS это бета-возможность.
+- **Создание изображений и видео** начинается сразу: при неточном запросе бот выбирает разумное толкование. Он спрашивает только при оценке стоимости выше 0,50 доллара США: показывает модель и запрос, позволяя сразу сменить модель. Постоянное подтверждение включается в настройках бота.
+
+<p align="center">
+  <img src="docs/assets/features/computer-use.gif" alt="Бот открывает Блокнот, вводит и сохраняет заметку; перед каждым кликом и вводом появляется карточка подтверждения" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/features/media-generation.gif" alt="Бот предлагает модель изображения, пользователь подтверждает, готовая картинка приходит файлом в чат и открывается в просмотрщике" width="100%">
+</p>
+
+## 🌐 Любая модель через Modelflare
+
+- **Войдите один раз**, и модели Modelflare появятся автоматически. Предпочитаете ключ — вставьте его.
+- **Один список для всех.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM и другие — с размером контекста, метками возможностей и ориентировочной ценой.
+- **Выбор для каждого разговора** или модель по умолчанию для бота. Для упорядочивания памяти и передачи контекста можно назначить отдельную модель.
+- **Три домена API.** Выберите `modelflare.dev`, `origin.modelflare.dev` или `cf.modelflare.dev` и сравните время ответа в настройках. AnyModelBot не переключает домены автоматически.
+- **Оплата по использованию.** Встроены баланс кошелька, уведомления о его снижении, расходы по дням и отдельные бюджетные ключи ботов. Подписки AnyModelBot нет.
+
+<p align="center">
+  <img src="docs/assets/features/first-run.gif" alt="Первый запуск: вход в Modelflare, подтверждение в браузере, возврат к списку моделей и первое сообщение" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/features/model-switch.gif" alt="Открытие списка моделей, поиск, просмотр размера контекста и ориентировочной цены, переключение модели разговора" width="100%">
+</p>
+
+## 🧠 Помнит важное и доступен отовсюду
+
+- **Память между разговорами.** Боты хранят Markdown-память на трёх уровнях: команда, бот и группа. Данные, похожие на секреты, отфильтровываются.
+- **Длинные чаты остаются удобными.** Управление контекстом сжимает его или начинает новый сегмент с краткой заметкой до заполнения окна.
+- **Аккаунты общие для всех ботов.** Добавьте WeChat, Feishu, Telegram, Slack, Discord и Notion один раз в настройках. Все боты используют их; для каждого сервиса можно добавить несколько аккаунтов с именами. В мессенджере отправьте `/bot name`, чтобы сменить бота, или попросите бота прочитать ваши данные Notion и сообщения Feishu.
+- **WeChat и Feishu.** Подключите WeChat по QR-коду или бота Feishu с потоковыми карточками ответов. WeChat также поддерживает изображения и файлы.
+- **Telegram, Slack и Discord.** Вставьте токен в разделе «Настройки › Подключения». Публичный адрес не нужен. Ответы появляются по мере написания; изображения и файлы работают в обе стороны. Пока доступны только личные сообщения; на вопросы и запросы разрешения отвечают текстом.
+- **Четыре способа запуска.** Настольное приложение, командная строка, Docker или локальная веб-консоль `127.0.0.1:3600`.
+
+<p align="center">
+  <img src="docs/assets/features/memory.gif" alt="Пользователь просит запомнить предпочтение, проверяет запись на панели сведений и начинает новый чат, в котором бот учитывает её" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/features/channels-wechat.gif" alt="Подключение WeChat по QR-коду, вопрос и ответ на телефоне; разговор появляется в недавних сеансах приложения на компьютере" width="100%">
+</p>
+
+## 🔒 Локальные данные и приятный интерфейс
+
+- **Данные остаются у вас.** Разговоры, память, файлы и API-ключи хранятся на устройстве. Локальная консоль слушает только `127.0.0.1`; настольное приложение создаёт новый токен доступа при каждом запуске.
+- **Бот подчиняется вам.** По умолчанию он отвечает владельцу и разрешённым пользователям. В WeChat владелец — аккаунт, отсканировавший QR-код; в Feishu, Telegram, Slack и Discord — первый написавший после подключения, то есть вы. Остальные получают короткое уведомление без вызова модели. Разрешить доступ можно на панели сведений или ответом `yes <code>` в чате.
+- **Ответы не теряются.** Ответ сохраняется локально до отправки. Сетевые ошибки вызывают повторные попытки, после перезапуска отправка продолжается. При закрытом 24-часовом окне WeChat ответ ждёт вашего следующего сообщения.
+- **Телеметрия выключена.** Телеметрия встроенного драйвера управления компьютером отключена; встроенный шлюз запускается без автообновления.
+- **Обновление — по вашему решению.** Раз в 6 часов приложение запрашивает у GitHub последнюю версию, передавая только номер текущей. О новой версии сообщит боковая панель; скачивание и установка выполняются вами.
+- **Светлая, тёмная или системная тема.** Шесть персонажей-ботов следят глазами за указателем.
+- **Трей и автозапуск.** Закройте окно, чтобы спрятать его в трей. В macOS и Windows доступен автозапуск.
+
+<p align="center">
+  <img src="docs/assets/features/characters-eyes.gif" alt="Шесть персонажей AnyModelBot в ряд следят глазами за движением указателя" width="100%">
+</p>
+
+> [!NOTE]
+> Возможности зависят от модели, операционной системы и выданных разрешений. Управлению компьютером нужен сеанс рабочего стола; в macOS эта функция находится в бета-версии. Запросы проходят через Modelflare к выбранному поставщику; см. [принцип работы и приватность](#-как-это-работает-и-приватность).
+
+# 🆚 AnyModelBot и Grok Bot, OpenAI dots и Claude Duet
+
+Во второй половине 2026 года [Grok Bot](https://x.ai/bot) от xAI, [dots](https://openai.com/index/introducing-dots/) от OpenAI и Claude Duet от Anthropic привлекли внимание к постоянно доступным личным ИИ-агентам: они наблюдают за событиями, работают в фоне и обращаются к вам для принятия решений. AnyModelBot решает похожие задачи другим способом: с открытым кодом, на вашем устройстве и с любой моделью.
+
+| | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
+| :--- | :--- | :--- | :--- | :--- |
+| Открытый код | ✅ MIT | — | — | — |
+| Где работает агент | Ваш компьютер или сервер | Облачный компьютер xAI | Облачный компьютер OpenAI | Облако Anthropic |
+| Модели | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM и ещё более 70 через Modelflare | В основном Grok от xAI | Модели OpenAI | Claude (Opus 5.5) |
+| Стоимость | Приложение бесплатно, модели — по токенам | Подписка | Подписка ChatGPT Pro / Business Premium | Подписка Claude Pro / Max |
+| Где общаться | Приложение для Windows, macOS и Linux, Docker, WeChat, Feishu, Telegram, Slack, Discord | Настольное приложение, iPhone | ChatGPT, Slack, Teams | iOS, Android, claude.ai |
+| Доступность | Можно скачать сейчас | Бета | Отдельные рынки | Исследовательская предварительная версия, очередь в США |
+
+AnyModelBot тоже работает в фоне: переданная ему задача может завершиться и прислать результат в мессенджер, а всё, что требует вашего разрешения или ответа, появится в разделе «Требует внимания» на боковой панели. Все шаги видны; действия вне рабочей папки требуют подтверждения.
+
+> [!NOTE]
+> Информация о других продуктах взята из открытых публикаций по состоянию на октябрь 2026 года и могла измениться. Сверяйтесь с официальными источниками поставщиков. Grok Bot, dots и Claude Duet — продукты и товарные знаки xAI, OpenAI и Anthropic соответственно. AnyModelBot с ними не связан.
+
+# 🔐 Как это работает и приватность
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/data-flow-dark.svg">
+  <img src="docs/assets/diagrams/data-flow-light.svg" alt="Потоки данных: разговоры, память, файлы и ключи остаются на устройстве; запросы проходят через Modelflare к поставщику модели; сообщения мессенджеров проходят через их платформы, а боты обращаются к разрешённым вами аккаунтам Notion и Feishu" width="100%">
+</picture>
+
+| Остаётся на устройстве | Покидает устройство |
+| :--- | :--- |
+| Разговоры и сеансы в локальной SQLite | Запросы, файлы и результаты инструментов, нужные модели; передаются через Modelflare выбранному поставщику |
+| Память в Markdown-файлах | Снимки экрана, когда вы просите бота посмотреть на экран при управлении компьютером |
+| Файлы в рабочей папке каждого бота | Сообщения мессенджеров, проходящие через их платформы |
+| API-ключ и токены входа | Вход в Modelflare на modelflare.dev |
+| Настройки | При добавлении Notion или Feishu боты обращаются к этим аккаунтам; прочитанные данные также включаются в запросы к моделям |
+
+Modelflare хранит журналы запросов; состав и сроки хранения описаны в [Центре доверия](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme). Мы не заявляем, что данные полностью защищены от любых рисков: всё отправляемое модели покидает устройство. Полный перечень — в [документе о приватности](./docs/privacy_ru.md).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagrams/architecture-dark.svg">
+  <img src="docs/assets/diagrams/architecture-light.svg" alt="Архитектура: оболочка Electron, CLI или Docker запускают сервер Node.js и TypeScript с интерфейсом Preact, SQLite, средой агента DSH и адаптерами каналов; они вызывают встроенный шлюз magpie, обращающийся к Modelflare" width="100%">
+</picture>
+
+| Уровень | Технологии |
+| :--- | :--- |
+| Интерфейс | Preact + htm, без этапа сборки |
+| Серверная часть | Node.js 22.13+, TypeScript, `node:sqlite` |
+| Настольная оболочка | Electron с треем |
+| Шлюз моделей | [magpie](https://github.com/yetone/magpie) (Go, MIT), встроен и запускается приложением |
+| Среда агента | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT), отдельный процесс |
+| Управление компьютером | Встроенный [Cua Driver](https://github.com/trycua/cua) |
+| Каналы | Feishu (постоянное соединение и потоковые карточки), WeChat (iLink), Telegram (long polling), Slack (Socket Mode), Discord (Gateway) |
+| Аккаунты данных | Notion (REST API, официальный удалённый MCP), сообщения Feishu (от имени пользователя, только чтение) |
+| Тесты и CI | Vitest, GitHub Actions |
+
+# 📝 Планы
+
+Направления, которые мы изучаем. Это не обещания, а порядок не является расписанием. Изменения выпущенных версий — в [истории изменений](./CHANGELOG_ru.md).
+
+- [x] **Задачи по расписанию:** выполнение по таймеру, реализовано как правила выше.
+- [x] **Групповые чаты в приложении:** создавайте группы и общайтесь с несколькими ботами сразу.
+- [ ] **Группы в мессенджерах:** сейчас каналы поддерживают личные чаты.
+- [x] **Многоязычный интерфейс:** упрощённый китайский, английский, японский, корейский и русский; выбор в настройках.
+- [ ] **Управление macOS:** проверить прямой режим на большем числе реальных устройств и вывести из бета-версии.
+- [ ] **Почта, календарь и запуск по событиям:** подключать аккаунты и запускать правила при событии — письме от определённого человека или скором начале встречи, — а не только по таймеру. События из внешнего содержимого получают меньше прав, чтобы чужой текст не мог отдавать боту команды.
+- [ ] **Постоянный хостинг, резервирование и перенос:** при выключенном компьютере правила не работают. Хотим упростить развёртывание на своём сервере в один клик, перенос чатов, памяти и аккаунтов, резервное копирование и восстановление.
+- [ ] **Свои MCP-серверы:** сейчас доступны только встроенные инструменты и аккаунты. Открытая настройка позволит самостоятельно подключать GitHub, Linear и другие сервисы.
+- [ ] **Совместная работа ботов:** передача задач между ботами, например подготовка и проверка текста разными моделями с отдельным учётом расходов.
+- [ ] **Расшифровка голосовых:** сейчас боты не слышат голосовые Telegram, а WeChat зависит от расшифровки самой платформы.
+- [ ] **Отдельное мобильное приложение:** пока боты доступны через WeChat, Feishu, Telegram, Slack и Discord.
+
+Есть другая идея? Создайте [issue](https://github.com/modelflare-ai/AnyModelBot/issues) или [обсуждение](https://github.com/modelflare-ai/AnyModelBot/discussions). Взятые в работу идеи отмечаются меткой [`roadmap`](https://github.com/modelflare-ai/AnyModelBot/labels/roadmap).
+
+# 🤝 Участие в разработке
+
+Будем рады сообщениям об ошибках, исправлениям, документации и идеям.
+
+1. Сначала проверьте существующие [issues](https://github.com/modelflare-ai/AnyModelBot/issues) и [обсуждения](https://github.com/modelflare-ai/AnyModelBot/discussions). Начать удобно с задач с меткой [`good first issue`](https://github.com/modelflare-ai/AnyModelBot/labels/good%20first%20issue).
+2. Сделайте форк и создайте ветку от `master`.
+3. Запустите локально и внесите изменения:
+
+   ```bash
+   npm install
+   npm run setup          # загружает и собирает встроенный шлюз
+   npm run electron:dev   # настольное приложение в режиме разработки
+   npm run typecheck && npm test
+   ```
+
+4. Откройте pull request в `master`, объяснив, что изменилось и зачем. Для изменений крупнее небольшого исправления сначала создайте issue и согласуйте подход.
+
+Полное [руководство по участию](./CONTRIBUTING_ru.md). Об уязвимостях сообщайте по [правилам безопасности](./SECURITY_ru.md), не создавая публичный issue.
+
+# 🔗 Связанные проекты
+
+- [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme): шлюз ИИ-API, предоставляющий модели AnyModelBot.
+- [magpie](https://github.com/yetone/magpie): встроенный шлюз на Go (MIT).
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): среда агента (MIT).
+- [Cua](https://github.com/trycua/cua): драйвер управления компьютером.
+- [kimi-computer-use](https://github.com/songkeys/kimi-computer-use): мост управления macOS.
+- [openclaw-weixin](https://github.com/Tencent/openclaw-weixin): исходная реализация канала WeChat, которую мы портировали (MIT).
+- [DS Bot](https://github.com/Fei2411/DS-Bot): источник идей памяти и управления контекстом (Apache-2.0).
+
+Все лицензии и уведомления: [THIRD_PARTY_NOTICES_ru.md](./THIRD_PARTY_NOTICES_ru.md).
+
+# 💬 Сообщество
+
+- **Вопросы и идеи:** [GitHub Discussions](https://github.com/modelflare-ai/AnyModelBot/discussions)
+- **Ошибки и пожелания:** [GitHub Issues](https://github.com/modelflare-ai/AnyModelBot/issues)
+- **Почта:** [support@anymodel.bot](mailto:support@anymodel.bot)
+- **Новости Modelflare:** [@modelflare_dev в X](https://x.com/modelflare_dev)
+
+# 🚀 Участники
+
+<a href="https://github.com/modelflare-ai/AnyModelBot/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=modelflare-ai/AnyModelBot" alt="Участники разработки AnyModelBot" />
+</a>
+
+# ⭐️ История звёзд
+
+<a href="https://www.star-history.com/#modelflare-ai/AnyModelBot&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date" />
+    <img alt="График звёзд AnyModelBot на GitHub" src="https://api.star-history.com/svg?repos=modelflare-ai/AnyModelBot&type=Date" width="100%" />
+  </picture>
+</a>
+
+# 📜 Лицензия
+
+AnyModelBot распространяется под [лицензией MIT](./LICENSE). Встроенное стороннее ПО сохраняет собственные лицензии; см. [THIRD_PARTY_NOTICES_ru.md](./THIRD_PARTY_NOTICES_ru.md) и папку [`LICENSES/`](./LICENSES).
+
+<!-- link & badge references -->
+[release-shield]: https://img.shields.io/github/v/release/modelflare-ai/AnyModelBot?include_prereleases&label=release&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB4PSIzIiB5PSI5IiB3aWR0aD0iOTQiIGhlaWdodD0iODIiIHJ4PSIzNiIgZmlsbD0iI2Q3ZmYwMCIvPjxyZWN0IHg9IjI5IiB5PSIzNiIgd2lkdGg9IjEzIiBoZWlnaHQ9IjI4IiByeD0iNi41IiBmaWxsPSIjMTYxYTAwIi8+PHJlY3QgeD0iNTgiIHk9IjM2IiB3aWR0aD0iMTMiIGhlaWdodD0iMjgiIHJ4PSI2LjUiIGZpbGw9IiMxNjFhMDAiLz48L3N2Zz4=&style=flat-square&labelColor=161a00&color=d7ff00
+[downloads-shield]: https://img.shields.io/github/downloads/modelflare-ai/AnyModelBot/total?logo=github&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
+[stars-shield]: https://img.shields.io/github/stars/modelflare-ai/AnyModelBot?logo=github&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
+[license-shield]: https://img.shields.io/github/license/modelflare-ai/AnyModelBot?logo=opensourceinitiative&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/modelflare-ai/AnyModelBot/ci.yml?branch=master&label=CI&logo=githubactions&logoColor=d7ff00&style=flat-square&labelColor=161a00&color=d7ff00
+[platform-shield]: https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Docker-d7ff00?style=flat-square&labelColor=161a00
+[pricing-shield]: https://img.shields.io/badge/pricing-pay--as--you--go-d7ff00?style=flat-square&labelColor=161a00
+[modelflare-shield]: https://img.shields.io/badge/Modelflare-modelflare.dev-d7ff00?style=flat-square&labelColor=161a00
+[x-shield]: https://img.shields.io/badge/X-@modelflare__dev-d7ff00?style=flat-square&labelColor=161a00&logo=x&logoColor=d7ff00
+[win-badge]: https://img.shields.io/badge/Windows-161a00?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2Q3ZmYwMCI+PHJlY3QgeD0iMiIgeT0iMyIgd2lkdGg9IjkuNSIgaGVpZ2h0PSI4LjUiLz48cmVjdCB4PSIxMi41IiB5PSIzIiB3aWR0aD0iOS41IiBoZWlnaHQ9IjguNSIvPjxyZWN0IHg9IjIiIHk9IjEyLjUiIHdpZHRoPSI5LjUiIGhlaWdodD0iOC41Ii8+PHJlY3QgeD0iMTIuNSIgeT0iMTIuNSIgd2lkdGg9IjkuNSIgaGVpZ2h0PSI4LjUiLz48L3N2Zz4=
+[mac-badge]: https://img.shields.io/badge/macOS-161a00?style=for-the-badge&logo=apple&logoColor=d7ff00
+[linux-badge]: https://img.shields.io/badge/Linux-161a00?style=for-the-badge&logo=linux&logoColor=d7ff00
+
+[releases-link]: https://github.com/modelflare-ai/AnyModelBot/releases
+[stars-link]: https://github.com/modelflare-ai/AnyModelBot/stargazers
+[license-link]: https://github.com/modelflare-ai/AnyModelBot/blob/master/LICENSE
+[ci-link]: https://github.com/modelflare-ai/AnyModelBot/actions/workflows/ci.yml
+[pricing-link]: https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme
+[modelflare-link]: https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme
+[x-link]: https://x.com/modelflare_dev

@@ -36,14 +36,14 @@ const v = buildVars(lang);
     </div>
 
     <div class="pricing__block">
-      <PriceTable client:visible rows={pricing.rows} featured={pricing.config.featuredModels} t={p.table}
+      <PriceTable lang={lang} client:visible rows={pricing.rows} featured={pricing.config.featuredModels} t={p.table}
         mediaText={fmt(p.table.media, v)} mediaHref={MF.pricing} initialAll />
       <p class="small muted">{fmt(p.table.note, v)}</p>
     </div>
 
     <div class="pricing__block calc-wrap" id="calc">
       <h2 class="h3">{p.calc.title}</h2>
-      <PriceCalculator client:visible rows={pricing.rows} defaultModel={pricing.config.sampleModel} t={p.calc} fetchedAt={v.fetchedAt as string} fullHref={MF.pricing} />
+      <PriceCalculator lang={lang} copied={t.ui.copied} client:visible rows={pricing.rows} defaultModel={pricing.config.sampleModel} t={p.calc} fetchedAt={v.fetchedAt as string} fullHref={MF.pricing} />
     </div>
 
     <div class="pbanner">

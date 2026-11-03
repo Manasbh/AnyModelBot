@@ -109,6 +109,20 @@ jobs:
           ref: ${{ needs.meta.outputs.ref }}
 
       # The Dockerfile compiles the bundled gateway from this submodule.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        if: needs.meta.outputs.push == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Validate all target languages before publishing
+        if: needs.meta.outputs.push == 'true'
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run i18n:check
+
       - name: Fetch magpie
         run: git submodule update --init --depth 1 vendor/magpie
 

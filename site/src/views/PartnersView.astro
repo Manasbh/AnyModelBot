@@ -1,0 +1,157 @@
+---
+// 合作伙伴页：告诉大家可以合作销售 AnyModelBot，并收集申请。不写分成比例、结算规则和价格，这些一对一谈。
+// 版式和下载页同一套：居中页头 + 等宽卡片，层次靠留白和细线；页头、分节、图标底片直接用 .dl-*，其余样式在 pages.css 的“合作伙伴”。
+// 申请表的交互在 scripts/partner-form.ts：配了 PARTNER_APPLY_URL 才直接提交，没配时让申请人把内容发到邮箱。
+// 机器人不绑定任何一类合作方，只在申请表上方探出头（看指针由 client.ts 驱动）。
+import Base from "../layouts/Base.astro";
+import BotFace from "../components/BotFace.astro";
+import EyesMark from "../components/EyesMark.astro";
+import Icon from "../components/Icon.astro";
+import { buildVars, dict, fmt, href, type Lang } from "../i18n";
+import { CHAR_KEYS } from "../lib/bots";
+import { PARTNER_LIMITS, PARTNER_TYPES, type MailText } from "../lib/partner-form";
+import { PARTNERS_EMAIL, PARTNER_APPLY_URL } from "../lib/site";
+import "../styles/pages.css";
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const t = dict(lang);
+const p = t.partners;
+const a = p.apply;
+const vars = buildVars(lang);
+const whoIcons = ["monitor", "chat", "server"] as const;
+const inputs = [
+  { name: "name", label: a.name, error: a.errors.name, autocomplete: "name" },
+  { name: "company", label: a.company, autocomplete: "organization" },
+  { name: "contact", label: a.contact, hint: a.contactHint, error: a.errors.contact, wide: true },
+  { name: "audience", label: a.audience, hint: a.audienceHint, autocomplete: "off", wide: true },
+] as const;
+const mailText: MailText = {
+  subject: a.mail.subject,
+  labels: { type: a.type, name: a.name, company: a.company, contact: a.contact, audience: a.audience, message: a.message },
+  types: a.types,
+};
+---
+<Base lang={lang} path="/partners" title={p.pageTitle} description={p.pageDescription}>
+  <div class="container page pt-page">
+    <header class="dl-hero pt-hero">
+      <EyesMark size={72} class="dl-hero__mark" lookAt="#pt-cta" />
+      <p class="eyebrow">{p.eyebrow}</p>
+      <h1>{p.h1}</h1>
+      <p class="lead">{p.lead}</p>
+      <div class="pt-hero__cta">
+        <a class="btn btn--primary" id="pt-cta" href="#apply" data-track="cta_click" data-track-location="partners-hero">{p.cta}</a>
+        <a class="btn btn--secondary" href={href(lang, "/")} data-track="cta_click" data-track-location="partners-product">{p.ctaProduct}</a>
+      </div>
+    </header>
+
+    <section class="dl-sec" aria-labelledby="pt-who-h">
+      <h2 class="subhead" id="pt-who-h">{p.who.title}</h2>
+      <ul class="pt-who" role="list">
+        {p.who.items.map((x, i) => (
+          <li class="card pt-who__card">
+            <span class="dl-ico"><Icon name={whoIcons[i]} size={22} /></span>
+            <h3 class="h3">{x.title}</h3>
+            <p class="dl-sub">{x.body}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="dl-sec pt-why" aria-labelledby="pt-why-h">
+      <h2 class="subhead" id="pt-why-h">{p.why.title}</h2>
+      <ul class="pt-why__list" role="list">
+        {p.why.items.map((x, i) => (
+          <li class="pt-why__item">
+            <h3 class="h3">{x.title}</h3>
+            <p class="dl-sub">{fmt(x.body, vars)}{i === 0 && <Fragment> <a href={href(lang, "/security")}>{p.why.dataLink}</a></Fragment>}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="dl-sec" aria-labelledby="pt-steps-h">
+      <h2 class="subhead" id="pt-steps-h">{p.steps.title}</h2>
+      <ol class="pt-steps" role="list">
+        {p.steps.items.map((x, i) => (
+          <li>
+            <span class="pt-steps__no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+            <h3 class="h3">{x.title}</h3>
+            <p class="dl-sub">{x.body}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section class="pt-apply" id="apply" aria-labelledby="pt-apply-h" data-partner-apply>
+      <div class="pt-apply__intro">
+        <h2 class="subhead" id="pt-apply-h">{a.title}</h2>
+        <p class="dl-sub">{a.lead}</p>
+        <div class="pt-apply__mail">
+          <p class="eyebrow">{a.mailLabel}</p>
+          <p class="pt-mail">
+            <a href={`mailto:${PARTNERS_EMAIL}?subject=${encodeURIComponent(a.mail.subject)}`} data-track="cta_click" data-track-location="partners-email">{PARTNERS_EMAIL}</a>
+            <button type="button" class="copy-btn" data-copy-text={PARTNERS_EMAIL} aria-label={t.ui.copy} title={t.ui.copy}><Icon name="copy" /></button>
+          </p>
+        </div>
+      </div>
+
+      <div class="pt-apply__side">
+        <div class="pt-apply__bots" aria-hidden="true">{CHAR_KEYS.map((k) => <BotFace char={k} size={56} lively />)}</div>
+
+        <form class="card pt-form" data-partner-form data-endpoint={PARTNER_APPLY_URL || undefined} data-email={PARTNERS_EMAIL} data-lang={lang} data-mail={JSON.stringify(mailText)} novalidate>
+          <fieldset class="pt-field pt-field--wide" data-field="type">
+            <legend class="pt-label">{a.type}</legend>
+            <div class="pt-chips">
+              {PARTNER_TYPES.map((k) => <label class="pt-chip"><input type="radio" name="type" value={k} aria-describedby="pt-err-type" /><span>{a.types[k]}</span></label>)}
+            </div>
+            <p class="pt-err" id="pt-err-type" hidden>{a.errors.type}</p>
+          </fieldset>
+
+          {inputs.map((f) => {
+            const error = "error" in f ? f.error : undefined;
+            return (
+              <div class:list={["pt-field", { "pt-field--wide": "wide" in f }]} data-field={f.name}>
+                <label class="pt-label" for={`pt-${f.name}`}>{f.label}{!error && <span class="pt-opt">{a.optional}</span>}</label>
+                <input class="pt-input" id={`pt-${f.name}`} name={f.name} type="text" maxlength={PARTNER_LIMITS[f.name]} autocomplete={"autocomplete" in f ? f.autocomplete : undefined} placeholder={"hint" in f ? f.hint : undefined} aria-required={error ? "true" : undefined} aria-describedby={error ? `pt-err-${f.name}` : undefined} />
+                {error && <p class="pt-err" id={`pt-err-${f.name}`} hidden>{error}</p>}
+              </div>
+            );
+          })}
+
+          <div class="pt-field pt-field--wide">
+            <label class="pt-label" for="pt-message">{a.message}<span class="pt-opt">{a.optional}</span></label>
+            <textarea class="pt-input pt-input--area" id="pt-message" name="message" rows="4" maxlength={PARTNER_LIMITS.message} placeholder={a.messageHint}></textarea>
+          </div>
+
+          {/* 蜜罐：正常人看不到，机器人会填 */}
+          <div class="pt-hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+
+          <p class="pt-failed" data-partner-failed role="alert" hidden>{fmt(a.failed, { email: PARTNERS_EMAIL })}</p>
+          <div class="pt-form__foot">
+            <button class="btn btn--primary" type="submit" data-label={a.submit} data-sending={a.sending}>{a.submit}</button>
+            <p class="small muted">{a.consent} <a href={href(lang, "/privacy")}>{a.privacy}</a></p>
+          </div>
+        </form>
+
+        <div class="card pt-panel" data-partner-done hidden>
+          <span class="dl-ico"><Icon name="check" size={22} /></span>
+          <h3 class="h3" tabindex="-1" data-partner-focus>{a.done.title}</h3>
+          <p class="dl-sub">{a.done.body}</p>
+        </div>
+
+        <div class="card pt-panel" data-partner-mail hidden>
+          <h3 class="h3" tabindex="-1" data-partner-focus>{a.mail.title}</h3>
+          <p class="dl-sub">{fmt(a.mail.body, { email: PARTNERS_EMAIL })}</p>
+          <div class="code"><code></code><button type="button" class="copy-btn" data-copy-code aria-label={t.ui.copy} title={t.ui.copy}><Icon name="copy" /></button></div>
+          <div class="pt-panel__actions">
+            <a class="btn btn--primary" href="#apply" data-partner-open>{a.mail.open}</a>
+            <button class="btn btn--secondary" type="button" data-partner-back>{a.mail.back}</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+    import "../scripts/partner-form";
+  </script>
+</Base>

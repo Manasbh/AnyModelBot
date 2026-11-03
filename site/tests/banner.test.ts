@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildBannerItems, edge, isPlaceholder, shortDate, type BannerSource } from "../src/lib/banner";
 import { zh } from "../src/i18n/zh";
 import { en } from "../src/i18n/en";
-import type { Announcement } from "../src/data/announcements";
+import { ANNOUNCEMENTS, type Announcement } from "../src/data/announcements";
 
 const NOW = Date.parse("2026-11-10T12:00:00+08:00");
 const promo: Announcement = {
+  ...ANNOUNCEMENTS[0],
   id: "p1", kind: "promo",
   zh: { tag: "活动", text: "{modelCount} 个模型", cta: { label: "看价格", href: "/pricing" }, link: { label: "文档", href: "https://docs.example.com" } },
   en: { tag: "Promo", text: "{modelCount} models", cta: { label: "Pricing", href: "/pricing" } },

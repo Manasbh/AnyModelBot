@@ -3,4 +3,4 @@
 import type { Lang } from "../i18n";
 import { GITHUB_URL } from "./site";
 
-export const docsUrl = (lang: Lang) => (lang === "zh" ? `${GITHUB_URL}#readme` : `${GITHUB_URL}/blob/master/README_en.md`);
+export const docsUrl = (lang: Lang) => (lang === "zh" ? `${GITHUB_URL}#readme` : `${GITHUB_URL}/blob/master/README_${lang}.md`);

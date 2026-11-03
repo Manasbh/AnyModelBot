@@ -28,5 +28,5 @@ const { lang } = Astro.props;
   <Faq lang={lang} />
   <Final lang={lang} />
   <DemoTour lang={lang} />
-  <script type="application/json" id="amb-quips" set:html={JSON.stringify(dict(lang).quips)} />
+  <script type="application/json" id="amb-quips" set:html={JSON.stringify(dict(lang).home.quips)} />
 </Base>

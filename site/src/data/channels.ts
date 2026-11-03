@@ -1,3 +1,6 @@
+import ja from "./channels.ja";
+import ko from "./channels.ko";
+import ru from "./channels.ru";
 // 首页"在哪都能用"（sections/Devices.astro）里的聊天渠道：切换台里的入口和接入步骤都由这里生成。
 //
 // 不放在 i18n 里：中英文页面展示的渠道可以不同，不是同一份内容的两种语言——
@@ -25,6 +28,7 @@ export interface Channel {
 }
 
 export const CHANNELS: Record<Lang, Channel[]> = {
+  ja, ko, ru,
   zh: [
     {
       id: "wechat", icon: "chat", title: "微信", body: "扫码接入，在微信里直接聊，图片和文件也能发。", format: "渠道（iLink 扫码登录）",

@@ -20,17 +20,17 @@ import { releases } from "../lib/site";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
-const d = t.devices;
+const d = t.home.devices;
 const it = d.items;
 const th = d.thread;
-const blue = t.bots.looks.blue;
+const blue = t.home.bots.looks.blue;
 const chats = CHANNELS[lang];
 // 入口行的小字只列已经能用的渠道；标着 soon 的（还没上线）只在接入指南里出现
 const chatNames = chats.filter((c) => !c.soon).map((c) => c.title).join(" · ");
 // 合成图里手机上的聊天软件：第一个已经能用的渠道
 const liveChat = chats.find((c) => !c.soon) ?? chats[0];
 // 合成图里 App 窗口的数据：侧栏三行（时间是示意）、搜索与输入框的占位（借用 Hero 舞台的文案）、输入框里的模型
-const st = t.hero.stage;
+const st = t.home.hero.stage;
 const rows = [{ k: "blue", when: "17:02" }, { k: "orange", when: "16:40" }, { k: "green", when: "09:15" }] as const;
 const MODEL = "claude-sonnet-5-5";
 // 接入指南的标签：Docker、浏览器、各聊天渠道
@@ -61,7 +61,7 @@ for (let y = 0; y < 29; y++) for (let x = 0; x < 29; x++) {
 ---
 <section class="section" id="devices" aria-labelledby="devices-h2">
   <div class="container">
-    <SectionHead n={6} label={t.kicker.devices} id="devices-h2" title={d.h2} dim={d.h2dim} lead={d.lead} />
+    <SectionHead n={6} label={t.home.kicker.devices} id="devices-h2" title={d.h2} dim={d.h2dim} lead={d.lead} />
 
     <div class="reach" id="download">
       <!-- 合成图：三块磨砂玻璃屏幕，同一段对话、同一条记忆；背后一层静止的柔光，玻璃才磨得出砂 -->
@@ -94,7 +94,7 @@ for (let y = 0; y < 29; y++) for (let x = 0; x < 29; x++) {
               {rows.map((r, i) => (
                 <span class:list={["rs__row", { "is-on": i === 0 }]}>
                   <BotFace char={r.k} size={28} />
-                  <span class="rs__row-body"><span class="rs__row-line"><b>{t.bots.looks[r.k].name}</b><small>{r.when}</small></span><span class="rs__snip">{t.bots.personas[CHAR_PERSONA[r.k]].bot}</span></span>
+                  <span class="rs__row-body"><span class="rs__row-line"><b>{t.home.bots.looks[r.k].name}</b><small>{r.when}</small></span><span class="rs__snip">{t.home.bots.personas[CHAR_PERSONA[r.k]].bot}</span></span>
                 </span>
               ))}
             </div>
@@ -118,12 +118,12 @@ for (let y = 0; y < 29; y++) for (let x = 0; x < 29; x++) {
           <div class="rs__status"><b>9:41</b><span class="rs__sig"><i></i><i></i><i></i><i></i></span><span class="rs__bat"><i></i></span></div>
           <div class="rs__phone-head"><Icon name="chevron" size={14} class="rs__back" /><BotFace char="blue" size={26} /><span><b>{blue.name}</b><small>{liveChat?.title}</small></span></div>
           <div class="rs__thread">
-            <span class="rs__day">{t.bots.phoneDay}</span>
+            <span class="rs__day">{t.home.bots.phoneDay}</span>
             <p class="rs__msg rs__msg--me">{th.user}</p>
             <div class="rs__reply"><p class="rs__msg">{th.bot}</p></div>
             <p class="rs__memo"><Icon name="layers" size={11} />{th.memoLabel} · {th.memo}</p>
           </div>
-          <div class="rs__input"><span class="rs__ib rs__ib--ring"><Icon name="plus" size={11} /></span><span class="rs__field">{t.bots.phoneInput}</span></div>
+          <div class="rs__input"><span class="rs__ib rs__ib--ring"><Icon name="plus" size={11} /></span><span class="rs__field">{t.home.bots.phoneInput}</span></div>
           <i class="rs__home"></i>
         </div>
       </div>

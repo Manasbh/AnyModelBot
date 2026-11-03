@@ -14,10 +14,10 @@ import { pricing } from "../lib/site";
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
-const u = t.tour.ui;
-const P = t.bots.personas;
-const L = t.bots.looks;
-const isZh = lang === "zh";
+const u = t.home.tour.ui;
+const P = t.home.bots.personas;
+const L = t.home.bots.looks;
+const isZh = lang === "zh" || lang === "ja" || lang === "ko";
 const cps = isZh ? 34 : 64;            // 回复逐字打出的速度：英文字母多，快一点，两种语言差不多同时写完
 const durations = [6000, 8000, 7000, 7500, 8000, 8500, 6500];
 const connected = fmt(u.connected, { n: pricing.counts.text });
@@ -60,7 +60,7 @@ const tplIcons = [I.file, I.chat, I.terminal];
 ---
 <dialog class="sheet tour" id="demo-tour" aria-labelledby="tour-title" data-tour>
   <div class="sheet__head">
-    <h2 class="h3" id="tour-title">{t.tour.title}</h2>
+    <h2 class="h3" id="tour-title">{t.home.tour.title}</h2>
     <button class="icon-btn" type="button" data-close-dialog aria-label={t.ui.close}><Icon name="close" /></button>
   </div>
 
@@ -274,16 +274,16 @@ const tplIcons = [I.file, I.chat, I.terminal];
               <div class="tw-item tw-item--static"><div><span class="tw-time">{u.today}</span></div></div>
               <div class="tw-item" data-at="300"><div><p class="tw-msg tw-msg--me">{u.task}</p></div></div>
               <div class="tw-item" data-at="800"><div><p class="tw-work"><span class="by-time"><span class="tw-shimmer">{u.working}</span><span data-at="6400">{fmt(u.took, { s: "5.6s" })}</span></span></p></div></div>
-              <div class="tw-item" data-at="1200"><div><ul class="tw-well tw-steps" role="list">{t.handson.demoSteps.map((x, i) => <li data-at={String(1200 + i * 450)}><Fragment set:html={ic(I.check, 13)} />{x}</li>)}</ul></div></div>
+              <div class="tw-item" data-at="1200"><div><ul class="tw-well tw-steps" role="list">{t.home.handson.demoSteps.map((x, i) => <li data-at={String(1200 + i * 450)}><Fragment set:html={ic(I.check, 13)} />{x}</li>)}</ul></div></div>
               <div class="tw-item" data-at="2700"><div>
                 <div class="tw-well tw-card" data-at="4700">
                   <span class="tw-card__meta"><span>{u.approvalMeta} · <span class="tnum">4F2K</span></span><span class="tw-badge">{u.allowed}</span></span>
-                  <b class="tw-card__q">{t.handson.approvalBody}</b>
+                  <b class="tw-card__q">{t.home.handson.approvalBody}</b>
                   <span class="tw-card__cmd mono">mv ~/Downloads/*.pdf ~/Documents/</span>
                   <span class="tw-card__acts"><span class="tw-btn tw-btn--primary tw-press" data-at="4400">{u.allowOnce}</span><span class="tw-btn">{u.deny}</span></span>
                 </div>
               </div></div>
-              <div class="tw-item" data-at="5400"><div><div class="tw-well tw-file"><Fragment set:html={ic(I.doc, 24)} /><span><b>{t.handson.file}</b><small>{u.fileSub}</small></span></div></div></div>
+              <div class="tw-item" data-at="5400"><div><div class="tw-well tw-file"><Fragment set:html={ic(I.doc, 24)} /><span><b>{t.home.handson.file}</b><small>{u.fileSub}</small></span></div></div></div>
             </div>
             <div class="tw-composer">
               <span class="tw-composer__ph">{fmt(u.input, { name: code })}</span>
@@ -316,27 +316,27 @@ const tplIcons = [I.file, I.chat, I.terminal];
                 <p class="msg msg--user on-rise" data-at="900">{u.imUser}</p>
                 <p class="msg msg--bot on-rise" data-at="1900"><span data-at="2000" data-type={u.imReply} data-cps={isZh ? 18 : 34}></span></p>
               </div>
-              <div class="phone__input">{t.bots.phoneInput}</div>
+              <div class="phone__input">{t.home.bots.phoneInput}</div>
             </div>
           </div>
         </div>
       </section>
     </div>
-    <button type="button" class="tour__arrow tour__arrow--prev" data-tour-prev aria-label={t.tour.prev}><Icon name="arrow" class="flip" size={18} /></button>
-    <button type="button" class="tour__arrow tour__arrow--next" data-tour-next aria-label={t.tour.next}><Icon name="arrow" size={18} /></button>
+    <button type="button" class="tour__arrow tour__arrow--prev" data-tour-prev aria-label={t.home.tour.prev}><Icon name="arrow" class="flip" size={18} /></button>
+    <button type="button" class="tour__arrow tour__arrow--next" data-tour-next aria-label={t.home.tour.next}><Icon name="arrow" size={18} /></button>
   </div>
 
-  <div class="tour__steps" role="tablist" aria-label={t.tour.steps}>
-    {t.tour.scenes.map((s, i) => (
+  <div class="tour__steps" role="tablist" aria-label={t.home.tour.steps}>
+    {t.home.tour.scenes.map((s, i) => (
       <button type="button" role="tab" class="tour__step" data-goto={i} aria-selected={i === 0 ? "true" : "false"}>
         <span class="tour__step-n mono">{i + 1}</span><span class="tour__step-t">{s.title}</span><i class="tour__step-bar"></i>
       </button>
     ))}
   </div>
   <div class="tour__caption" aria-live="polite">
-    {t.tour.scenes.map((s, i) => (
+    {t.home.tour.scenes.map((s, i) => (
       <p data-caption={i} hidden={i !== 0}><b>{s.title}</b><span>{s.caption}</span></p>
     ))}
   </div>
-  <p class="tour__note small muted">{t.tour.note}</p>
+  <p class="tour__note small muted">{t.home.tour.note}</p>
 </dialog>

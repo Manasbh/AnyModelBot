@@ -5,13 +5,14 @@
 import EyesMark from "./EyesMark.astro";
 import DownloadButton from "./DownloadButton.astro";
 import { dict, fmt, buildVars, href, type Lang } from "../i18n";
+import { localizeSnapshotUSD } from "../lib/locale-format";
 import { pricing, MF } from "../lib/site";
 interface Props { lang: Lang; compact?: boolean }
 const { lang, compact = false } = Astro.props;
 const t = dict(lang);
 const c = t.pricing.cards;
 const v = buildVars(lang);
-const s = pricing.sample;
+const s = { ...pricing.sample, ...Object.fromEntries(["input", "output", "officialIn", "officialOut", "monthly"].map((k) => [k, localizeSnapshotUSD(pricing.sample[k as keyof typeof pricing.sample], lang)])) };
 const page = href(lang, "/pricing");
 ---
 <ol class:list={["pcards", { "pcards--compact": compact }]} role="list">

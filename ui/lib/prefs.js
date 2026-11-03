@@ -20,6 +20,7 @@ export const PREF_DEFAULTS = Object.freeze({
   notify: false, //     窗口不在前台时，回复完成 / 需要确认弹系统通知
   sideW: 0, //          侧栏宽度（px），拖分隔条调的；0 = 默认（tokens 的 --side-w，窄窗口时更窄）
   panelW: 0, //         信息面板宽度（px），同上
+  updateDismissed: "", // 侧栏叉掉的新版本提示是哪个版本；更新的版本照样提示
 });
 /** "恢复默认外观"重置的键（对话习惯不动） */
 export const APPEARANCE_KEYS = ["text", "font", "fontName", "codeFont", "width", "codeWrap", "motion", "glass"];
@@ -50,6 +51,7 @@ function sanitize(raw) {
   for (const [k, list] of Object.entries(CHOICES)) if (list.includes(raw[k])) p[k] = raw[k];
   for (const k of ["fontName", "codeFont"]) if (typeof raw[k] === "string") p[k] = cleanFontName(raw[k]);
   for (const k of ["codeWrap", "notify"]) if (typeof raw[k] === "boolean") p[k] = raw[k];
+  if (typeof raw.updateDismissed === "string") p.updateDismissed = raw.updateDismissed.slice(0, 32);
   // 宽度只粗查一下是不是合理的像素数；精确的范围（最窄 / 最宽 / 窗口占比）由 CSS 的 clamp() 和 Splitter 管
   for (const k of ["sideW", "panelW"]) if (Number.isFinite(raw[k]) && raw[k] >= 120 && raw[k] <= 1200) p[k] = Math.round(raw[k]);
   return p;

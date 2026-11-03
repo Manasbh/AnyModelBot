@@ -1,6 +1,6 @@
 # 数据与隐私
 
-简体中文 | [English](./privacy_en.md)
+简体中文 | [English](./privacy_en.md) | [日本語](./privacy_ja.md) | [한국어](./privacy_ko.md) | [Русский](./privacy_ru.md)
 
 **一句话结论：** 对话、记忆、文件和密钥存在你的设备上；发给模型的内容会经过 Modelflare 转发到你选定的模型供应商。我们不声称能做到万无一失——凡是发给模型的内容，都会离开你的设备。
 

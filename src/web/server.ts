@@ -14,6 +14,7 @@ import { ZOOMS, normalizeLowBalance, saveConfigFile } from "../config.js";
 import { ApiError, ROUTING_STRATEGIES } from "../account/client.js";
 import { OAuthError } from "../account/oauth.js";
 import { normalizeLine } from "../modelflare.js";
+import { testModelflareDomains } from "../modelflare-domains.js";
 import { SseReply } from "./sse-reply.js";
 import { LiveTurns, type LiveTurn } from "./live.js";
 import { botWorkspace, describeFile, resolveFile, runnable, sendFile } from "./files.js";
@@ -23,7 +24,7 @@ import { GroupChats } from "../core/groups.js";
 import { defaultLine } from "../agent/approvals.js";
 import { normalizeSettings } from "../agent/settings.js";
 import { SEARCH_PROVIDERS, normalizeSearxUrl, type SearchProvider } from "../agent/search.js";
-import { ConnectionError } from "../agent/accounts.js";
+import { ConnectionError, connectionUserMessage } from "../agent/accounts.js";
 import { scopeLabel } from "../agent/memory.js";
 import { pwshProbe, type PwshMode, type PwshStatus } from "../agent/pwsh.js";
 import { ACCESS_CHANNELS, peerName, shortPeer, whoText, type AccessChannel } from "../core/access.js";
@@ -32,7 +33,7 @@ import { normalizeSchedule, type Schedule } from "../tasks/schedule.js";
 import { exportFileName } from "../tasks/export.js";
 import type { StageGroup } from "../tasks/stage.js";
 import { GUIDE_STEPS, deriveGuide, isGuideStep, mergeGuide, normalizeGuide, type GuideState } from "../guide.js";
-import { normalizeLang, requestLang, setLangPref, t, withLang, type LangPref, t as tr } from "../i18n/index.js";
+import { lang, normalizeLang, requestLang, setLangPref, t, withLang, type LangPref, t as tr } from "../i18n/index.js";
 
 const log = logger("web");
 const require = createRequire(import.meta.url);
@@ -360,6 +361,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         notices: app.recentNotices,
       });
     }
+    if (p === "/update" && m === "GET") return send(res, 200, app.updates.status());
     if (p === "/models" && m === "GET") {
       try {
         return send(res, 200, { models: await app.runtime.listModels(true) });
@@ -367,6 +369,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         return send(res, 200, { models: [], error: (e as Error).message });
       }
     }
+    if (p === "/modelflare/domains/test" && m === "POST") return send(res, 200, { results: await testModelflareDomains() });
     if (p === "/modelflare" || p === "/modelflare/line") {
       if (m === "GET" && p === "/modelflare") return send(res, 200, app.modelflareStatus());
       if (m !== "GET" && !app.magpie) throw new HttpError(409, t("web.externalNoConnection"));
@@ -377,7 +380,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         const apiKey = String(b.apiKey ?? "").trim();
         if (!apiKey) throw new HttpError(400, t("web.missingApiKey"));
         const r = await app.connectModelflare(apiKey, normalizeLine(b.line ?? cfg.modelflare.line));
-        if (!r.ok) return send(res, 400, { error: r.message, code: r.code, status: r.status, suggestLine: r.suggestLine });
+        if (!r.ok) return send(res, 400, { error: r.message, code: r.code, status: r.status });
         return send(res, 200, { ...app.modelflareStatus(), models: r.models });
       }
       if (m === "DELETE") {
@@ -518,7 +521,9 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
           return "";
         }
       };
-      return send(res, 200, { license: read("LICENSE"), notices: read("THIRD_PARTY_NOTICES.md") });
+      const locale = lang();
+      const notices = locale === "zh-CN" ? "THIRD_PARTY_NOTICES.md" : `THIRD_PARTY_NOTICES_${locale}.md`;
+      return send(res, 200, { license: read("LICENSE"), notices: read(notices) || read("THIRD_PARTY_NOTICES.md") });
     }
     if (p === "/desktop/open-data-dir" && m === "POST") {
       if (!app.desktop) throw new HttpError(400, t("web.desktopOnly"));
@@ -670,8 +675,8 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         try {
           return await run();
         } catch (e) {
-          if (e instanceof ConnectionError) throw new HttpError(400, e.message);
-          throw e;
+          if (!(e instanceof ConnectionError)) log.warn("connection authorization failed", { message: e instanceof Error ? e.message : String(e) });
+          throw new HttpError(e instanceof ConnectionError ? 400 : 500, connectionUserMessage(e));
         }
       };
       if (seg.length === 1 && m === "GET") return send(res, 200, { accounts: c.accounts.view() });
@@ -1321,12 +1326,12 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
       detail = `${account.label} · ${detail}`;
     } catch (e) {
       title = t("web.oauthFailed");
-      detail = e instanceof ConnectionError ? e.message : t("web.oauthFailedRetry");
+      detail = connectionUserMessage(e);
       if (!(e instanceof ConnectionError)) log.warn("notion authorization failed", { message: (e as Error).message });
     }
     const escape = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
     res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer" }).end(
-      `<!doctype html><meta charset="utf-8"><title>${escape(title)}</title><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui,sans-serif;display:grid;place-content:center;min-height:90vh;text-align:center"><h1 style="font-size:20px;font-weight:600">${escape(title)}</h1><p>${escape(detail)}</p></body>`,
+      `<!doctype html><html lang="${escape(lang())}"><head><meta charset="utf-8"><title>${escape(title)}</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font:16px system-ui,sans-serif;display:grid;place-content:center;min-height:90vh;text-align:center"><h1 style="font-size:20px;font-weight:600">${escape(title)}</h1><p>${escape(detail)}</p></body></html>`,
     );
   }
 

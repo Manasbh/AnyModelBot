@@ -1,6 +1,6 @@
-// 界面多语言：简体中文 / English。
+// 界面多语言：目标语言和就绪状态见 locales/manifest.json。
 //
-// 语言偏好（system | zh-CN | en）是应用级设置，以服务端配置 config.ui.lang 为准：托盘菜单、服务端报错、
+// 语言偏好（system | zh-CN | en | ja | ko | ru）是应用级设置，以服务端配置 config.ui.lang 为准：托盘菜单、服务端报错、
 // 机器人发到微信 / 飞书的系统消息都跟着它。localStorage 只缓存一份给首帧用（index.html 先按它设 <html lang>），
 // 启动后 App 读到 /settings 里的 lang 再以服务端为准（adoptServerLang）。
 // 每个 API 请求带 x-amb-lang（解析后的语言），服务端据此返回同一种语言的报错和状态文字。
@@ -10,25 +10,31 @@
 //   t("chat.queued", { n: 3 })                  → 插值：文案里写 {n}
 //   t("chat.files", { count: 2 })               → 复数：文案写成 { one: "…", other: "…" }，按 count 选（Intl.PluralRules）
 //   t("appearance.hint", { b: html`<b>…</b>` }) → 插值里有 vnode 时返回数组，可直接放进 htm 模板
-// 缺失的键先回退到简体中文，再回退到键名本身（开发时控制台警告一次）。
+// 开发时缺失的键回退到英文（中文仍用中文），再回退到键名本身；发布校验禁止缺失（开发时控制台警告一次）。
 // 切换语言时 App 订阅 useLang() 整棵树重渲染：模块顶层不要缓存翻译后的字符串（写成函数，渲染时再取），
 // useMemo 的依赖里要带上 useLang() 的返回值。
 import { useEffect, useState } from "preact/hooks";
 import zhCN from "../locales/zh-CN/index.js";
 import en from "../locales/en/index.js";
+import manifest from "../locales/manifest.json" with { type: "json" };
+import ja from "../locales/ja/index.js";
+import ko from "../locales/ko/index.js";
+import ru from "../locales/ru/index.js";
 
-export const LANGS = ["zh-CN", "en"];
+export const TARGET_LANGS = manifest.locales.map((l) => l.code);
+export const LANGS = manifest.locales.filter((l) => l.ready).map((l) => l.code);
 /** 各语言用自己的文字写名字（语言菜单的惯例），不随界面语言翻译 */
-export const LANG_NAMES = { "zh-CN": "简体中文", en: "English" }; // i18n-ignore
-const DICTS = { "zh-CN": zhCN, en };
+export const LANG_NAMES = Object.fromEntries(manifest.locales.map((l) => [l.code, l.name]));
+const DICTS = { "zh-CN": zhCN, en, ja, ko, ru };
 const FALLBACK = "zh-CN";
 const KEY = "amb-lang";
 
 /** "zh" / "zh-Hans-CN" / "zh-TW" → zh-CN；"en-US" → en；其他 → null */
 export function normalizeLang(s) {
   const v = String(s || "").trim().toLowerCase();
-  if (v.startsWith("zh")) return "zh-CN";
-  if (v.startsWith("en")) return "en";
+  const base = v.split(/[-_.@]/)[0];
+  if (base === "zh") return "zh-CN";
+  if (["en", "ja", "ko", "ru"].includes(base)) return base;
   return null;
 }
 export const normalizePref = (s) => (s === "system" ? "system" : normalizeLang(s) || "system");
@@ -38,7 +44,7 @@ export function systemLang() {
   const list = (typeof navigator !== "undefined" && (navigator.languages?.length ? navigator.languages : [navigator.language])) || [];
   for (const l of list) {
     const n = normalizeLang(l);
-    if (n) return n;
+    if (n && LANGS.includes(n)) return n;
   }
   return "en";
 }
@@ -55,9 +61,9 @@ let pref = readPref();
 let current = pref === "system" ? systemLang() : pref;
 const subs = new Set();
 
-/** 当前界面语言（解析后的 zh-CN | en） */
+/** 当前界面语言（解析后的 zh-CN | en | ja | ko | ru） */
 export const getLang = () => current;
-/** 语言偏好（system | zh-CN | en） */
+/** 语言偏好（system | zh-CN | en | ja | ko | ru） */
 export const getLangPref = () => pref;
 /** 给 Intl / toLocaleString 用的语言标签 */
 export const locale = () => current;
@@ -152,7 +158,7 @@ const warned = new Set();
 
 function resolve(key) {
   let v = lookup(DICTS[current], key);
-  if (typeof v !== "string" && !isPlural(v)) v = lookup(DICTS[FALLBACK], key);
+  if (typeof v !== "string" && !isPlural(v)) v = lookup(DICTS[current === "zh-CN" ? FALLBACK : "en"], key);
   if (typeof v === "string" || isPlural(v)) return v;
   if (!warned.has(key)) {
     warned.add(key);
@@ -202,6 +208,6 @@ export const fmtList = (items, type = "conjunction") => {
   try {
     return new Intl.ListFormat(current, { type }).format(items.map(String));
   } catch {
-    return items.join(current === "en" ? ", " : "、"); // i18n-ignore
+    return items.join(current === "zh-CN" || current === "ja" ? "、" : ", "); // i18n-ignore
   }
 };

@@ -1,0 +1,20 @@
+export default {
+  "main": "主导航",
+  "bots": "机器人",
+  "features": "功能",
+  "data": "数据",
+  "models": "模型",
+  "pricing": "价格",
+  "docs": "文档",
+  "skip": "跳到主要内容",
+  "home": "AnyModelBot 首页",
+  "menu": "菜单",
+  "close": "关闭",
+  "github": "GitHub",
+  "lang": "中 / EN",
+  "langLabel": "切换语言",
+  "theme": "外观",
+  "themeLight": "浅色",
+  "themeDark": "深色",
+  "themeSystem": "跟随系统"
+};

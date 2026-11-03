@@ -1,21 +1,23 @@
 /**
  * Modelflare：本程序唯一的模型来源。
- * - 两条线路（文档《Which endpoint to call》）：国际 modelflare.dev、中国大陆优化 origin.modelflare.dev；
+ * - 三个 API 域名：modelflare.dev、origin.modelflare.dev、cf.modelflare.dev；
  *   飞行中的 POST 不跨主机重定向，所以线路由用户事先选定，不自动切换。
  * - 连接前用 GET {base}/models + Bearer 校验密钥；错误按状态码给出可操作的说明。
  */
 import { t } from "./i18n/index.js";
 
-export type ModelflareLine = "auto" | "global" | "cn";
+// 保留历史配置值；auto/global 都指向主域名，cn 指向 origin，不代表地域或质量差异。
+export type ModelflareLine = "auto" | "global" | "cn" | "cf";
 
 export const MODELFLARE_LINES: Record<Exclude<ModelflareLine, "auto">, string> = {
   global: "https://modelflare.dev/v1",
   cn: "https://origin.modelflare.dev/v1",
+  cf: "https://cf.modelflare.dev/v1",
 };
 
 export const MODELFLARE_PROVIDER = "modelflare";
 
-/** Modelflare 官网：登录、注册、充值、控制台都在这里（国内线路只开放 /v1，不提供网页） */
+/** Modelflare 官网：登录、注册、充值、控制台都在这里（origin 域名只开放 /v1，不提供网页） */
 export const MODELFLARE_WEB = "https://modelflare.dev";
 
 /**
@@ -83,14 +85,15 @@ export function routeModel(model: string, providerId: string): string {
 }
 
 export function normalizeLine(v: unknown): ModelflareLine {
-  return v === "global" || v === "cn" ? v : "auto";
+  if (v === "origin") return "cn";
+  return v === "global" || v === "cn" || v === "cf" ? v : "auto";
 }
 
 /** 线路 → 基址。AMB_MODELFLARE_BASE_URL 仅供开发/测试（指向本地 mock），不经界面设置。 */
 export function modelflareBaseUrl(line: ModelflareLine, env: NodeJS.ProcessEnv = process.env): string {
   const override = env.AMB_MODELFLARE_BASE_URL?.trim();
   if (override) return override.replace(/\/+$/, "");
-  return line === "cn" ? MODELFLARE_LINES.cn : MODELFLARE_LINES.global;
+  return MODELFLARE_LINES[line === "auto" ? "global" : line];
 }
 
 /**
@@ -115,7 +118,7 @@ export type VerifyResult =
        */
       chatModels: string[];
     }
-  | { ok: false; code: VerifyFailure; status?: number; message: string; suggestLine?: ModelflareLine };
+  | { ok: false; code: VerifyFailure; status?: number; message: string };
 
 /** 校验密钥：只发一次 GET /models，不重试、不换线路。 */
 export async function verifyModelflareKey(
@@ -136,7 +139,6 @@ export async function verifyModelflareKey(
       ok: false,
       code: "network",
       message: t("modelflare.unreachable", { host, reason: (e as Error).name === "TimeoutError" ? t("modelflare.timeout") : (e as Error).message }),
-      ...(opts.line !== "cn" ? { suggestLine: "cn" as const } : {}),
     };
   }
   if (res.status === 401) return { ok: false, code: "invalid_key", status: 401, message: t("modelflare.invalid_key") };
@@ -185,7 +187,7 @@ export interface KeyBalance {
 
 /**
  * 只有 API Key（没有登录账户）时的余额：GET {base}/dashboard/billing/credit_grants。
- * 返回的是整个账户钱包，不是这一把 Key 的额度；国内线路也开放这个 /v1 路径。
+ * 返回的是整个账户钱包，不是这一把 Key 的额度；origin 域名也开放这个 /v1 路径。
  */
 export async function fetchKeyBalance(baseUrl: string, apiKey: string, fetchImpl: typeof fetch = fetch): Promise<KeyBalance> {
   const res = await fetchImpl(`${baseUrl}/dashboard/billing/credit_grants`, {

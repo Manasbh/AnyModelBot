@@ -31,13 +31,13 @@ const vendors = pricing.vendors.filter((vd) => vendorLogo(vd));
 const rows = pricing.rows.filter((r) => vendorLogo(r.vendor));
 const models = rows.map((r) => r.model);
 const byVendor = [...new Set(rows.map((r) => r.vendor))].map((vd) => ({ vendor: vd, rows: rows.filter((r) => r.vendor === vd) }));
-const prices = Object.fromEntries(rows.map((r) => [r.model, [fmtPrice(r.input), fmtPrice(r.output)]]));
+const prices = Object.fromEntries(rows.map((r) => [r.model, [fmtPrice(r.input, lang), fmtPrice(r.output, lang)]]));
 const vendorOf: Record<string, string> = Object.fromEntries(rows.map((r) => [r.model, r.vendor]));
 // 选择器胶囊里的标志随模型换（scripts/sections.ts 的 setModel 读这张表）：模型 → 图标表的键
 const logos = Object.fromEntries(rows.map((r) => [r.model, vendorLogo(r.vendor) ?? ""]));
 const scen = ["copy", "code", "research"] as const;
 const first = rowOf(demoModels.copy)!;
-const demoData = { prices, logos, scenarios: Object.fromEntries(scen.map((s) => [s, { model: demoModels[s], q: t.models.question[s], a: t.models.answer[s] }])), priceLine: t.models.priceLine };
+const demoData = { prices, logos, scenarios: Object.fromEntries(scen.map((s) => [s, { model: demoModels[s], q: t.home.models.question[s], a: t.home.models.answer[s] }])), priceLine: t.home.models.priceLine };
 // 外环：演示里会用到的模型 + 主推模型（都得在价格表里，点了才能切过去）；内环：前 8 家厂商
 const ring = [...new Set([...Object.values(demoModels), ...pricing.config.featuredModels])].filter((m) => rowOf(m)).slice(0, 9);
 const inner = vendors.slice(0, 8);
@@ -46,7 +46,7 @@ const inner = vendors.slice(0, 8);
   <VendorSprite vendors={vendors} color />
   <div class="container">
     {/* 章节头两侧的厂商图标砖 + 标题下的"1 个 Key → 所有模型"胶囊：把两句标题各落成一样实物，标题区不再空着 */}
-    <SectionHead n={4} label={t.kicker.models} id="models-h2" title={t.models.h2} dim={t.models.h2dim} lead={t.models.lead} host="purple" center>
+    <SectionHead n={4} label={t.home.kicker.models} id="models-h2" title={t.home.models.h2} dim={t.home.models.h2dim} lead={t.home.models.lead} host="purple" center>
       <ModelsHeadArt lang={lang} />
     </SectionHead>
 
@@ -65,8 +65,8 @@ const inner = vendors.slice(0, 8);
 
       <div class="model-demo" data-model-demo>
         <script type="application/json" data-model-demo-data set:html={JSON.stringify(demoData)} />
-        <div class="seg" role="tablist" aria-label={t.models.pickerTitle}>
-          {scen.map((s, i) => <button type="button" role="tab" class="chip" aria-selected={i === 0 ? "true" : "false"} data-scenario={s}>{t.models.scenarios[s]}</button>)}
+        <div class="seg" role="tablist" aria-label={t.home.models.pickerTitle}>
+          {scen.map((s, i) => <button type="button" role="tab" class="chip" aria-selected={i === 0 ? "true" : "false"} data-scenario={s}>{t.home.models.scenarios[s]}</button>)}
         </div>
         <div class="model-demo__chat">
           <div class="model-demo__top">
@@ -75,8 +75,8 @@ const inner = vendors.slice(0, 8);
               <span data-model-name>{first.model}</span><Icon name="chevron" />
             </button>
             <div class="model-list" id="model-list" hidden data-model-list>
-              <label class="model-list__search"><Icon name="search" size={16} /><input type="search" placeholder={t.models.pickerSearch} aria-label={t.models.pickerSearch} data-model-search /></label>
-              <ul role="listbox" aria-label={t.models.pickerTitle} tabindex="-1" data-model-options>
+              <label class="model-list__search"><Icon name="search" size={16} /><input type="search" placeholder={t.home.models.pickerSearch} aria-label={t.home.models.pickerSearch} data-model-search /></label>
+              <ul role="listbox" aria-label={t.home.models.pickerTitle} tabindex="-1" data-model-options>
                 {byVendor.map((g) => (
                   <>
                     <li role="presentation" class="model-list__group"><VendorLogo vendor={g.vendor} size={13} />{g.vendor}</li>
@@ -86,11 +86,11 @@ const inner = vendors.slice(0, 8);
               </ul>
             </div>
           </div>
-          <p class="msg msg--user" data-q>{t.models.question.copy}</p>
-          <div class="msg msg--bot"><BotFace char="purple" size={36} /><p data-a aria-live="polite">{t.models.answer.copy}</p></div>
+          <p class="msg msg--user" data-q>{t.home.models.question.copy}</p>
+          <div class="msg msg--bot"><BotFace char="purple" size={36} /><p data-a aria-live="polite">{t.home.models.answer.copy}</p></div>
         </div>
-        <p class="small model-demo__price tnum" data-price-line>{fmt(t.models.priceLine, { model: first.model, input: fmtPrice(first.input), output: fmtPrice(first.output) })}</p>
-        <p class="small muted">{t.models.example}</p>
+        <p class="small model-demo__price tnum" data-price-line>{fmt(t.home.models.priceLine, { model: first.model, input: fmtPrice(first.input, lang), output: fmtPrice(first.output, lang) })}</p>
+        <p class="small muted">{t.home.models.example}</p>
       </div>
     </div>
 
@@ -99,9 +99,9 @@ const inner = vendors.slice(0, 8);
         <div class="marquee__track">{[...models, ...models].map((x) => <span class="marquee__item mono"><VendorLogo vendor={vendorOf[x]} size={15} />{x}</span>)}</div>
       </div>
     </div>
-    <p class="sr-only">{lang === "en"
-      ? `${t.models.marqueeLabel}: ${vendors.join(", ")}; ${models.join(", ")}`
-      : `${t.models.marqueeLabel}：${vendors.join("、")}；${models.join("、")}`}</p>
+    <p class="sr-only">{lang !== "zh" && lang !== "ja"
+      ? `${t.home.models.marqueeLabel}: ${vendors.join(", ")}; ${models.join(", ")}`
+      : `${t.home.models.marqueeLabel}：${vendors.join("、")}；${models.join("、")}`}</p>
 
     <div class="models__pricing">
       <div class="models__price-head">
@@ -109,7 +109,7 @@ const inner = vendors.slice(0, 8);
         <p class="small muted">{pricing.stale ? fmt(p.stale, v) : fmt(p.source, v)}</p>
       </div>
       <PriceCards lang={lang} compact />
-      <p class="models__cta"><a class="btn btn--primary" href={MF.home} target="_blank" rel="noopener" data-track="mf_key_click" data-track-location="models">{t.models.cta}</a></p>
+      <p class="models__cta"><a class="btn btn--primary" href={MF.home} target="_blank" rel="noopener" data-track="mf_key_click" data-track-location="models">{t.home.models.cta}</a></p>
     </div>
   </div>
 </section>

@@ -20,4 +20,6 @@ import * as delivery from "./delivery.js";
 import * as cli from "./cli.js";
 import * as rules from "./rules.js";
 
-export const catalogs = { web, desktop, app, diag, modelflare, account, magpie, channel, runtime, agent, approvals, media, cu, pwsh, activity, tasks, access, delivery, cli, rules };
+import * as connections from "./connections.js";
+
+export const catalogs = { connections, web, desktop, app, diag, modelflare, account, magpie, channel, runtime, agent, approvals, media, cu, pwsh, activity, tasks, access, delivery, cli, rules };

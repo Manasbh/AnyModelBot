@@ -26,7 +26,7 @@ export function homeJsonLd(lang: Lang) {
       "@context": "https://schema.org",
       "@type": "FAQPage",
       inLanguage: t.meta.lang,
-      mainEntity: t.faq.items.map((it) => ({ "@type": "Question", name: it.q, acceptedAnswer: { "@type": "Answer", text: fmt(it.a, v) } })),
+      mainEntity: t.home.faq.items.map((it) => ({ "@type": "Question", name: it.q, acceptedAnswer: { "@type": "Answer", text: fmt(it.a, v) } })),
     },
   ];
 }

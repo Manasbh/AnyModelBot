@@ -10,7 +10,7 @@
 import crypto from "node:crypto";
 import QRCode from "qrcode";
 import { logger } from "../log.js";
-import { AccountStore, ConnectionError, capped, clampLimit, wait, type ConnectedAccount, type FeishuBrand, type FeishuUserAuth } from "./accounts.js";
+import { AccountStore, ConnectionError, LocalizedConnectionError, capped, clampLimit, wait, type ConnectedAccount, type FeishuBrand, type FeishuUserAuth } from "./accounts.js";
 
 const log = logger("agent.feishu-account");
 
@@ -107,7 +107,8 @@ export interface FeishuFlowView {
   error: string;
   label: string;
 }
-interface Flow extends FeishuFlowView {
+interface Flow extends Omit<FeishuFlowView, "error"> {
+  failure?: LocalizedConnectionError;
   abort: AbortController;
 }
 
@@ -322,12 +323,12 @@ export class FeishuAccounts {
 
   private launch(state: FeishuFlowState, run: (flow: Flow) => Promise<void>): FeishuFlowView {
     for (const [k, f] of this.flows) if (f.state === "done" || f.state === "failed") this.flows.delete(k);
-    const flow: Flow = { id: crypto.randomBytes(12).toString("hex"), state, url: "", qr: "", error: "", label: "", abort: new AbortController() };
+    const flow: Flow = { id: crypto.randomBytes(12).toString("hex"), state, url: "", qr: "", label: "", abort: new AbortController() };
     this.flows.set(flow.id, flow);
     run(flow).catch((e) => {
       if (flow.abort.signal.aborted) return;
       flow.state = "failed";
-      flow.error = e instanceof ConnectionError ? e.message : "Feishu didn't complete the authorization. Try again.";
+      flow.failure = e instanceof LocalizedConnectionError ? e : new LocalizedConnectionError("connections.feishuAuthIncomplete");
       log.warn("feishu flow failed", { reason: e instanceof Error ? e.message : String(e) });
     });
     return this.view(flow);
@@ -344,7 +345,7 @@ export class FeishuAccounts {
   }
 
   private view(f: Flow): FeishuFlowView {
-    return { id: f.id, state: f.state, url: f.url, qr: f.qr, error: f.error, label: f.label };
+    return { id: f.id, state: f.state, url: f.url, qr: f.qr, error: f.failure?.userMessage() ?? "", label: f.label };
   }
 
   private async showUrl(flow: Flow, state: FeishuFlowState, url: string): Promise<void> {
@@ -388,7 +389,7 @@ export class FeishuAccounts {
   private async createApp(flow: Flow, signal: AbortSignal): Promise<{ appId: string; appSecret: string; brand: FeishuBrand }> {
     const begin = await this.form(`${HOSTS.feishu.accounts}/oauth/v1/app/registration`, { action: "begin", archetype: "PersonalAgent", auth_method: "client_secret", request_user_info: "open_id tenant_brand" }, signal);
     const device = String(begin.data?.device_code ?? "");
-    if (!device) throw new ConnectionError("Feishu refused to start. Try again, or use an app you already have.");
+    if (!device) throw new LocalizedConnectionError("connections.feishuStartRefused");
     // 官方 CLI 也是自己拼这个页面地址，不用接口回的 verification_uri
     await this.showUrl(flow, "create-app", begin.data.user_code ? `${HOSTS.feishu.open}/page/cli?user_code=${encodeURIComponent(String(begin.data.user_code))}&from=cli` : String(begin.data.verification_uri_complete ?? begin.data.verification_uri ?? ""));
     let brand: FeishuBrand = "feishu";
@@ -421,12 +422,12 @@ export class FeishuAccounts {
           interval = Math.min(interval + 5, MAX_POLL_S);
           break;
         case "access_denied":
-          throw new ConnectionError("You declined in Feishu.");
+          throw new LocalizedConnectionError("connections.feishuDeclined");
         default:
-          throw new ConnectionError("The QR code expired. Try again.");
+          throw new LocalizedConnectionError("connections.feishuQrExpired");
       }
     }
-    throw new ConnectionError("The QR code expired. Try again.");
+    throw new LocalizedConnectionError("connections.feishuQrExpired");
   }
 
   /** 第 2 步：设备授权，用户确认后拿到用户身份的令牌 */
@@ -435,7 +436,7 @@ export class FeishuAccounts {
     const begin = await this.form(`${HOSTS[app.brand].accounts}/oauth/v1/device_authorization`, { client_id: app.appId, scope: FEISHU_SCOPES }, signal, { authorization: `Basic ${basic}` });
     if (!begin.data?.device_code) {
       log.warn("feishu device authorization refused", { status: begin.status, error: String(begin.data?.error ?? begin.data?.code ?? "") });
-      throw new ConnectionError("Feishu refused this app. Check the App ID and Secret, and that the app has the message permissions.");
+      throw new LocalizedConnectionError("connections.feishuAppRefused");
     }
     await this.showUrl(flow, "authorize", String(begin.data.verification_uri_complete || begin.data.verification_uri));
     let interval = Number(begin.data.interval) || 5;
@@ -451,7 +452,7 @@ export class FeishuAccounts {
         continue;
       }
       if (data?.access_token) {
-        if (!data.refresh_token) throw new ConnectionError("Feishu didn't give a long-lived sign-in. Try again.");
+        if (!data.refresh_token) throw new LocalizedConnectionError("connections.feishuNoRefreshToken");
         return { accessToken: data.access_token, refreshToken: data.refresh_token, expiresAt: Date.now() + (Number(data.expires_in) || 7200) * 1000 };
       }
       switch (data?.error) {
@@ -461,15 +462,15 @@ export class FeishuAccounts {
           interval = Math.min(interval + 5, MAX_POLL_S);
           break;
         case "access_denied":
-          throw new ConnectionError("You declined in Feishu.");
+          throw new LocalizedConnectionError("connections.feishuDeclined");
         case "expired_token":
         case "invalid_grant":
-          throw new ConnectionError("The authorization expired. Try again.");
+          throw new LocalizedConnectionError("connections.feishuAuthExpired");
         default:
           log.warn("feishu token poll refused", { code: String(data?.code ?? ""), error: String(data?.error ?? "") });
-          throw new ConnectionError("Feishu didn't complete the authorization. Try again.");
+          throw new LocalizedConnectionError("connections.feishuAuthIncomplete");
       }
     }
-    throw new ConnectionError("The authorization expired. Try again.");
+    throw new LocalizedConnectionError("connections.feishuAuthExpired");
   }
 }

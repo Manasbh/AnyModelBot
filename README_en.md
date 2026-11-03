@@ -14,10 +14,13 @@
 <p align="center"><b>Your own AI bot, on your own computer. Any model, pay per use.</b></p>
 
 <p align="center">
-  <a href="https://anymodel.bot/">Website</a> |
+  <a href="https://anymodel.bot/en/">Website</a> |
   <a href="https://github.com/modelflare-ai/AnyModelBot/releases">Download</a> |
   <a href="./README.md">简体中文</a> |
   English |
+  <a href="./README_ja.md">日本語</a> |
+  <a href="./README_ko.md">한국어</a> |
+  <a href="./README_ru.md">Русский</a> |
   <a href="https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme">Modelflare</a> |
   <a href="https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme">Pricing</a> |
   <a href="./docs/development_en.md">Development</a> |
@@ -134,7 +137,7 @@ Requirements for building from source: Node.js 22.13+ and Go 1.26.8+. To build t
 
 # 🌠 Screenshots
 
-These screenshots show the Simplified Chinese interface. The app also runs in English; switch in Settings.
+These screenshots show the Simplified Chinese interface. The app also supports English, Japanese, Korean and Russian; switch in Settings.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/chat-dark.webp">
@@ -228,7 +231,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 - **Sign in once** and your Modelflare models appear automatically. Prefer a key? Paste one.
 - **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, each with context length, capability tags and a reference price.
 - **Switch per conversation** or set a default per bot. Background chores such as tidying memory and context hand-offs can use a separate model of their own.
-- **Two routes.** Choose the international route or the one optimized for mainland China; AnyModelBot never switches between them on its own.
+- **Three API domains.** Choose `modelflare.dev`, `origin.modelflare.dev` or `cf.modelflare.dev` and compare their response times in Settings; AnyModelBot never switches automatically.
 - **Pay per use.** Wallet balance, low-balance reminders, daily usage and per-bot budget keys are built in. AnyModelBot has no subscription.
 
 <p align="center">
@@ -262,6 +265,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 - **It answers to you.** By default a bot replies only to its owner (the WeChat account that scanned the QR code; on Feishu, Telegram, Slack and Discord, the first person to message it after you connect it, which is you) and the people you allow. Anyone else gets a one-line notice and no model is called; you let them in from the info panel, or by replying `yes <code>` in chat.
 - **Replies are not lost.** A reply is saved locally before it is sent; network errors are retried, sending resumes after a restart, and when WeChat's 24-hour window has closed the reply waits and arrives with your next message.
 - **Telemetry kept off.** Telemetry in the bundled computer-use driver is switched off, and the built-in gateway runs with auto-update disabled.
+- **You decide when to update.** The desktop app asks GitHub for the latest version number every 6 hours. The request carries only your current version. When a new version is out, the sidebar tells you, and you download and install it yourself.
 - **Light, dark or follow the system.** Six bot characters, and their eyes follow your pointer.
 - **Tray and autostart.** Close the window to hide to the tray; autostart is available on macOS and Windows.
 
@@ -331,7 +335,7 @@ Directions we are exploring. They are not promises, and the order is not a sched
 - [x] **Scheduled tasks**: let a bot run work on a timer (shipped as rules, above).
 - [x] **In-app group chats**: create a group in the app and chat with several bots at once.
 - [ ] **Group chats on chat channels**: chat channels handle one-to-one chats today.
-- [x] **English interface**: the app runs in English and Simplified Chinese; switch in Settings.
+- [x] **Multilingual interface**: the app supports Simplified Chinese, English, Japanese, Korean and Russian; switch in Settings.
 - [ ] **macOS computer use**: verify direct mode on more real machines and move it out of Beta.
 - [ ] **Email, calendar and event triggers**: connect email and calendar accounts, and let rules run the moment something happens (a message from a certain person, a meeting about to start), not only on a timer. Runs triggered by outside content get lower permissions, so text written by someone else can't give your bot orders.
 - [ ] **Always-on hosting, backup and migration**: rules don't run while your computer is off. Make it possible for anyone to deploy to their own server in one click, move their chats, memory and accounts over, and back up and restore.
@@ -371,7 +375,7 @@ Read the full [contributing guide](./CONTRIBUTING_en.md). To report a security p
 - [openclaw-weixin](https://github.com/Tencent/openclaw-weixin): the WeChat channel we ported from (MIT).
 - [DS Bot](https://github.com/Fei2411/DS-Bot): the design source for our memory and context steward (Apache-2.0).
 
-Full licenses and notices: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+Full licenses and notices: [THIRD_PARTY_NOTICES_en.md](./THIRD_PARTY_NOTICES_en.md).
 
 # 💬 Community
 
@@ -398,7 +402,7 @@ Full licenses and notices: [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
 # 📜 License
 
-AnyModelBot is released under the [MIT License](./LICENSE). Bundled third-party software keeps its own licenses; see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) and the [`LICENSES/`](./LICENSES) folder.
+AnyModelBot is released under the [MIT License](./LICENSE). Bundled third-party software keeps its own licenses; see [THIRD_PARTY_NOTICES_en.md](./THIRD_PARTY_NOTICES_en.md) and the [`LICENSES/`](./LICENSES) folder.
 
 <!-- link & badge references -->
 [release-shield]: https://img.shields.io/github/v/release/modelflare-ai/AnyModelBot?include_prereleases&label=release&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB4PSIzIiB5PSI5IiB3aWR0aD0iOTQiIGhlaWdodD0iODIiIHJ4PSIzNiIgZmlsbD0iI2Q3ZmYwMCIvPjxyZWN0IHg9IjI5IiB5PSIzNiIgd2lkdGg9IjEzIiBoZWlnaHQ9IjI4IiByeD0iNi41IiBmaWxsPSIjMTYxYTAwIi8+PHJlY3QgeD0iNTgiIHk9IjM2IiB3aWR0aD0iMTMiIGhlaWdodD0iMjgiIHJ4PSI2LjUiIGZpbGw9IiMxNjFhMDAiLz48L3N2Zz4=&style=flat-square&labelColor=161a00&color=d7ff00

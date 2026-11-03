@@ -7,8 +7,8 @@ interface Props { lang: Lang }
 const { lang } = Astro.props;
 const t = dict(lang);
 const s = t.security;
-const n = t.flow.nodes;
-const cmp = t.flow.compare;
+const n = t.home.flow.nodes;
+const cmp = t.home.flow.compare;
 const stays = (["chats", "memory", "workspace", "key", "console"] as const).map((k) => n[k]);
 ---
 <Base lang={lang} path="/security" title={s.title} description={s.description}>
@@ -18,7 +18,7 @@ const stays = (["chats", "memory", "workspace", "key", "console"] as const).map(
     <ul class="ticks" role="list">{stays.map((x) => <li><b>{x.label}</b> — {x.body}</li>)}</ul>
     <h2>{s.leaves}</h2>
     <ul class="ticks" role="list">{s.leavesItems.map((x) => <li>{x}</li>)}</ul>
-    <p class="small page__aside"><a href={t.flow.retentionUrl} target="_blank" rel="noopener">{t.flow.retentionLink}</a></p>
+    <p class="small page__aside"><a href={t.home.flow.retentionUrl} target="_blank" rel="noopener">{t.home.flow.retentionLink}</a></p>
     <h2>{cmp.caption}</h2>
     <div class="table-wrap compare">
       <table class="table">
@@ -28,7 +28,7 @@ const stays = (["chats", "memory", "workspace", "key", "console"] as const).map(
     </div>
     <p class="small muted page__aside">{cmp.note}</p>
     <h2>{s.guardsTitle}</h2>
-    <ol class="ticks" role="list">{t.oss.facts.map((f) => <li>{f.text} <code class="small muted">{f.path}</code></li>)}</ol>
+    <ol class="ticks" role="list">{t.home.oss.facts.map((f) => <li>{f.text} <code class="small muted">{f.path}</code></li>)}</ol>
     <h2>{s.limitsTitle}</h2>
     <ul class="ticks" role="list">{s.limits.map((x) => <li>{x}</li>)}</ul>
     <p class="page__cta">{fmt(s.report, { email: SECURITY_EMAIL })}</p>

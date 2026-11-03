@@ -4,6 +4,25 @@
   /* —— 下载 ——
      版式和首页同一套：居中的页头 + 一个主操作，下面是等宽的卡片。层次靠留白和细线，不靠色块、边条；品牌色只给页头的主按钮和“你的系统”。
      结构见 views/DownloadView.astro。 */
+  /* 页头和平台卡落在一块圆角大卡片里，背景和首页 Hero 同一套（hero-scene.css）。四周留 8px，顶边压到导航下面。
+     地平线放在 .dl-stage 里，位置跟着平台卡走，不用算页头有多高：--stage-h 取 100%，公共规则里的 top 就只剩 --hz-y（顶沿比卡片顶边高多少）。
+     叠放次序：背景各层 → 磨砂颗粒（z 1）→ 页头、卡片（z 2）。全部静止。 */
+  .dl-page { padding-top: 0; }
+  .dl-top {
+    --dl-inset: 8px; --stage-h: 100%; --hz-y: -24px; --hz-w: max(2600px, 190%);
+    position: relative; isolation: isolate; overflow: clip;
+    margin: calc(var(--dl-inset) - var(--nav-h)) var(--dl-inset) 0;
+    padding: calc(var(--nav-h) - var(--dl-inset) + var(--hero-top)) 0 var(--stack-head);
+    border-radius: var(--r-feature); background: var(--hero-panel-bg); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .dl-top::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: var(--hero-grain); }
+  /* 大卡片比页面窄一圈，内容宽度补回来，和下面几节的左右边对齐 */
+  .dl-top > .container { width: min(var(--container), 100% + 2 * var(--dl-inset) - 2 * var(--gutter)); }
+  .dl-stage { position: relative; }
+  .dl-hero, .dl-plats, .dl-note { position: relative; z-index: 2; }
+  /* 浅色的闪光不动，会闪的那些（.tw）压到 40%，浓度接近首页某一刻看到的样子 */
+  [data-theme="light"] .dl-top .hero__glints .tw { opacity: calc(var(--o) * .4); }
+
   .dl-hero { display: grid; justify-items: center; margin-bottom: var(--stack-head); text-align: center; }
   .dl-hero__mark { margin-bottom: var(--space-6); }
   .dl-hero .lead { max-width: 34em; margin-top: var(--space-4); }
@@ -65,10 +84,91 @@
     .dl-ways { grid-template-columns: minmax(0, 1fr); }
   }
   @media (max-width: 767px) {
+    .dl-top { --dl-inset: 6px; --hz-w: 1500px; border-radius: var(--r-card); }
     .dl-sums { padding-inline: var(--space-4); }
     .dl-sums__row { grid-template-columns: minmax(0, 1fr) auto; }
     .dl-sums__hash { grid-column: 1 / -1; grid-row: 2; }
     .dl-sums__row .copy-btn { grid-column: 2; grid-row: 1; }
+  }
+
+  /* —— 合作伙伴 ——
+     页头、分节、图标底片沿用下载页（.dl-hero、.dl-sec、.dl-ico、.dl-sub）。结构见 views/PartnersView.astro。
+     品牌色只给主按钮和选中的类型；机器人只在申请表上方探出头，除了看指针没有别的动效。 */
+  .pt-hero .eyebrow { margin-bottom: var(--space-3); }
+  .pt-hero h1 { max-width: 15em; text-wrap: balance; }
+  .pt-hero__cta { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-8); }
+
+  .pt-who { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .pt-who__card { display: grid; align-content: start; }
+  .pt-who__card .dl-ico { margin-bottom: var(--space-6); }
+  .pt-who__card .dl-sub { margin-top: var(--space-2); }
+
+  .pt-why { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--grid-gap); align-items: start; }
+  .pt-why > .subhead { margin-bottom: 0; }
+  .pt-why__item { padding-block: var(--space-8); border-top: 1px solid var(--line); }
+  .pt-why__item:first-child { padding-top: 0; border-top: 0; }
+  .pt-why__item:last-child { padding-bottom: 0; }
+  .pt-why__item .dl-sub { margin-top: var(--space-2); }
+  .pt-why__item a, .pt-form__foot a { color: inherit; text-decoration: underline 1px var(--line-strong); text-underline-offset: 4px; }
+  .pt-why__item a:hover, .pt-form__foot a:hover { color: var(--text); text-decoration-color: currentColor; }
+
+  .pt-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }
+  .pt-steps > li { display: grid; align-content: start; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--line-strong); }
+  .pt-steps__no { margin-bottom: var(--space-4); font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-2); }
+
+  /* 申请合作：左边说明和邮箱，右边表单 */
+  .pt-apply { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--grid-gap); align-items: start; margin-top: var(--stack-block); }
+  .pt-apply__intro { display: grid; gap: var(--space-4); padding-top: 40px; }
+  .pt-apply__mail { display: grid; gap: var(--space-2); margin-top: var(--space-4); padding-top: var(--space-6); border-top: 1px solid var(--line); }
+  .pt-mail { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-body-sm); overflow-wrap: anywhere; }
+  .pt-mail a { color: var(--text); text-decoration: underline 1px var(--line-strong); text-underline-offset: 4px; }
+  .pt-mail a:hover { text-decoration-color: currentColor; }
+  .pt-mail .copy-btn { padding: 0 8px; }
+  /* 六个机器人从表单上沿探出半个头：盒子只露出上半部分，padding-top 留给头顶的配饰 */
+  .pt-apply__bots { display: flex; justify-content: center; align-items: flex-start; gap: clamp(4px, 1.6vw, 20px); height: 40px; padding-top: 8px; overflow: hidden; }
+
+  .pt-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--space-4); }
+  .pt-form[hidden], .pt-panel[hidden] { display: none; }
+  .pt-field { display: grid; align-content: start; gap: var(--space-2); min-width: 0; margin: 0; padding: 0; border: 0; }
+  :is(.pt-field--wide, .pt-failed, .pt-form__foot) { grid-column: 1 / -1; }
+  .pt-label { display: flex; justify-content: space-between; gap: var(--space-3); width: 100%; padding: 0; font-size: var(--fs-sm); font-weight: 500; line-height: 1.5; }
+  fieldset > .pt-label { margin-bottom: var(--space-2); }
+  .pt-opt { flex: none; color: var(--text-2); font-size: var(--fs-xs); font-weight: 400; }
+  .pt-input { width: 100%; height: 44px; padding: 0 12px; border: 0; border-radius: var(--r-field); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--line); color: var(--text); font-size: var(--fs-body); }
+  .pt-input::placeholder { color: var(--text-2); opacity: .75; }
+  .pt-input--area { display: block; height: auto; min-height: 112px; padding-block: 10px; line-height: 1.6; resize: vertical; }
+  .pt-input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent-fg), 0 0 0 4px var(--accent-wash); }
+  [data-invalid] > .pt-input { box-shadow: inset 0 0 0 1.5px var(--danger); }
+  .pt-err, .pt-failed { color: var(--danger); font-size: var(--fs-sm); line-height: 1.5; }
+  .pt-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .pt-chip { position: relative; display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: var(--r-btn); color: var(--text-2); font-size: var(--fs-sm); box-shadow: inset 0 0 0 1px var(--line); transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast); }
+  .pt-chip:hover { color: var(--text); background: var(--hover); }
+  .pt-chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .pt-chip:has(input:checked) { color: var(--text); font-weight: 500; background: var(--accent-wash); box-shadow: inset 0 0 0 1.5px var(--accent-fg); }
+  .pt-chip:has(input:focus-visible) { box-shadow: inset 0 0 0 1.5px var(--accent-fg), 0 0 0 4px var(--accent-wash); }
+  [data-invalid] .pt-chip:not(:has(input:checked)) { box-shadow: inset 0 0 0 1px var(--danger); }
+  .pt-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .pt-form__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
+  .pt-form__foot .small { flex: 1 1 16em; }
+
+  /* 提交后的状态：已收到 / 还差一步（发邮件） */
+  .pt-panel { display: grid; justify-items: start; gap: var(--space-4); }
+  .pt-panel .h3:focus { outline: none; }
+  .pt-panel .code { width: 100%; }
+  .pt-panel .code code { font-size: var(--fs-sm); }
+  .pt-panel__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
+
+  @media (max-width: 1023px) {
+    .pt-who, .pt-steps, .pt-why, .pt-apply { grid-template-columns: minmax(0, 1fr); }
+    .pt-why { gap: var(--space-8); }
+    .pt-steps { gap: var(--space-6); }
+    .pt-apply__intro { padding-top: 0; }
+  }
+  @media (max-width: 767px) {
+    .pt-form { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+    .pt-apply__bots { height: 32px; }
+    .pt-apply__bots .bot-face { --s: 44px !important; }
+    .pt-form__foot .btn, .pt-panel__actions, .pt-panel__actions .btn { width: 100%; }
   }
 
   /* —— 安全说明：对照表里 AnyModelBot 一列用正文色，最后两行（出网、可审计）加重 —— */

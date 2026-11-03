@@ -262,11 +262,7 @@ export default {
       keys: "invite referral reward",
       copy: "Copy invite link",
     },
-    line: {
-      name: "Route",
-      sub: "The optimized route gives steadier access from mainland China. Applies to new requests",
-      keys: "route mainland china global origin network",
-    },
+    line: {"name": "API domain", "sub": "Choose a domain or compare response times. Changes apply to new requests", "keys": "domain speed latency modelflare origin cf network route"},
     defaultModel: {
       name: "Default model",
       sub: "Used when a bot doesn't set its own",
@@ -374,7 +370,11 @@ export default {
     },
     version: {
       name: "Version",
-      keys: "version",
+      keys: "version update upgrade",
+      available: "Version {version} is available",
+      latest: "You're on the latest version",
+      download: "Download ↗",
+      notes: "What's new ↗",
     },
     licenses: {
       name: "Licenses & third-party notices",

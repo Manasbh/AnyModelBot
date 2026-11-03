@@ -23,7 +23,6 @@ export interface BannerItem {
 
 const DAY = 864e5;
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
-const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** 部署占位符（{VERSION} 之类）还没替换 */
 export const isPlaceholder = (s: string) => /\{[A-Z][A-Z0-9_]*\}/.test(s);
@@ -39,7 +38,7 @@ export function shortDate(s: string, lang: Lang): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
   if (!m) return s;
   const mo = Number(m[2]), d = Number(m[3]);
-  return lang === "zh" ? `${mo} 月 ${d} 日` : `${MON[mo - 1]} ${d}`;
+  return lang === "zh" ? `${mo} 月 ${d} 日` : new Intl.DateTimeFormat(lang, { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(2026, mo - 1, d)));
 }
 
 function action(l: BannerLink, lang: Lang): BannerAction {
@@ -48,7 +47,7 @@ function action(l: BannerLink, lang: Lang): BannerAction {
 
 export interface BannerSource {
   announcements: Announcement[];
-  release: { enabled: boolean; days: number; highlights: Record<string, { zh: string; en: string }> };
+  release: { enabled: boolean; days: number; highlights: Record<string, Partial<Record<Lang, string>>> };
   releases: { version: string; publishedAt: string };
   t: Dict["banner"];
   vars: Record<string, string | number>;

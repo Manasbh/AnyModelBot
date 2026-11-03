@@ -1,0 +1,96 @@
+export default {
+  "h2": "내 데이터는",
+  "h2dim": "어디로 가나요?",
+  "lead": "기기에 남는 것과 외부로 전송되는 것을 모두 보여 드립니다.",
+  "local": "내 기기",
+  "localBadge": "로컬",
+  "out": "기기 외부로 전송",
+  "vendors": "모델 제공업체",
+  "channels": "연결한 채널",
+  "onlyRequest": "현재 요청만",
+  "nodes": {
+    "chats": {
+      "label": "대화 기록(SQLite)",
+      "body": "데이터 폴더의 SQLite 데이터베이스에 저장합니다. 봇을 삭제하면 해당 봇의 대화도 삭제됩니다."
+    },
+    "memory": {
+      "label": "장기 기억(Markdown)",
+      "body": "데이터 폴더의 Markdown 파일로 저장하고 변경 내역은 journal.jsonl에 기록합니다. 비밀번호, 키, 신분증 번호는 저장을 거부합니다."
+    },
+    "workspace": {
+      "label": "작업 공간 파일",
+      "body": "봇 전용 작업 공간입니다. 기본적으로 이 안에서만 쓰며 외부 작업은 승인이 필요합니다."
+    },
+    "key": {
+      "label": "모델 키(격리, 끝 4자리만 표시)",
+      "body": "게이트웨이 프로세스와 설정에 보관합니다. 에이전트 프로세스는 실제 키를 볼 수 없고 화면에는 끝 4자리만 표시됩니다."
+    },
+    "console": {
+      "label": "콘솔: 127.0.0.1 + 토큰",
+      "body": "기본적으로 127.0.0.1에서 수신 대기하고 Host 헤더를 검사합니다. Docker 모드에는 접근 토큰이 필요합니다."
+    },
+    "gateway": {
+      "label": "Modelflare 게이트웨이",
+      "sub": "현재 요청 전달 · 로그 보존 설정 가능",
+      "body": "선택한 제공업체로 요청을 전달합니다. 로그 보존은 Modelflare의 ‘데이터 보존’ 문서를 따릅니다."
+    },
+    "vendors": {
+      "label": "OpenAI / Anthropic / Google …",
+      "body": "컴퓨터 사용 중의 화면 내용을 포함해 모델에 보낸 정보를 수신합니다."
+    },
+    "channels": {
+      "label": "채팅 앱",
+      "sub": "Slack · Telegram · Discord",
+      "body": "이 앱에서 주고받는 메시지는 해당 서비스의 서버를 거칩니다."
+    }
+  },
+  "retentionLink": "Modelflare ‘데이터 보존’ 문서",
+  "retentionUrl": "https://docs.modelflare.dev/guides/features/data-retention/?utm_source=anymodelbot&utm_campaign=amb_homepage",
+  "compare": {
+    "caption": "AnyModelBot과 일반적인 클라우드 도우미 비교",
+    "head": [
+      "",
+      "AnyModelBot",
+      "일반적인 클라우드 도우미"
+    ],
+    "rows": [
+      [
+        "실행 위치",
+        "내 컴퓨터 / 내 서버",
+        "제공업체의 클라우드"
+      ],
+      [
+        "대화와 기억 저장 위치",
+        "내 디스크",
+        "제공업체 서버"
+      ],
+      [
+        "모델",
+        "Modelflare의 모든 모델, 언제든 변경",
+        "대개 제공업체 자체 모델로 제한"
+      ],
+      [
+        "과금",
+        "앱 무료, 모델은 Modelflare에서 사용량에 따라 결제",
+        "대개 등급별 월간 구독"
+      ],
+      [
+        "컴퓨터 사용",
+        "내 컴퓨터 조작(제한된 24가지 동작)",
+        "제공업체의 클라우드 컴퓨터 조작"
+      ],
+      [
+        "추론 요청이 기기 외부로 나가나요?",
+        "예, Modelflare를 거쳐 모델 제공업체로 전송",
+        "예"
+      ],
+      [
+        "코드 검토 가능",
+        "MIT",
+        "대부분 불가"
+      ]
+    ],
+    "note": "‘일반적인 클라우드 도우미’는 제공업체가 호스팅하고 월 구독료를 받는 일반적인 방식을 뜻하며 특정 제품을 가리키지 않습니다."
+  },
+  "security": "전체 보안 안내 읽기 →"
+};

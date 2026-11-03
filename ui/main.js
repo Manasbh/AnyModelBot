@@ -20,7 +20,7 @@ import { setThemeMode } from "./lib/theme.js";
 import { failed, toast, useStore } from "./lib/store.js";
 import { prefs, setPrefs } from "./lib/prefs.js";
 import { usePresence } from "./design/motion.js";
-import { t, useLang, adoptServerLang, changeLang, getLangPref, LANG_NAMES } from "./lib/i18n.js";
+import { t, useLang, adoptServerLang, changeLang, getLangPref, LANG_NAMES, LANGS } from "./lib/i18n.js";
 
 // —— 路由：#/chat/<bot> · #/group/<群> · #/new · #/needs · #/settings/<tab>[/<row>] · #/bot/<bot>/settings[/<section>] ——
 function parseHash() {
@@ -94,6 +94,7 @@ function Palette({ commands, onClose }) {
     c.run();
   };
   const onKey = (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setSel((s) => Math.min(hits.length - 1, s + 1));
@@ -133,6 +134,9 @@ function App() {
   const [route, setRoute] = useState(parseHash);
   const [mf, mfErr, reloadMf] = useLoader(() => api("/modelflare"));
   const [status, , reloadStatus] = useLoader(() => api("/status"));
+  // 新版本提示：服务端在后台查 GitHub，这里只读结果（启动约 20 秒后才有第一次结果，所以隔一分钟看一次）
+  const [update, , reloadUpdate] = useLoader(() => api("/update"));
+  useInterval(reloadUpdate, 60_000);
   const [settings, , reloadSettings, setSettings] = useLoader(() => api("/settings"));
   // 语言偏好以服务端配置为准（可能在另一个窗口 / 浏览器里改过）；本机缓存只管首帧
   useEffect(() => {
@@ -312,6 +316,7 @@ function App() {
   // —— 全局快捷键 ——
   useEffect(() => {
     const key = (e) => {
+      if (e.isComposing || e.keyCode === 229) return;
       if (!connected) return;
       if (mod(e) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -355,7 +360,7 @@ function App() {
     { label: t("app.cmd.themeLight"), keys: t("app.cmd.themeLightKeys"), run: () => setThemeMode("light") },
     { label: t("app.cmd.themeDark"), keys: t("app.cmd.themeDarkKeys"), run: () => setThemeMode("dark") },
     // 语言：各语言用自己的文字写名字；当前选中的那一项不列
-    ...[["system", t("common.lang.system")], ["zh-CN", LANG_NAMES["zh-CN"]], ["en", LANG_NAMES.en]]
+    ...[["system", t("common.lang.system")], ...LANGS.map((l) => [l, LANG_NAMES[l]])]
       .filter(([v]) => v !== getLangPref())
       .map(([v, name]) => ({ label: t("app.cmd.lang", { name }), keys: t("app.cmd.langKeys"), run: () => setLang(v) })),
     ...(bots || []).map((b) => ({ label: t("app.cmd.switchBot", { name: b.name }), keys: "bot switch " + b.id, run: () => openChat(b.id) })),
@@ -390,7 +395,7 @@ function App() {
       ? html`<${SettingsSide} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} onBack=${() => openChat()}
           username=${status && status.username} account=${managed ? account : null} />`
       : html`<${Sidebar} bots=${bots} botsError=${botsErr} reloadBots=${reloadBots} selectedId=${bot && bot.id} view=${view === "chat" && bots && !bots.length ? "new" : view}
-          previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null}
+          previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null} update=${update}
           onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
           groups=${groups} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup} />`}
     <${Splitter} class="split-side" size="--side-w" label=${t("app.resizeSide")} value=${sideW} room=${room("--panel-track")} onCommit=${(v) => setPrefs({ sideW: v })} />
@@ -405,7 +410,7 @@ function App() {
         onCreated=${(b) => { reloadBots(); openChat(b.id); }} onCancel=${bots && bots.length ? () => openChat() : null} />`}
       ${view === "settings" && html`<${SettingsScreen} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} focusRow=${route.row}
         mf=${mf} onMfChanged=${reloadMf} onSettings=${setSettings} models=${models} modelsError=${modelsError} reloadModels=${reloadModels}
-        status=${status} bots=${bots} onOpenBotSettings=${openBotSettings} account=${managed ? account : null} onAccount=${setAccount} />`}
+        status=${status} update=${update} bots=${bots} onOpenBotSettings=${openBotSettings} account=${managed ? account : null} onAccount=${setAccount} />`}
       ${view === "needs" && html`<${NeedsYouScreen} multiBot=${!!bots && bots.length > 1} onChanged=${pollWorking} onOpenChat=${openChat} onRelogin=${relogin} onOpenBotSettings=${openBotSettings} />`}
       ${view === "bot-settings" && routedBot && html`<${BotSettingsScreen} key=${routedBot.id} bot=${routedBot} section=${route.section}
         models=${models} modelsError=${modelsError} reloadModels=${reloadModels} defaultModel=${settings && settings.defaultModel}

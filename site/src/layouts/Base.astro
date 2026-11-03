@@ -8,7 +8,7 @@ import "../styles/eyes.css";
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
 import SiteBanner from "../components/SiteBanner.astro";
-import { dict, href, type Lang } from "../i18n";
+import { dict, href, READY_LANGS, LOCALES, type Lang } from "../i18n";
 import { ORIGIN, ANALYTICS_SCRIPT_URL, ANALYTICS_SITE_ID, releases, GITHUB_URL } from "../lib/site";
 
 interface Props {
@@ -25,7 +25,6 @@ const t = dict(lang);
 const pageTitle = title ?? t.meta.title;
 const desc = description ?? t.meta.description;
 const canonical = `${ORIGIN}${href(lang, path)}`;
-const alt = { zh: `${ORIGIN}${href("zh", path)}`, en: `${ORIGIN}${href("en", path)}` };
 const og = `${ORIGIN}${t.meta.ogImage}`;
 const dlData = {
   version: releases.version,
@@ -50,9 +49,8 @@ const dlData = {
     <meta name="description" content={desc} />
     {noindex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="zh-CN" href={alt.zh} />
-    <link rel="alternate" hreflang="en" href={alt.en} />
-    <link rel="alternate" hreflang="x-default" href={alt.zh} />
+    {!noindex && READY_LANGS.map((l) => <link rel="alternate" hreflang={LOCALES[l].tag} href={`${ORIGIN}${href(l, path)}`} />)}
+    {!noindex && <link rel="alternate" hreflang="x-default" href={`${ORIGIN}${href("zh", path)}`} />}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="AnyModelBot" />
     <meta property="og:title" content={pageTitle} />
@@ -61,7 +59,8 @@ const dlData = {
     <meta property="og:image" content={og} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:locale" content={lang === "zh" ? "zh_CN" : "en_US"} />
+    <meta property="og:locale" content={LOCALES[lang].og} />
+    {READY_LANGS.filter((l) => l !== lang).map((l) => <meta property="og:locale:alternate" content={LOCALES[l].og} />)}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={desc} />

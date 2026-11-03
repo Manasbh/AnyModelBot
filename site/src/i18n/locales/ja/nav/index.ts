@@ -1,0 +1,21 @@
+import type { Dict } from "../../../zh";
+export default {
+  main: "メインナビゲーション",
+  bots: "ボット",
+  features: "機能",
+  data: "データ",
+  models: "モデル",
+  pricing: "料金",
+  docs: "ドキュメント",
+  skip: "本文へ移動",
+  home: "AnyModelBot ホーム",
+  menu: "メニュー",
+  close: "閉じる",
+  github: "GitHub",
+  lang: "言語",
+  langLabel: "言語を変更",
+  theme: "外観",
+  themeLight: "ライト",
+  themeDark: "ダーク",
+  themeSystem: "システムに合わせる",
+} satisfies Dict["nav"];

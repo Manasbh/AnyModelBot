@@ -229,12 +229,14 @@ describe("安全", () => {
 });
 
 describe("Modelflare", () => {
-  it("线路：白名单两条，auto=国际；测试覆盖变量优先", () => {
+  it("域名：白名单三个，auto=主域名；测试覆盖变量优先", () => {
     expect(modelflareBaseUrl("auto", {})).toBe("https://modelflare.dev/v1");
     expect(modelflareBaseUrl("global", {})).toBe(MODELFLARE_LINES.global);
     expect(modelflareBaseUrl("cn", {})).toBe("https://origin.modelflare.dev/v1");
+    expect(modelflareBaseUrl("cf", {})).toBe("https://cf.modelflare.dev/v1");
     expect(modelflareBaseUrl("cn", { AMB_MODELFLARE_BASE_URL: "http://127.0.0.1:9/v1/" })).toBe("http://127.0.0.1:9/v1");
     expect(normalizeLine("cn")).toBe("cn");
+    expect(normalizeLine("cf")).toBe("cf");
     expect(normalizeLine("https://evil.example")).toBe("auto");
     expect(keyTail("mf-abcdef1234")).toBe("1234");
     expect(keyTail("abc")).toBe("");
@@ -272,7 +274,8 @@ describe("Modelflare", () => {
       await srv.close();
     }
     const down = await verifyModelflareKey("http://127.0.0.1:9/v1", "k", { line: "auto" });
-    expect(down).toMatchObject({ ok: false, code: "network", suggestLine: "cn" });
+    expect(down).toMatchObject({ ok: false, code: "network" });
+    expect(down).not.toHaveProperty("suggestLine");
     expect(await verifyModelflareKey("http://127.0.0.1:9/v1", "k", { line: "cn" })).not.toHaveProperty("suggestLine");
   });
   it("配置写回：只改给出的键，其余保留；读取时规范化", () => {
@@ -286,6 +289,8 @@ describe("Modelflare", () => {
     expect(c.modelflare.line).toBe("cn");
     expect(c.ui.zoom).toBe(1.25);
     expect(c.ui.closeToTray).toBe(false);
+    saveConfigFile(dir, (f) => (f.modelflare = { ...f.modelflare, line: "cf" }));
+    expect(loadConfig({ dataDir: dir, env: {} }).modelflare.line).toBe("cf");
     fs.writeFileSync(path.join(dir, "config.json"), JSON.stringify({ ui: { zoom: 3 }, modelflare: { line: "x" } }));
     const d = loadConfig({ dataDir: dir, env: {} });
     expect(d.ui.zoom).toBe(1);

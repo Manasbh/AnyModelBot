@@ -1,4 +1,12 @@
 @layer tokens, base, components, app, utilities;
+
+@layer components {
+  .language-options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .language-options [aria-current="page"] { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
+  .drawer__prefs, .footer__switch { flex-wrap: wrap; }
+  :lang(ko) :is(h1, h2, h3, .lead) { word-break: keep-all; overflow-wrap: anywhere; }
+  :is(:lang(ja), :lang(ko), :lang(ru)) :is(.hstage, .tour) { --a-font: var(--font-sans); }
+}
 /* 全站共用的组件与页面骨架（§4.6、§9）：每一页都会加载。只在某一页出现的版式放在 home / pricing / pages.css。
    状态：default · hover · focus-visible · active · disabled */
 @layer components {
@@ -60,7 +68,7 @@
 
   /* —— 徽标、chip —— */
   .badge { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: var(--r-btn); font-family: var(--font-mono); font-size: var(--fs-eyebrow); font-weight: 500; letter-spacing: .02em; white-space: nowrap; }
-  :lang(zh) .badge { font-family: var(--font-sans); }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .badge { font-family: var(--font-sans); }
   .badge--neutral { background: var(--grain), var(--glass); color: var(--text-2); box-shadow: var(--glass-ring); }
   /* 品牌标签（"默认""本地"）：深色实心黄绿；浅色淡底 + 深橄榄字，价格表里成排出现也不刺眼 */
   .badge--accent { background: var(--tag-bg); color: var(--tag-fg); box-shadow: inset 0 0 0 1px var(--tag-edge); }
@@ -99,7 +107,7 @@
   @media (max-width: 767px) { .card { padding: 20px; } }
   /* 小标签（价格卡标签、章节头的"编号 / 名称"、工牌职位）全站只有这一种：英文等宽大写，中文无衬线、不大写 */
   .eyebrow { font-family: var(--font-mono); font-size: var(--fs-eyebrow); font-weight: 500; line-height: 1.4; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
-  :lang(zh) .eyebrow { font-family: var(--font-sans); font-size: var(--fs-eyebrow-zh); letter-spacing: .04em; text-transform: none; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .eyebrow { font-family: var(--font-sans); font-size: var(--fs-eyebrow-zh); letter-spacing: .04em; text-transform: none; }
 
   /* —— 列表打勾 —— */
   .ticks { display: grid; gap: 8px; }
@@ -113,14 +121,14 @@
   /* 标题四级（字号在 tokens.css）：Hero 的 display 在 home.css，这里是 h2 → title（.subhead）→ h3。
      字越大，行高越紧、字距越收；中文行高比英文大 .15–.2，字距不收。字重一律 600。两段式标题的后半句用次要色。 */
   .h2 { font-size: var(--fs-h2); line-height: 1.06; letter-spacing: -.035em; font-weight: 600; }
-  :lang(zh) .h2 { font-size: var(--fs-h2-zh); line-height: 1.25; letter-spacing: 0; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .h2 { font-size: var(--fs-h2-zh); line-height: 1.25; letter-spacing: 0; }
   .h2__dim { color: var(--text-2); }
   /* 块标题：章节里的一块内容（功能卡、价格概览、工牌上的名字） */
   .subhead { font-size: var(--fs-title); line-height: 1.12; letter-spacing: -.025em; font-weight: 600; }
-  :lang(zh) .subhead { font-size: var(--fs-title-zh); line-height: 1.3; letter-spacing: 0; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .subhead { font-size: var(--fs-title-zh); line-height: 1.3; letter-spacing: 0; }
   .h3 { font-size: var(--fs-h3); line-height: 1.3; }
   .lead { font-size: var(--fs-lead); line-height: 1.6; color: var(--text-2); }
-  :lang(zh) .lead { line-height: 1.75; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .lead { line-height: 1.75; }
   @media (max-width: 767px) { .h3 { font-size: 20px; } }
 
   /* —— 首页章节头（components/SectionHead.astro）——
@@ -131,10 +139,10 @@
   .shead__n { font-family: var(--font-mono); font-size: var(--fs-eyebrow); letter-spacing: .04em; text-transform: none; color: var(--accent-fg); }
   .shead__n::after { content: "/"; margin-left: 12px; color: var(--line-strong); }
   .shead__title { max-width: 18em; }
-  :lang(zh) .shead__title { max-width: 20em; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .shead__title { max-width: 20em; }
   .shead__title > span { display: block; }
   .shead__lead { max-width: 34em; margin-top: clamp(16px, 1.8vw, 24px); }
-  :lang(zh) .shead__lead { max-width: 32em; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .shead__lead { max-width: 32em; }
   .shead__host { position: absolute; right: 0; bottom: calc(100% - 3px); }
   @media (max-width: 767px) { .shead__host { --s: 36px !important; } }
   /* 居中版（SectionHead center）：编号、标题、说明都居中，主持机器人站在细线正中；细线从中间往两边画开（sections.css） */
@@ -342,7 +350,7 @@
     display: flex; align-items: center; gap: 16px; min-height: 64px; border-bottom: 1px solid var(--line);
     color: var(--text); font-size: 24px; font-weight: 500; letter-spacing: -.02em; text-decoration: none;
   }
-  :lang(zh) .drawer__links a { letter-spacing: 0; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .drawer__links a { letter-spacing: 0; }
   .drawer__links a:hover { color: var(--text); text-decoration: none; }
   .drawer__num { width: 24px; flex: none; font-family: var(--font-mono); font-size: var(--fs-eyebrow); font-weight: 400; letter-spacing: 0; color: var(--text-2); }
   .drawer__label { flex: 1; }
@@ -369,7 +377,7 @@
   .page__head { display: grid; gap: 16px; margin-bottom: clamp(32px, 5vw, 48px); max-width: 760px; }
   /* 附属页的 H1 和首页章节标题同级（h2 那一档），不另起字号 */
   .page h1 { font-size: var(--fs-h2); line-height: 1.06; letter-spacing: -.035em; }
-  :lang(zh) .page h1 { font-size: var(--fs-h2-zh); line-height: 1.25; letter-spacing: 0; }
+  :is(:lang(zh), :lang(ja), :lang(ko)) .page h1 { font-size: var(--fs-h2-zh); line-height: 1.25; letter-spacing: 0; }
   .page.prose > h2, .page .prose > h2 { font-size: var(--fs-h3); line-height: 1.3; margin: 40px 0 16px; }
   .page.prose p + p, .page .prose p + p { margin-top: 12px; }
   .page .ticks { margin-top: 12px; }

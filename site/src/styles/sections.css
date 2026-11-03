@@ -560,6 +560,7 @@
   }
   @media (max-width: 767px) {
     .reach__stage { height: auto; display: grid; justify-items: center; padding-bottom: 8px; }
+    .reach__lights { inset-inline: calc(-1 * var(--gutter)); }
     .rs--app { display: none; }
     .rs--phone { position: relative; right: auto; bottom: auto; width: min(270px, 82%); height: 420px; }
     .reach__ways { grid-template-columns: minmax(0, 1fr); margin-top: 40px; }

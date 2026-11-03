@@ -5,7 +5,7 @@ import type { Platform } from "../lib/platform";
 type Deps = {
   track: (name: string, props?: Record<string, unknown>) => void;
   platform: Promise<Platform>;
-  data: { lang: "zh" | "en"; platforms?: Record<string, { url: string }>; i18n: Record<string, string> };
+  data: { lang: import("../i18n/locales").Lang; platforms?: Record<string, { url: string }>; i18n: Record<string, string> };
   store: { get: (k: string) => string | null; set: (k: string, v: string) => void };
 };
 

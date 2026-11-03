@@ -18,7 +18,7 @@ import { loadConfig } from "../src/config.js";
 import { App } from "../src/app.js";
 import { findAppRoot } from "../src/magpie/supervisor.js";
 import { initFileLog, logFilePath, logger, registerSecret, setConsoleLog } from "../src/log.js";
-import { normalizeLang, onLangChange, setLangPref, setSystemLang, t } from "../src/i18n/index.js";
+import { normalizeLang, onLangChange, setLangPref, setSystemLang, LANGS, t } from "../src/i18n/index.js";
 import { notificationOf, trayTitle, type AttentionItem } from "../src/tasks/attention.js";
 
 const log = logger("desktop");
@@ -210,7 +210,7 @@ async function boot(): Promise<void> {
   initFileLog(path.join(dataDir, "logs"));
   const config = loadConfig({ dataDir });
   // 语言：跟随系统时用系统的首选语言（不支持的语言用英文）；偏好本身在 config.ui.lang
-  setSystemLang(app.getPreferredSystemLanguages().map(normalizeLang).find(Boolean) ?? normalizeLang(app.getLocale()) ?? "en");
+  setSystemLang(app.getPreferredSystemLanguages().map(normalizeLang).find((l) => l && LANGS.includes(l)) ?? "en");
   setLangPref(config.ui.lang);
   // 桌面版：仅回环 + 每次启动随机令牌；端口沿用配置（默认 3600，被占用时自动换随机端口）
   config.ui.host = "127.0.0.1";

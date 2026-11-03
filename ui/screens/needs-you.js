@@ -94,7 +94,7 @@ export function NeedItem({ item, multiBot, onAct, onOpenChat, onRelogin, onOpenB
     ${writing && html`<div class="need-reply">
       <input ref=${input} class="field" placeholder=${t("needs.answerPlaceholder")} value=${text} disabled=${busy === "text"}
         onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => {
-          if (e.key === "Enter" && !e.isComposing) send();
+          if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) send();
           if (e.key === "Escape") (e.stopPropagation(), setWriting(false));
         }} />
       <${Button} variant="primary" loading=${busy === "text"} disabled=${!text.trim()} onClick=${send}>${t("needs.send")}<//>

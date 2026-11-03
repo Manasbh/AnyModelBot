@@ -1,18 +1,24 @@
 // 公开价格表（§6.5 C）：默认 6 个精选行；展开后可搜索、按厂商过滤；每行可展开看全部线路。
 import { useMemo, useState } from "preact/hooks";
 import type { PriceRow } from "../lib/pricing";
-import { fmtPrice } from "../lib/pricing";
+import { fmtPrice as priceUSD } from "../lib/pricing";
 import type { Dict } from "../i18n/zh";
 
 type T = Dict["pricing"]["table"];
-interface Props { rows: PriceRow[]; featured: string[]; t: T; mediaText: string; mediaHref: string; initialAll?: boolean }
+interface Props { lang: string; rows: PriceRow[]; featured: string[]; t: T; mediaText: string; mediaHref: string; initialAll?: boolean }
 
 const f = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 export const ctx = (n: number | null) => (n == null ? "" : n >= 1e6 ? `${+(n / 1e6).toFixed(2)}M` : `${Math.round(n / 1e3)}K`);
-const pct = (r: number) => `${+(r * 100).toFixed(2)}%`;
+const percentages = new Map<string, Intl.NumberFormat>();
+const percentage = (r: number, lang: string) => {
+  if (!percentages.has(lang)) percentages.set(lang, new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 2 }));
+  return percentages.get(lang)!.format(r);
+};
 const track = (n: string, p?: object) => { try { (window as any).umami?.track(n, p); } catch { /* 忽略 */ } };
 
-export default function PriceTable({ rows, featured, t, mediaText, mediaHref, initialAll = false }: Props) {
+export default function PriceTable({ lang, rows, featured, t, mediaText, mediaHref, initialAll = false }: Props) {
+  const fmtPrice = (value: number) => priceUSD(value, lang);
+  const pct = (ratio: number) => percentage(ratio, lang);
   const [all, setAll] = useState(initialAll);
   const [q, setQ] = useState("");
   const [vendor, setVendor] = useState("");
@@ -110,7 +116,7 @@ export default function PriceTable({ rows, featured, t, mediaText, mediaHref, in
                             </tbody>
                           </table>
                           {long && long.maxInputTokens == null && r.tiers[0].maxInputTokens != null && (
-                            <p class="small muted">{f(t.tiers, { n: r.tiers[0].maxInputTokens.toLocaleString("en-US"), input: fmtPrice(long.input * r.ratio), output: fmtPrice(long.output * r.ratio) })}</p>
+                            <p class="small muted">{f(t.tiers, { n: r.tiers[0].maxInputTokens.toLocaleString(lang), input: fmtPrice(long.input * r.ratio), output: fmtPrice(long.output * r.ratio) })}</p>
                           )}
                         </div>
                       )}

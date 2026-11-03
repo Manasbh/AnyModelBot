@@ -1,3 +1,4 @@
+import { href, normalizeLang, type Lang } from "../i18n/locales";
 // 所有页面共用的交互：主题、语言提示、导航、菜单、对话框、复制、Toast、下载识别、入场动画、埋点。
 // 每块都先判断元素在不在；本地存储一律 try/catch（隐私模式下可能抛错）。
 import { mountEyes } from "../lib/eyes";
@@ -7,7 +8,7 @@ import "./stars";
 import "./sections";
 
 type Data = {
-  version: string; publishedAt: string; docker: string; github: string; lang: "zh" | "en";
+  version: string; publishedAt: string; docker: string; github: string; lang: Lang;
   platforms: Record<string, { url: string; sha256: string; sizeMB: number }>;
   i18n: Record<"win" | "mac" | "linux" | "mobile" | "generic" | "downloading" | "started" | "copied" | "copyFailed" | "bannerLeft" | "bannerLastDay", string>;
 };
@@ -90,13 +91,18 @@ document.addEventListener("click", (e) => {
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => document.documentElement.dataset.themePref === "system" && applyTheme("system"));
 
 // —— 语言：首次访问按浏览器语言提示一次（在顶部公告条里，见 scripts/banner.ts），不强制跳转；点了切换就记住 ——
-document.addEventListener("click", (e) => {
+function switchLanguage(e: MouseEvent) {
   const a = (e.target as Element).closest<HTMLAnchorElement>("a[data-lang-switch]");
   if (!a) return;
-  const to = data.lang === "zh" ? "en" : "zh";
+  const to = normalizeLang(a.dataset.langSwitch || a.hreflang);
+  if (!to) return;
+  if (location.search && !a.search) a.search = location.search;
+  if (location.hash && !a.hash) a.hash = location.hash;
   store.set("amb-lang", to);
   track("lang_switch", { from: data.lang, to });
-});
+}
+document.addEventListener("click", switchLanguage);
+document.addEventListener("auxclick", (event) => { if (event.button === 1) switchLanguage(event); });
 
 // —— 菜单（下载平台、主题） ——
 function closeMenus(except?: Element) {
@@ -231,7 +237,7 @@ const platform = detectPlatform().then((p) => {
     const main = g.querySelector<HTMLAnchorElement>("[data-dl-main]")!;
     const lab = g.querySelector<HTMLElement>("[data-dl-label]")!;
     if (!g.dataset.short) lab.textContent = label;
-    if (p.os === "mobile") { main.href = `${data.lang === "en" ? "/en/" : "/"}#devices`; main.dataset.platform = "mobile"; }
+    if (p.os === "mobile") { main.href = `${href(data.lang, "/")}#devices`; main.dataset.platform = "mobile"; }
     else if (pid) {
       main.href = data.platforms[pid].url; main.setAttribute("download", ""); main.dataset.dlPlatform = pid;
     }

@@ -1,0 +1,94 @@
+# データとプライバシー
+
+[简体中文](./privacy.md) | [English](./privacy_en.md) | 日本語 | [한국어](./privacy_ko.md) | [Русский](./privacy_ru.md)
+
+**要点：** 会話、記憶、ファイル、キーは端末に保存します。モデルへ送る内容は Modelflare を経由して選択した提供元に届きます。データに一切のリスクがないとは主張しません。モデルに送るものは端末の外に出ます。
+
+保存するデータと場所、外部への送信、削除方法を説明します。お問い合わせは [support@anymodel.bot](mailto:support@anymodel.bot) へ。
+
+## データディレクトリ
+
+| 実行方法 | データディレクトリ |
+| :--- | :--- |
+| デスクトップ・Windows | `%APPDATA%\anymodel bot\data` |
+| デスクトップ・macOS | `~/Library/Application Support/anymodel bot/data` |
+| デスクトップ・Linux | `~/.config/anymodel bot/data` |
+| CLI `npm start` | `./data`（`AMB_DATA_DIR` で変更可能） |
+| Docker | コンテナー内の `/data`（README の例では `amb-data` ボリューム） |
+
+## 保存データの一覧
+
+| データ | 保存場所（データディレクトリ内） | 端末外への送信 | 送信先 |
+| :--- | :--- | :--- | :--- |
+| 会話とセッション | `anymodel.db`（SQLite） | 回答に必要な部分 | モデルのコンテキストとして Modelflare 経由で選んだ提供元へ |
+| 記憶 | `memory/`（Markdown：`bots/`、`groups/`、`team/`） | 使用するとき | モデルのコンテキストに含める。秘密情報らしい内容は書き込み前に除去 |
+| ボットの作業ファイル | `workspaces/<bot>/`（受信ファイルの `inbox/`、生成画像・動画の `media/` を含む） | ボットが読み、モデルに送るとき | 同上 |
+| Modelflare ログイン認証情報 | `modelflare-account.json`（モード 600、デスクトップは OS のキーチェーンで暗号化） | トークン更新時に modelflare.dev だけへ | Modelflare |
+| API キー | `magpie/config/` の隔離された設定 | モデルへの各リクエストの認証に使用 | Modelflare |
+| WeChat ログイン状態と同期カーソル | データディレクトリ内（`weixin/` など） | WeChat iLink API との通信時 | Tencent WeChat |
+| Feishu チャットの App ID / Secret | `anymodel.db` | Feishu Open Platform との持続接続開始時 | Feishu |
+| Telegram、Slack、Discord のトークン | `anymodel.db` | 各プラットフォームとの通信時 | 接続したプラットフォーム |
+| 許可リストと利用リクエスト | `anymodel.db`：チャネルアカウントごとの許可対象と、未許可の人からの最初のメッセージ（相手を判断できるよう一部を保存） | なし | — |
+| 送信待ちの返信 | `anymodel.db` の送信キュー：内容と未送信の理由。相手の次のメッセージまで保留する WeChat 返信を含む（最大 7 日保持。送信済みは 7 日後、配信不能は 30 日後に削除） | 送信時 | WeChat / Feishu |
+| バックグラウンドタスクとルール | `anymodel.db` のタスク・ルール・実行履歴（30 日保持）。`workspaces/<bot>/tasks/` は 30 日未使用で削除（先に「あなたの対応待ち」で案内）。`dsh/<bot>/sessions/` のセッションファイルはタスクとともに削除 | 実行時 | 会話と同じくモデルのコンテキストとして Modelflare 経由で選んだ提供元へ |
+| 設定 | `config.json` | なし | — |
+| ログ | `logs/app.log`（サイズでローテーション） | なし。「診断情報をコピー」は手動でコピーするもので、キーは `***` に置換 | — |
+| 接続アカウントのトークン（追加した Notion・Feishu のみ） | `anymodel.db`、全ボットで共有 | ボットの読み書きごとに認証として送信 | Notion、Feishu |
+| 読み取った Notion の内容と Feishu メッセージ | 単独では保存せず、会話に含まれた場合は会話と一緒に保存 | あり | モデルのコンテキストとして Modelflare 経由で選んだ提供元へ |
+| スクリーンショット（コンピューター操作） | 長期保存しない | あり | Modelflare 経由で画像対応モデルへ。ユーザーがファイルとして求めない限り WeChat・Feishu の会話には送らない |
+
+## ローカルコンソールのアクセス制御
+
+- 既定では `127.0.0.1:3600` で待ち受け、ネットワークやインターネットからはアクセスできません。
+- デスクトップは起動ごとにランダムなアクセストークンを生成し、ほかのローカルプログラムが管理 API を直接呼べないようにします。
+- Docker の `0.0.0.0` などループバック以外で待ち受ける場合はトークンが必須です。データディレクトリの `ui-token` にあります（Docker：`docker exec amb cat /data/ui-token`）。
+- ポート 3600 をインターネットに直接公開しないでください。遠隔アクセスには、自分で管理する VPN または認証付きリバースプロキシを使ってください。
+
+## Modelflare へのログイン
+
+- RFC 8252 に従うネイティブアプリとして、OIDC 認可コードフローと PKCE（RFC 7636）を使います。AnyModelBot はクライアントシークレットを持たない公開クライアントで、認可結果は一時的なループバックポートへ返されます。
+- ログインは modelflare.dev で行い、AnyModelBot がパスワードを見ることはありません。
+- Modelflare プロフィールの認可済みアプリから、いつでも端末の認可を取り消せます。アプリのログアウトも認可を取り消し、端末とボットに発行したキーを削除します。
+
+## モデルのリクエストと Modelflare
+
+- 内蔵 magpie ゲートウェイから Modelflare を経由し、選択した提供元にリクエストを送ります。
+- プロンプト、会話の文脈、使用する記憶、ファイル内容、ツール結果、コンピューター操作時のスクリーンショットなど、回答に必要な内容が含まれます。
+- 出所の識別用に `X-Modelflare-Skill: anymodel-bot/<version>` ヘッダーを付けます。アプリから開く Modelflare のリンクには `utm_source=anymodelbot` が含まれます。
+- Modelflare はリクエストログを保持します。項目と期間は [トラストセンター](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) を参照してください。モデル提供元のデータ取り扱いは各社の規約に従います。
+
+## テレメトリー
+
+- 同梱の Cua Driver は `CUA_TELEMETRY_ENABLED=0` と `CUA_DRIVER_RS_TELEMETRY_ENABLED=0` でテレメトリーを無効にします。
+- 内蔵 magpie は自動更新とアカウント検出を無効にして動かし、端末上の他の AI ツールの認証情報を読みません。
+- AnyModelBot 本体（`src`、`electron`、`ui`、`scripts`、`dsh-runtime/plugins`）には解析やテレメトリーの送信処理がありません。telemetry、analytics、sentry、posthog、mixpanel の検索で見つかるのは上記 Cua の環境変数 2 個だけです。
+- 同梱の第三者コンポーネントは各自の文書に従って動作します。ここではそれらの動作を保証しません。
+
+## アプリが行うその他の通信
+
+モデルのリクエスト以外に、次の通信を行います。
+
+- Modelflare のモデル一覧、残高、使用量、通知の取得（modelflare.dev のアカウントデータ）。
+- 画像・動画生成時に docs.modelflare.dev からリクエスト形式を取得。
+- WeChat：`ilinkai.weixin.qq.com` との通信、および送られた画像・ファイルの WeChat CDN からの取得。
+- Feishu：Feishu Open Platform との持続接続。
+- Telegram、Slack、Discord：接続後に `api.telegram.org`、`slack.com`、`discord.com` と各ファイル配信先を利用してメッセージやファイルを送受信。
+- Windows でエージェントが有効かつ使用可能な PowerShell 7 がない場合、Microsoft の公式配布先から PowerShell 7 を取得（`AMB_PWSH_AUTO_INSTALL=0` で停止可能。[開発ガイド](./development_ja.md) 参照）。
+
+## コンピューター操作とスクリーンショット
+
+- 画面の読み取りではスクリーンショットを撮り、モデルリクエストの一部として画像対応モデルへ送ります。
+- 既定では操作を自動実行します。ボット設定 → コンピューター操作で画面変更前に確認する設定にできます。画面の読み取りは引き続き自動です。
+- 読み取り専用のボットには読み取りツールだけを提供します。
+
+## チャネル
+
+- WeChat、Feishu、Telegram、Slack、Discord で交わすメッセージは各プラットフォームのサーバーを通り、それぞれのプライバシーポリシーが適用されます。
+- 既定では所有者と許可した人だけが会話できます。他者のメッセージはモデルに渡さず、利用リクエストとして記録します（[開発ガイド](./development_ja.md#ボットを利用できる人) 参照）。
+
+## データの削除
+
+1. AnyModelBot を終了します（トレイメニュー → 終了）。
+2. 上の表にあるデータディレクトリを削除します。Docker：`docker rm -f amb && docker volume rm amb-data`。
+3. Modelflare プロフィールの認可済みアプリから AnyModelBot の認可を取り消します。
+4. 必要に応じて Feishu Open Platform のアプリ（スキャンで作成したものも含む）を無効にし、WeChat のボット連携を解除します。Telegram（@BotFather）、Slack、Discord で作ったボットも削除し、Notion では AnyModelBot との接続を切って作成済みトークンを削除します。

@@ -14,14 +14,15 @@
     "fetch:github": "tsx scripts/fetch-github-stars.ts",
     "check": "tsx scripts/check-i18n.ts && tsx scripts/banned.ts && tsx scripts/check-images.ts",
     "test": "vitest run",
-    "build": "tsx scripts/sync-from-app.ts && tsx scripts/fetch-pricing.ts --lenient && tsx scripts/fetch-github-stars.ts && tsx scripts/check-images.ts && astro build && tsx scripts/banned.ts --dist && tsx scripts/check-links.ts && tsx scripts/check-placeholders.ts",
+    "build": "tsx scripts/sync-from-app.ts && tsx scripts/check-i18n.ts --release && tsx scripts/fetch-pricing.ts --lenient && tsx scripts/fetch-github-stars.ts && tsx scripts/check-images.ts && astro build && tsx scripts/banned.ts --dist && tsx scripts/check-links.ts && tsx scripts/check-placeholders.ts",
     "build:draft": "tsx scripts/sync-from-app.ts && tsx scripts/check-images.ts && astro build && tsx scripts/banned.ts --dist && tsx scripts/check-links.ts && tsx scripts/check-placeholders.ts --warn",
     "preview": "astro preview",
     "og": "python3 scripts/make-og.py",
     "bots:avif": "tsx scripts/make-bot-avif.ts",
     "badges:copies": "tsx scripts/make-badge-copies.ts",
     "releases": "tsx scripts/releases-from-github.ts",
-    "releases:dir": "tsx scripts/releases-from-dir.ts"
+    "releases:dir": "tsx scripts/releases-from-dir.ts",
+    "test:locales:browser": "tsx scripts/smoke-locales.ts"
   },
   "dependencies": {
     "@astrojs/preact": "4.1.3",

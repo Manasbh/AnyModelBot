@@ -64,7 +64,7 @@ describe("界面 t()", () => {
     expect(ui.normalizeLang("zh-Hans-CN")).toBe("zh-CN");
     expect(ui.normalizeLang("zh-TW")).toBe("zh-CN");
     expect(ui.normalizeLang("en-GB")).toBe("en");
-    expect(ui.normalizeLang("ja")).toBe(null);
+    expect(ui.normalizeLang("ja-JP")).toBe("ja");
     expect(ui.normalizePref("fr")).toBe("system");
     expect(ui.normalizePref("en")).toBe("en");
   });

@@ -10,7 +10,7 @@
  */
 import crypto from "node:crypto";
 import { logger } from "../log.js";
-import { AccountStore, ConnectionError, capped, clampLimit, wait, type ConnectedAccount, type NotionOAuthAuth } from "./accounts.js";
+import { AccountStore, ConnectionError, LocalizedConnectionError, capped, clampLimit, wait, type ConnectedAccount, type NotionOAuthAuth } from "./accounts.js";
 import { parseRpcReply } from "./search.js";
 
 const log = logger("agent.notion");
@@ -474,9 +474,9 @@ export class NotionService {
   private async oauthMeta(signal?: AbortSignal) {
     if (this.meta) return this.meta;
     const res = await this.send()(`${MCP_ORIGIN}/.well-known/oauth-authorization-server`, { signal: this.deadline(signal) });
-    if (!res.ok) throw new ConnectionError("Could not reach Notion's sign-in service. Try again in a moment.");
+    if (!res.ok) throw new LocalizedConnectionError("connections.notionUnavailable");
     const meta = (await res.json()) as NotionService["meta"];
-    if (!meta?.authorization_endpoint || !meta.token_endpoint) throw new ConnectionError("Notion's sign-in service gave an unexpected reply.");
+    if (!meta?.authorization_endpoint || !meta.token_endpoint) throw new LocalizedConnectionError("connections.notionUnexpected");
     this.meta = meta;
     return meta;
   }
@@ -491,7 +491,7 @@ export class NotionService {
     }
     if (clients[redirectUri]) return clients[redirectUri];
     const meta = await this.oauthMeta(signal);
-    if (!meta.registration_endpoint) throw new ConnectionError("Notion's sign-in service doesn't accept new clients.");
+    if (!meta.registration_endpoint) throw new LocalizedConnectionError("connections.notionRegistrationUnavailable");
     const res = await this.send()(meta.registration_endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -499,7 +499,7 @@ export class NotionService {
       signal: this.deadline(signal),
     });
     const data: any = await res.json().catch(() => undefined);
-    if (!res.ok || !data?.client_id) throw new ConnectionError("Notion's sign-in service refused to register this app.");
+    if (!res.ok || !data?.client_id) throw new LocalizedConnectionError("connections.notionRegistrationRefused");
     clients[redirectUri] = String(data.client_id);
     this.o.kv.setKV(NOTION_CLIENTS_KV, JSON.stringify(clients));
     return clients[redirectUri];
@@ -522,9 +522,9 @@ export class NotionService {
   /** 授权页跳回来：state 对得上才换令牌（一次性），账号写进列表。已有的同一账号只换令牌 */
   async finishAuthorization(params: { state?: string | null; code?: string | null; error?: string | null }, signal?: AbortSignal): Promise<ConnectedAccount> {
     const flow = params.state ? this.pending.get(params.state) : undefined;
-    if (!flow || flow.expires < Date.now()) throw new ConnectionError("This sign-in link has expired. Start again from Settings.");
+    if (!flow || flow.expires < Date.now()) throw new LocalizedConnectionError("connections.notionLinkExpired");
     this.pending.delete(params.state!);
-    if (params.error || !params.code) throw new ConnectionError(params.error === "access_denied" ? "You declined the authorization." : "Notion didn't complete the authorization.");
+    if (params.error || !params.code) throw new LocalizedConnectionError(params.error === "access_denied" ? "connections.notionDeclined" : "connections.notionAuthIncomplete");
     const meta = await this.oauthMeta(signal);
     const res = await this.send()(meta.token_endpoint, {
       method: "POST",
@@ -535,7 +535,7 @@ export class NotionService {
     const data: any = await res.json().catch(() => undefined);
     if (!res.ok || !data?.access_token || !data?.refresh_token) {
       log.warn("notion token exchange failed", { status: res.status, error: String(data?.error ?? "") });
-      throw new ConnectionError("Notion didn't complete the authorization. Try again.");
+      throw new LocalizedConnectionError("connections.notionExchangeFailed");
     }
     const auth: NotionOAuthAuth = { kind: "notion-oauth", clientId: flow.clientId, accessToken: data.access_token, refreshToken: data.refresh_token, expiresAt: Date.now() + (Number(data.expires_in) || 3600) * 1000 };
     const identity = data.workspace_id && data.user_id ? `oauth:${data.workspace_id}:${data.user_id}` : `oauth:${data.bot_id ?? crypto.randomBytes(8).toString("hex")}`;

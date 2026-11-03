@@ -8,6 +8,8 @@ export default {
   balance: "Balance",
   topUp: "Top up ↗",
   lowBalance: "Only {amount} left — top up ↗",
+  update: "Version {version} is available — download ↗",
+  updateDismiss: "Don't remind me about this version",
   renamed: "Renamed",
   delete: {
     title: "Delete “{name}”?",

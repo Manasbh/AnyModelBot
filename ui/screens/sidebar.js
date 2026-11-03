@@ -8,7 +8,8 @@ import { html, Icon, IconButton, Menu, Popover, Skeleton } from "../components/u
 import { BotAvatar } from "../components/avatar.js";
 import { GuidePill } from "../components/guide.js";
 import { api } from "../lib/api.js";
-import { confirmSheet, failed, toast } from "../lib/store.js";
+import { confirmSheet, failed, toast, useStore } from "../lib/store.js";
+import { prefs, setPrefs } from "../lib/prefs.js";
 import { fmtAgo } from "../lib/format.js";
 import { MF_TOPUP, usd } from "../lib/links.js";
 import { t } from "../lib/i18n.js";
@@ -52,7 +53,17 @@ function LowBalance({ account }) {
   </a>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup }) {
+/** 有新版本：点这一行在浏览器里下载这台机器对应的安装包；叉掉后这个版本不再提示，设置 › 关于 里还能找到 */
+function UpdateNotice({ update }) {
+  const { updateDismissed } = useStore(prefs);
+  if (!update || !update.available || updateDismissed === update.latest) return null;
+  return html`<div class="side-update" role="status">
+    <a href=${update.downloadUrl} target="_blank" rel="noopener noreferrer">${t("sidebar.update", { version: update.latest })}</a>
+    <${IconButton} icon="close" size="xs" iconSize="xs" label=${t("sidebar.updateDismiss")} onClick=${() => setPrefs({ updateDismissed: update.latest })} />
+  </div>`;
+}
+
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup }) {
   const [q, setQ] = useState("");
   const [ctx, setCtx] = useState(null); // 行的操作菜单：右键 { bot, x, y }，或者"更多"按钮 { bot, el }
   const [groupCtx, setGroupCtx] = useState(null); // 群聊行的操作菜单：{ group, x, y } 或 { group, el }
@@ -113,7 +124,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     <label class="side-search">
       <${Icon} name="search" size="sm" />
       <input ref=${searchRef} type="search" placeholder=${t("common.search")} aria-label=${t("sidebar.search")} value=${q} onInput=${(e) => setQ(e.target.value)}
-        onKeyDown=${(e) => e.key === "Escape" && q && (e.stopPropagation(), setQ(""))} />
+        onKeyDown=${(e) => e.key === "Escape" && !e.isComposing && e.keyCode !== 229 && q && (e.stopPropagation(), setQ(""))} />
     </label>
     <nav class="side-list" aria-label=${t("sidebar.list")}>
       <${NeedsRow} count=${needs.n} on=${view === "needs"} onClick=${onNeeds} />
@@ -132,7 +143,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
           return html`<div class="thread sel" key=${b.id}><${BotAvatar} bot=${b} size=${38} />
             <input class="field" value=${renameText} aria-label=${t("sidebar.newName")} ref=${renameRef}
               onInput=${(e) => setRenameText(e.target.value)} onBlur=${() => rename(b)}
-              onKeyDown=${(e) => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") { e.stopPropagation(); setRenaming(""); } }} /></div>`;
+              onKeyDown=${(e) => { if (e.isComposing || e.keyCode === 229) return; if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) e.target.blur(); if (e.key === "Escape") { e.stopPropagation(); setRenaming(""); } }} /></div>`;
         const pv = previews[b.id];
         const menuOpen = !!(ctx && ctx.el && ctx.bot.id === b.id);
         return html`<div class="thread-item" key=${b.id}>
@@ -167,6 +178,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
         </div>`;
       })}
     </nav>
+    <${UpdateNotice} update=${update} />
     <${LowBalance} account=${account} />
     ${bots && bots.length > 0 && html`<${GuidePill} onGo=${onGuide} />`}
     <div class="side-foot"><${AccountButton} username=${username} account=${account} onSettings=${() => onOpenSettings()} onModelflare=${() => onOpenSettings("modelflare")} /></div>

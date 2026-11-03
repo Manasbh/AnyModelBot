@@ -209,6 +209,23 @@ button.thread:active { background: var(--side-press); }
 .low-balance::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--red); }
 .low-balance:hover { --low-wash: color-mix(in srgb, var(--red) 14%, transparent); text-decoration: none; }
 .low-balance:active { --low-wash: color-mix(in srgb, var(--red) 20%, transparent); }
+/* 有新版本：和余额提示一个位置、一样的字号，但不是出错，铺强调色的淡底，前面一个强调色的点；
+   文字整段是链接，右边的叉只关掉这个版本的提示 */
+.side-update {
+  flex: none; display: flex; align-items: center; gap: var(--space-1);
+  margin: 0 var(--side-inset) var(--space-1); padding-right: var(--space-1); border-radius: var(--r-lg);
+  background: var(--accent-wash);
+  transition: background var(--t-fast);
+}
+.side-update:hover { background: var(--side-hover); }
+.side-update:active { background: var(--side-press); }
+.side-update a {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-2) var(--side-row-px);
+  font-size: var(--fs-sm); line-height: var(--lh-snug); color: var(--fg);
+}
+.side-update a:hover { text-decoration: none; }
+.side-update a::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--accent); }
 
 /* —— 窗口标题栏：桌面版没有系统标题栏，侧栏顶部这一行（--pane-gap + --head-h）就是标题栏。
    左上角归谁看平台：macOS 是红绿灯（应用名在菜单栏里，这里不再放 Logo），Windows 是应用图标 + 名称（Windows 的习惯）。

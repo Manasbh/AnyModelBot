@@ -88,6 +88,10 @@ jobs:
             package.json
             CHANGELOG.md
             CHANGELOG_en.md
+            CHANGELOG_ja.md
+            CHANGELOG_ko.md
+            CHANGELOG_ru.md
+            ui/locales/manifest.json
             scripts/release-notes.mjs
           sparse-checkout-cone-mode: false
 
@@ -202,6 +206,9 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
         run: npm ci --no-audit --no-fund
 
+      - name: Validate all target languages
+        run: npm run i18n:check
+
       - name: Compile TypeScript
         run: npm run build
 
@@ -311,6 +318,10 @@ jobs:
           sparse-checkout: |
             CHANGELOG.md
             CHANGELOG_en.md
+            CHANGELOG_ja.md
+            CHANGELOG_ko.md
+            CHANGELOG_ru.md
+            ui/locales/manifest.json
             scripts/release-notes.mjs
           sparse-checkout-cone-mode: false
 

@@ -1,5 +1,5 @@
 /**
- * 服务端多语言：简体中文 / English。界面那一份见 ui/lib/i18n.js，两边的语言代码一致（zh-CN | en）。
+ * 服务端多语言：语言与就绪状态见 ui/locales/manifest.json。界面入口见 ui/lib/i18n.js。
  *
  * 用哪种语言（lang()）：
  *   1. 正在处理的界面请求：请求头 x-amb-lang（界面解析后的语言），由 web/server.ts 用 requestLang() 包住整个请求，
@@ -9,26 +9,34 @@
  *      偏好是"跟随系统"时用系统语言——桌面版取系统首选语言（electron/main.ts 调 setSystemLang），
  *      命令行 / Docker 先看 AMB_LANG，再看 LC_ALL / LC_MESSAGES / LANG，都没有（或是 C / POSIX）时用简体中文。
  *
- * 文案在 src/i18n/messages/<命名空间>.ts；t() 的键有类型检查，写错键或漏了英文都编译不过。
+ * 中英文在 messages/<命名空间>.ts；新增语言在 locales/<语言>/<命名空间>.ts。t() 的键有类型检查；发布检查直接检查原始词典。
  * 日志、给模型看的提示词和工具说明不走这里：前者给开发者看，后者模型两种语言都懂。
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 import { catalogs } from "./messages/index.js";
 import type { Msg } from "./types.js";
+import manifest from "../../ui/locales/manifest.json" with { type: "json" };
+import ja from "./locales/ja/index.js";
+import ko from "./locales/ko/index.js";
+import ru from "./locales/ru/index.js";
 
-export type Lang = "zh-CN" | "en";
+export type Lang = "zh-CN" | "en" | "ja" | "ko" | "ru";
 export type LangPref = "system" | Lang;
-export const LANGS: readonly Lang[] = ["zh-CN", "en"];
+export const TARGET_LANGS = manifest.locales.map((l) => l.code) as Lang[];
+export const LANGS = manifest.locales.filter((l) => l.ready).map((l) => l.code) as Lang[];
 
 type Catalogs = typeof catalogs;
 export type MessageKey = { [N in keyof Catalogs]: `${N & string}.${Extract<keyof Catalogs[N]["zh"], string>}` }[keyof Catalogs];
 export type Params = Record<string, string | number | boolean | null | undefined>;
+export type TranslatedCatalog = { [N in keyof Catalogs]: { [K in keyof Catalogs[N]["zh"]]: Msg } };
+export const translations: Record<"ja" | "ko" | "ru", TranslatedCatalog> = { ja, ko, ru };
 
 /** "zh" / "zh_CN.UTF-8" / "zh-Hans" → zh-CN；"en-US" → en；其他 → undefined */
 export function normalizeLang(s: unknown): Lang | undefined {
   const v = String(s ?? "").trim().toLowerCase();
-  if (v.startsWith("zh")) return "zh-CN";
-  if (v.startsWith("en")) return "en";
+  const base = v.split(/[-_.@]/)[0];
+  if (base === "zh") return "zh-CN";
+  if (base === "en" || base === "ja" || base === "ko" || base === "ru") return base;
   return undefined;
 }
 export function normalizeLangPref(s: unknown): LangPref {
@@ -43,7 +51,8 @@ export function envLang(env: NodeJS.ProcessEnv = process.env): Lang {
     const v = String(env[k] ?? "").trim();
     if (!v) continue;
     if (/^(c|posix)([._].*)?$/i.test(v)) return "zh-CN";
-    return normalizeLang(v) ?? "en";
+    const candidate = normalizeLang(v);
+    return candidate && LANGS.includes(candidate) ? candidate : "en";
   }
   return "zh-CN";
 }
@@ -121,7 +130,7 @@ function pick(m: Msg, l: Lang, params?: Params): string {
   if (!Number.isFinite(n)) return m.other;
   let r = rules.get(l);
   if (!r) rules.set(l, (r = new Intl.PluralRules(l)));
-  return (r.select(n) === "one" && m.one) || m.other;
+  return m[r.select(n)] || m.other;
 }
 
 function format(s: string, params?: Params): string {
@@ -131,10 +140,15 @@ function format(s: string, params?: Params): string {
 
 function lookup(l: Lang, key: string): Msg | undefined {
   const i = key.indexOf(".");
+  const namespace = key.slice(0, i);
+  const k = key.slice(i + 1);
+  if (l === "ja" || l === "ko" || l === "ru") {
+    const translated = (translations[l] as Record<string, Record<string, Msg>>)[namespace]?.[k];
+    if (translated !== undefined) return translated;
+  }
   const ns = (catalogs as Record<string, { zh: Record<string, Msg>; en: Record<string, Msg> }>)[key.slice(0, i)];
   if (!ns) return undefined;
-  const k = key.slice(i + 1);
-  return (l === "en" ? ns.en[k] : undefined) ?? ns.zh[k];
+  return (l !== "zh-CN" ? ns.en[k] : undefined) ?? ns.zh[k];
 }
 
 /** 按指定语言取文案 */

@@ -12,6 +12,7 @@ import { DEFAULT_SETTINGS } from "../src/agent/settings.js";
 import { findAppRoot } from "../src/magpie/supervisor.js";
 import { RULE_DENY } from "../src/tasks/rules.js";
 import { Store } from "../src/store/db.js";
+import { t } from "../src/i18n/index.js";
 
 const TOKEN = "ntn_secret_token_1234";
 const PAGE = "11111111-1111-1111-1111-111111111111";
@@ -626,15 +627,15 @@ describe("飞书账号：添加流程", () => {
     const a = flowWith([{ json: { device_code: "d", verification_uri: "https://x", interval: 0.01, expires_in: 60 } }, { json: { error: "access_denied" } }]);
     const fa = await settle(a.feishu, a.feishu.startFlow({ appId: "a", appSecret: "s" }).id);
     expect(fa.state).toBe("failed");
-    expect(fa.error).toMatch(/declined/);
+    expect(fa.error).toBe(t("connections.feishuDeclined"));
     expect(a.accounts.list()).toEqual([]);
     const b = flowWith([{ json: { device_code: "d", verification_uri: "https://x", interval: 0.01, expires_in: 60 } }, { json: { error: "expired_token" } }]);
-    expect((await settle(b.feishu, b.feishu.startFlow({ appId: "a", appSecret: "s" }).id)).error).toMatch(/expired/);
+    expect((await settle(b.feishu, b.feishu.startFlow({ appId: "a", appSecret: "s" }).id)).error).toBe(t("connections.feishuAuthExpired"));
   });
 
   it("App 信息不对：直接说明", async () => {
     const { feishu } = flowWith([{ status: 400, json: { error: "invalid_client" } }]);
-    expect((await settle(feishu, feishu.startFlow({ appId: "a", appSecret: "bad" }).id)).error).toMatch(/App ID and Secret/);
+    expect((await settle(feishu, feishu.startFlow({ appId: "a", appSecret: "bad" }).id)).error).toBe(t("connections.feishuAppRefused"));
   });
 
   it("Lark 账号：轮询时换到 Lark 的地址", async () => {
@@ -679,7 +680,7 @@ describe("飞书账号：添加流程", () => {
     const flow = feishu.startAppFlow(async () => {
       throw new ConnectionError("Couldn't connect.");
     });
-    expect((await settle(feishu, flow.id)).error).toBe("Couldn't connect.");
+    expect((await settle(feishu, flow.id)).error).toBe(t("connections.feishuAuthIncomplete"));
   });
 
   it("取消：流程不再加账号", async () => {

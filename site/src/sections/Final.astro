@@ -47,13 +47,13 @@ const sky = (() => {
         </svg>
       </div>
       <div class="final__inner">
-        <h2 class="h2" id="final-h2">{t.final.h2}</h2>
-        <p class="lead">{t.final.sub}</p>
+        <h2 class="h2" id="final-h2">{t.home.final.h2}</h2>
+        <p class="lead">{t.home.final.sub}</p>
         <div class="final__cta">
           <DownloadButton lang={lang} placement="final" id="cta-final" />
-          <a class="final__docker" href={`${href(lang, "/download")}#docker`} data-track="cta_click" data-track-location="final-docker">{t.final.docker}</a>
+          <a class="final__docker" href={`${href(lang, "/download")}#docker`} data-track="cta_click" data-track-location="final-docker">{t.home.final.docker}</a>
         </div>
-        <p class="final__oss small"><span class="badge badge--neutral">MIT</span> {t.final.oss} · <a href={GITHUB_URL} target="_blank" rel="noopener" data-track="github_click" data-track-location="final"><Icon name="branch" size={14} />{t.final.ossRepo}</a> · <a href={href(lang, "/licenses")} data-track="licenses_click">{t.final.ossLicenses}</a></p>
+        <p class="final__oss small"><span class="badge badge--neutral">MIT</span> {t.home.final.oss} · <a href={GITHUB_URL} target="_blank" rel="noopener" data-track="github_click" data-track-location="final"><Icon name="branch" size={14} />{t.home.final.ossRepo}</a> · <a href={href(lang, "/licenses")} data-track="licenses_click">{t.home.final.ossLicenses}</a></p>
       </div>
       <div class="final__bots" aria-hidden="true" data-doze>{CHAR_KEYS.map((k, i) => <span class="final__bot" style={`--k:${i}`}><BotFace char={k} size={72} lively pokeable /></span>)}</div>
       <div class="final__horizon" aria-hidden="true"></div>

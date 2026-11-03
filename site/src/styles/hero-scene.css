@@ -1,0 +1,119 @@
+@layer tokens, base, components, app, utilities;
+/* Hero 的背景：取色（.hero-scene）+ 顶光 → 天空 → 光晕 → 地平线。首页 Hero（sections/Hero.astro）和下载页页头（views/DownloadView.astro）共用；
+   外框和磨砂颗粒各自写（首页 .hero__bg，下载页 .dl-top），各层的用意见 home.css 的"1 Hero"。
+   这里只有静止的样子：星闪、云飘、流星、地平线升起都写在 home.css，只有首页有——背景动画的例外只给首页 Hero（README"动效的硬规矩"）。 */
+@layer app {
+  .hero-scene {
+    --hero-top: clamp(40px, 7vw, 104px);
+    --hz-glow: var(--bot-blue-glow);
+    --hero-hue: 250;          /* 和窗口环境光的 --aura-hue 同一套：天天 250 · 飞飞 62 · 芽芽 158 */
+    --hero-core: rgba(255, 255, 255, .05);
+    --hero-panel-top: #070a14;  /* 顶上是夜空的深蓝，星才亮得起来；往下回到卡片底色 */
+    --hero-star: #dfe6ff; --hero-star-a: 1;
+    --hero-rim: rgba(255, 255, 255, .6);
+    --hero-glow-a: 14%;
+    --hero-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.05'/%3E%3C/svg%3E");
+    --hero-panel-bg: linear-gradient(var(--hero-panel-top), var(--bg-feature) 46%);
+  }
+  [data-theme="light"] .hero-scene {
+    --hero-core: rgba(255, 255, 255, .45);   /* 顶光收一点，标题背后不至于把蓝天洗白 */
+    --hero-panel-top: oklch(.968 .012 250);  /* 浅色下只用在小胶囊里头像的描边上；卡片顶上的蓝天见下面的 --hero-panel-bg */
+    --hero-star: oklch(.66 .07 var(--hero-hue)); --hero-star-a: 1;
+    --hero-rim: #ffffff;
+    --hero-glow-a: 4%;
+    --hero-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.035'/%3E%3C/svg%3E");
+    /* 浅色·蓝天：顶上是一片清透的浅天蓝（不是灰），往下越来越淡，到说明文字附近已经回到卡片的白；
+       用 px 定位而不是百分比，Hero 高矮不同时蓝天的厚度不变。白云和闪光都靠这层蓝才立得住 */
+    --hero-panel-bg: linear-gradient(
+      oklch(.86 .075 238),
+      oklch(.9 .056 238) 140px,
+      oklch(.945 .032 240) 300px,
+      oklch(.975 .013 242) 460px,
+      var(--bg-feature) 620px);
+  }
+  /* 顶光：一层很淡的中性白光，顶上 160px 淡入——光像是从卡片里面亮起来的，顶边不会被切出一条亮带 */
+  .hero__beam {
+    position: absolute; inset: 0 0 auto; height: 760px;
+    background: radial-gradient(ellipse 36% 520px at 50% 60px, var(--hero-core), transparent 72%);
+    -webkit-mask-image: linear-gradient(transparent, #000 160px); mask-image: linear-gradient(transparent, #000 160px);
+  }
+  /* 顶部天空（.hero__sky）：只占卡片上半部，整层往下渐隐；点在 components/HeroSky.astro 里伪随机生成，标题背后有意稀一些。
+     深色是星空（一条很淡的银河，一千多颗亮度悬殊的星沿着它聚集，十颗亮星带柔光和星芒，生成规则见 components/HeroSky.astro）；浅色是晴空（浅天蓝的顶 + 三朵白云 + 四十来个四角形细小闪光）。
+     动画都很轻（用户 2026-10-31 明确要的，是"背景不做动画"规矩里写明的例外）：
+       深色：约七十颗较亮的星（.tw）慢慢明暗闪烁，各自周期、起点不同；银河和暗星静止；两颗流星隔十几、二十秒才划过一次，每次不到一秒。
+       浅色：三朵云极慢地从左往右飘（横穿一次 3–5 分钟，几乎察觉不到在动）；约六成闪光亮起来、转 45° 再隐去，各自错开。
+       浅色不放流星（细线划过白底像划痕）。"减少动态效果"时全部静止，云停在各自的位置（--x0）。 */
+  .hero__sky {
+    position: absolute; left: 0; top: 0; width: 100%; height: 640px; color: var(--hero-star); container-type: inline-size;
+    -webkit-mask-image: linear-gradient(#000 25%, transparent 88%); mask-image: linear-gradient(#000 25%, transparent 88%);
+  }
+  .hero__stars { position: absolute; inset: 0; width: 100%; height: 100%; opacity: var(--hero-star-a); fill: currentColor; }
+  /* 深色·星空：两成偏冷蓝 .c、一成偏暖 .w，其余冷白；浅色下整组不显示。
+     暗星是长度几乎为零的圆头线段（归成几十条路径）；静止的这张 SVG 自己一层，闪烁只重绘上面那张 */
+  .hero__stars--still { will-change: transform; }
+  [data-theme="light"] .hero__stars--still { display: none; }
+  .hero__dust path { fill: none; stroke: currentColor; stroke-linecap: round; }
+  .hero__dust .c { stroke: #bfd4ff; }
+  .hero__dust .w { stroke: #ffe7c9; }
+  .hero__dots .c { fill: #bfd4ff; }
+  .hero__dots .w { fill: #ffe7c9; }
+  .hero__glints { display: none; }
+  /* 浅色·晨光：四角形的细小闪光，颜色跟着当前机器人的色调；每三个里一个是白的（蓝天上的亮点），不至于整片同色 */
+  [data-theme="light"] .hero__dots { display: none; }
+  [data-theme="light"] .hero__glints { display: inline; }
+  .hero__glints path { scale: var(--s); transform-box: fill-box; transform-origin: center; }
+  .hero__glints g:nth-child(3n) path { fill: #fff; }
+  /* 浅色·白云：四团白色的圆叠成一朵积云，边缘糊开；底下压一层极淡的中性灰影子，白底上才分得出云和天。深色下不显示 */
+  .hero__clouds { display: none; }
+  [data-theme="light"] .hero__clouds { display: block; }
+  .hero__cloud {
+    position: absolute; left: 0; top: var(--y); width: var(--w); aspect-ratio: 3 / 1; opacity: var(--o, .9); translate: var(--x0) 0; pointer-events: none;
+    background:
+      radial-gradient(closest-side, #fff 55%, rgba(255, 255, 255, 0)) 8% 78% / 36% 62% no-repeat,
+      radial-gradient(closest-side, #fff 55%, rgba(255, 255, 255, 0)) 36% 40% / 40% 96% no-repeat,
+      radial-gradient(closest-side, #fff 55%, rgba(255, 255, 255, 0)) 64% 52% / 38% 84% no-repeat,
+      radial-gradient(closest-side, #fff 55%, rgba(255, 255, 255, 0)) 90% 76% / 28% 58% no-repeat;
+    filter: blur(7px) drop-shadow(0 14px 16px rgba(17, 24, 39, .05));
+  }
+  /* 流星：一根 120px 的细线，尾巴透明、头上一颗小亮点，沿 18° 往右下划过 300px */
+  .hero__meteor {
+    position: absolute; left: var(--x); top: var(--y); width: 120px; height: 1px; border-radius: 1px; opacity: 0; rotate: 18deg; pointer-events: none;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--hero-star) 85%, transparent));
+  }
+  .hero__meteor::after { content: ""; position: absolute; right: -1px; top: -1px; width: 3px; height: 3px; border-radius: 50%; background: var(--hero-star); box-shadow: 0 0 6px 1px color-mix(in srgb, var(--hero-star) 70%, transparent); }
+  [data-theme="light"] .hero__meteor { display: none; }
+  /* 光晕：一个扁椭圆，中心落在地平线顶沿上，下半截被地平线盖住，只露出往上散开的那一半 */
+  .hero__glow {
+    position: absolute; left: 50%; top: calc(100% - var(--stage-h) + var(--hz-y) - 440px); width: min(1600px, 130%); height: 560px; translate: -50% 0;
+    background:
+      radial-gradient(50% 62% at 50% 79%, color-mix(in srgb, var(--hz-glow) var(--hero-glow-a), transparent), transparent 72%),
+      radial-gradient(16% 20% at 50% 81%, color-mix(in srgb, #fff calc(var(--hero-glow-a) * .4), transparent), transparent 70%);
+  }
+  /* 地平线：圆里是比卡片底色再沉一点的"地面"；整圈一线很淡的亮边，往里渗一点点机器人色；左右用遮罩淡掉。
+     ::before 是正中那一段稍亮的边：同一个圆的亮边，用遮罩只留顶上中间，往两头渐隐（顺着弧线走，不是一根直线） */
+  .hero__horizon {
+    position: absolute; left: 50%; top: calc(100% - var(--stage-h) + var(--hz-y)); width: var(--hz-w); aspect-ratio: 1; translate: -50% 0; border-radius: 50%;
+    background: radial-gradient(closest-side, var(--bg-feature) 92%, color-mix(in srgb, var(--hz-glow) 5%, var(--bg-feature)));
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--hero-rim) 18%, transparent),
+      inset 0 3px 8px -3px color-mix(in srgb, var(--hz-glow) 28%, transparent),
+      inset 0 24px 60px -22px color-mix(in srgb, var(--hz-glow) 16%, transparent),
+      inset 0 90px 180px -60px color-mix(in srgb, var(--hz-glow) 6%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent calc(50% - 980px), #000 calc(50% - 360px), #000 calc(50% + 360px), transparent calc(50% + 980px));
+    mask-image: linear-gradient(90deg, transparent calc(50% - 980px), #000 calc(50% - 360px), #000 calc(50% + 360px), transparent calc(50% + 980px));
+  }
+  /* 浅色：地平线是一圈白亮边 + 极淡的一点冷灰，机器人色只剩一丝（芽芽那一幕不会把整条地平线染绿） */
+  [data-theme="light"] .hero__horizon {
+    background: radial-gradient(closest-side, var(--bg-feature) 92%, #f1f2f5);
+    box-shadow:
+      inset 0 1px 0 var(--hero-rim),
+      inset 0 3px 8px -3px color-mix(in srgb, var(--hz-glow) 10%, rgba(17, 24, 39, .06)),
+      inset 0 24px 60px -22px color-mix(in srgb, var(--hz-glow) 5%, transparent);
+  }
+  .hero__horizon::before {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    box-shadow: inset 0 1px 0 var(--hero-rim), inset 0 4px 12px -4px color-mix(in srgb, var(--hz-glow) 40%, transparent);
+    -webkit-mask-image: radial-gradient(min(680px, 28%) 140px at 50% 0, #000, transparent); mask-image: radial-gradient(min(680px, 28%) 140px at 50% 0, #000, transparent);
+  }
+  [data-theme="light"] .hero__horizon::before { box-shadow: inset 0 1px 0 var(--hero-rim), inset 0 4px 12px -4px color-mix(in srgb, var(--hz-glow) 14%, transparent); }
+}

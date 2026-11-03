@@ -1,3 +1,4 @@
+import { locale } from "./i18n.js";
 // Modelflare 官网链接：都带来源参数，后台用它统计从本程序来的注册与充值。
 // 全项目统一 utm_source=anymodelbot&utm_campaign=amb_<位置>（和 src/modelflare.ts 的 UTM 一致）。
 export const MF_SITE = "https://modelflare.dev";
@@ -33,5 +34,6 @@ export function tagLink(url, campaign) {
 export function usd(n) {
   if (n === null || n === undefined || !Number.isFinite(Number(n))) return "—";
   const v = Number(n);
-  return `$${Math.abs(v) > 0 && Math.abs(v) < 0.01 ? v.toFixed(4) : v.toFixed(2)}`;
+  const digits = Math.abs(v) > 0 && Math.abs(v) < 0.01 ? 4 : 2;
+  return new Intl.NumberFormat(locale(), { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v);
 }

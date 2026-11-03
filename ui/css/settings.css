@@ -2,6 +2,18 @@
    不描边），一行一项、行间一条细线，开关用 Switch。
    设置分页在侧栏（shell.css 的 .side-nav）。 */
 @layer app {
+/* Full domain names and measurement details stay readable on narrow screens. */
+.domain-row, .settings #set-line { flex-wrap: wrap; }
+.domain-row > .who, .settings #set-line > .who { flex-basis: 100%; }
+.domain-row .sub, .settings #set-line .sub { white-space: normal; }
+.settings #set-line > .ctl { width: 100%; min-width: 0; }
+.domain-connection { display: grid; gap: var(--space-2); width: 100%; min-width: 0; }
+.domain-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.domain-actions .pick { max-width: 100%; }
+.domain-results { display: grid; gap: var(--space-1-5); font-size: var(--fs-xs); }
+.domain-results > div { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); justify-content: space-between; }
+.domain-results dt { overflow-wrap: anywhere; }
+.domain-results dd { margin: 0; font-variant-numeric: tabular-nums; color: var(--fg-2); }
 /* 内容列居中、最宽 --page-w，两侧至少 --page-gutter（和对话列同一条规则） */
 .settings { --page-px: max(var(--page-gutter), calc((100% - var(--page-w)) / 2)); flex: 1; min-height: 0; overflow-y: auto; }
 .set-head {

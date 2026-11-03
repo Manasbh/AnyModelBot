@@ -10,6 +10,7 @@
  */
 import crypto from "node:crypto";
 import { registerSecret } from "../log.js";
+import { t, tl, type MessageKey, type Params } from "../i18n/index.js";
 
 export const ACCOUNT_SERVICES = ["notion", "feishu"] as const;
 export type AccountService = (typeof ACCOUNT_SERVICES)[number];
@@ -68,6 +69,31 @@ export class ConnectionError extends Error {
     super(message);
     this.name = "ConnectionError";
   }
+
+  userMessage(): string {
+    return this.message;
+  }
+}
+
+/** 授权错误保留稳定的英文诊断，界面展示时才读取当前请求的语言。 */
+export class LocalizedConnectionError extends ConnectionError {
+  constructor(
+    readonly key: Extract<MessageKey, `connections.${string}`>,
+    readonly params?: Params,
+    status = 0,
+  ) {
+    super(tl("en", key, params), status);
+    this.name = "LocalizedConnectionError";
+  }
+
+  override userMessage(): string {
+    return t(this.key, this.params);
+  }
+}
+
+/** 不向授权页暴露未知网络异常里的地址、凭据或英文运行时信息。 */
+export function connectionUserMessage(error: unknown): string {
+  return error instanceof ConnectionError ? error.userMessage() : t("connections.failed");
 }
 
 const SERVICE_NAME: Record<AccountService, string> = { notion: "Notion", feishu: "Feishu" };

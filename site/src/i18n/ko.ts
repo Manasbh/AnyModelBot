@@ -1,0 +1,16 @@
+import home from './locales/ko/home';
+import meta from './locales/ko/meta';
+import nav from './locales/ko/nav';
+import banner from './locales/ko/banner';
+import pricing from './locales/ko/pricing';
+import footer from './locales/ko/footer';
+import download from './locales/ko/download';
+import security from './locales/ko/security';
+import privacy from './locales/ko/privacy';
+import licenses from './locales/ko/licenses';
+import changelog from './locales/ko/changelog';
+import notFound from './locales/ko/notFound';
+import ui from './locales/ko/ui';
+import partners from './locales/ko/partners';
+import type { Dict } from './zh';
+export const ko: Dict = { home, meta, nav, banner, pricing, footer, download, security, privacy, licenses, changelog, notFound, ui, partners };

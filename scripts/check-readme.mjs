@@ -16,9 +16,14 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ALLOW_MISSING = process.argv.includes("--allow-missing");
 
-const READMES = { zh: "README.md", en: "README_en.md" };
+const TARGET_READMES = { zh: "README.md", en: "README_en.md", ja: "README_ja.md", ko: "README_ko.md", ru: "README_ru.md" };
+const checkAll = process.argv.includes("--all-languages");
+const locales = JSON.parse(fs.readFileSync(path.join(ROOT, "ui/locales/manifest.json"), "utf8")).locales;
+const codes = locales.filter((l) => checkAll || l.ready).map((l) => l.siteCode);
+const READMES = Object.fromEntries(Object.entries(TARGET_READMES).filter(([code]) => codes.includes(code)));
 const LINKED_DOCS = [
   ...Object.values(READMES),
+  ...["ja", "ko", "ru"].filter((l) => codes.includes(l)).flatMap((l) => [`CONTRIBUTING_${l}.md`, `SECURITY_${l}.md`, `CHANGELOG_${l}.md`, `THIRD_PARTY_NOTICES_${l}.md`, `docs/development_${l}.md`, `docs/privacy_${l}.md`]),
   "CONTRIBUTING.md",
   "CONTRIBUTING_en.md",
   "SECURITY.md",
@@ -178,16 +183,17 @@ for (const readme of Object.values(READMES)) {
 if (gifTotal > GIF_TOTAL) err("docs/assets", `GIF 合计 ${fmtSize(gifTotal)} 超过 ${fmtSize(GIF_TOTAL)}`);
 
 // ---------- 2. 中英结构一致 ----------
-if (exists(READMES.zh) && exists(READMES.en)) {
+for (const translated of Object.values(READMES).filter((f) => f !== READMES.zh)) {
+  if (!exists(READMES.zh) || !exists(translated)) continue;
   const zh = read(READMES.zh);
-  const en = read(READMES.en);
+  const en = read(translated);
   for (const level of [1, 2]) {
     const a = headings(zh).filter((h) => h.level === level).length;
     const b = headings(en).filter((h) => h.level === level).length;
-    if (a !== b) err("README", `${level} 级标题数量不同：${READMES.zh} ${a} 个，${READMES.en} ${b} 个`);
+    if (a !== b) err("README", `${level} 级标题数量不同：${READMES.zh} ${a} 个，${translated} ${b} 个`);
   }
   const imgs = (t) => (t.match(/<img\b/g) || []).length;
-  if (imgs(zh) !== imgs(en)) err("README", `<img> 数量不同：${READMES.zh} ${imgs(zh)} 个，${READMES.en} ${imgs(en)} 个`);
+  if (imgs(zh) !== imgs(en)) err("README", `<img> 数量不同：${READMES.zh} ${imgs(zh)} 个，${translated} ${imgs(en)} 个`);
   const defs = (t) =>
     stripFences(t)
       .split("\n")
@@ -195,7 +201,7 @@ if (exists(READMES.zh) && exists(READMES.en)) {
       .map((l) => l.trim())
       .sort()
       .join("\n");
-  if (defs(zh) !== defs(en)) err("README", "文末引用式链接定义不一致（两份 README 应逐字相同）");
+  if (defs(zh) !== defs(en)) err("README", "文末引用式链接定义不一致（所有 README 应逐字相同）");
 }
 
 // ---------- 4. 禁用词 ----------

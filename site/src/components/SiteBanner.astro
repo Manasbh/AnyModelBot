@@ -5,20 +5,17 @@
 // 语言提示：有其他条目时缩成右侧的小胶囊，没有时单独占一条。
 import "../styles/banner.css";
 import Icon from "./Icon.astro";
-import { dict, switchHref, type Lang } from "../i18n";
+import { dict, READY_LANGS, LOCALES, switchHref, type Lang } from "../i18n";
 import { bannerItems } from "../lib/banner";
 import { ROTATE_MS } from "../data/announcements";
 interface Props { lang: Lang; path: string }
 const { lang, path } = Astro.props;
 const t = dict(lang).banner;
 const items = bannerItems(lang);
-const langHref = switchHref(lang, path);
-// 语言提示的文字一律是英文：中文页上写给读英文的人；英文页整页不出现中文，也用英文说"有中文版"
-const target = lang === "zh" ? { hreflang: "en", lang: "en" } : { hreflang: "zh-CN", lang: undefined };
 const ext = (a: { external: boolean }) => (a.external ? { target: "_blank", rel: "noopener" } : {});
 const tr = (id: string, kind: string, where: string) => ({ "data-track": "banner_click", "data-track-id": id, "data-track-kind": kind, "data-track-target": where });
 ---
-<aside class="sbar" aria-label={t.label} data-sbar data-lang={lang} data-rotate={ROTATE_MS} data-placement="banner" hidden>
+<aside class="sbar" aria-label={t.label} data-sbar data-lang={lang} data-languages={READY_LANGS.join(",")} data-rotate={ROTATE_MS} data-placement="banner" hidden>
   <div class="container sbar__in">
     <div class="sbar__pager" data-sbar-pager hidden>
       <button type="button" class="sbar__btn sbar__prev" aria-label={t.prev} data-sbar-prev><Icon name="chevron" size={14} /></button>
@@ -41,20 +38,18 @@ const tr = (id: string, kind: string, where: string) => ({ "data-track": "banner
           </p>
         </div>
       ))}
-      <div class="sbar__item" data-sbar-item data-id="lang" data-kind="lang" data-tone="neutral" hidden>
-        <p class="sbar__msg" lang={target.lang}>
-          <Icon name="globe" size={14} class="sbar__globe" />
-          <span class="sbar__text">{t.lang.text}</span>
-          <a class="sbar__cta" href={langHref} hreflang={target.hreflang} data-lang-switch {...tr("lang", "lang", "cta")}>
-            <span>{t.lang.action}</span><Icon name="arrow" size={14} />
-          </a>
-        </p>
-      </div>
+      {READY_LANGS.filter((l) => l !== lang).map((l) => (
+        <div class="sbar__item" data-sbar-item data-id={`lang-${l}`} data-kind="lang" data-target-lang={l} data-tone="neutral" hidden>
+          <p class="sbar__msg" lang={LOCALES[l].tag}>
+            <Icon name="globe" size={14} class="sbar__globe" />
+            <span class="sbar__text">{LOCALES[l].hint}</span>
+            <a class="sbar__cta" href={switchHref(l, path)} hreflang={LOCALES[l].tag} data-lang-switch={l}>{LOCALES[l].action}</a>
+          </p>
+        </div>
+      ))}
     </div>
     <div class="sbar__side">
-      <a class="sbar__chip" href={langHref} hreflang={target.hreflang} lang={target.lang} title={t.lang.text} data-lang-switch data-sbar-chip hidden {...tr("lang", "lang", "chip")}>
-        <Icon name="globe" size={14} /><span>{t.lang.chip}</span>
-      </a>
+      <a class="sbar__chip" href="#" data-lang-switch data-sbar-chip hidden><Icon name="globe" size={14} /><span data-lang-chip-label></span></a>
       <button type="button" class="sbar__btn sbar__close" aria-label={t.close} data-sbar-close><Icon name="close" size={14} /></button>
     </div>
   </div>
@@ -67,18 +62,31 @@ const tr = (id: string, kind: string, where: string) => ({ "data-track": "banner
     var preview = /[?&]banner=preview(&|$)/.test(location.search), gone = [], picked = null;
     try { gone = JSON.parse(localStorage.getItem("amb-banner") || "[]"); picked = localStorage.getItem("amb-lang"); } catch (e) {}
     if (!Array.isArray(gone)) gone = [];
-    var now = Date.now(), all = bar.querySelectorAll("[data-sbar-item]"), shown = [], langItem = null;
+    var now = Date.now(), all = bar.querySelectorAll("[data-sbar-item]"), shown = [], langItems = [];
     for (var i = 0; i < all.length; i++) {
       var it = all[i];
-      if (it.getAttribute("data-kind") === "lang") { langItem = it; continue; }
+      if (it.getAttribute("data-kind") === "lang") { langItems.push(it); continue; }
       var a = Date.parse(it.getAttribute("data-start") || ""), b = Date.parse(it.getAttribute("data-end") || "");
       if (preview || (gone.indexOf(it.getAttribute("data-id")) < 0 && !(a > now) && !(b <= now))) { it.hidden = false; shown.push(it); }
     }
-    var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""], zh = false;
-    for (var j = 0; j < langs.length; j++) if (/^zh/i.test(langs[j])) zh = true;
-    if (langItem && (preview || (!picked && (bar.getAttribute("data-lang") === "zh") !== zh))) {
-      if (shown.length) bar.querySelector("[data-sbar-chip]").hidden = false;
-      else { langItem.hidden = false; shown.push(langItem); }
+    var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""], target = "en";
+    var supported = (bar.getAttribute("data-languages") || "zh,en").split(",");
+    for (var j = 0; j < langs.length; j++) {
+      var base = langs[j].toLowerCase().split(/[-_]/)[0];
+      if (supported.indexOf(base) >= 0) { target = base; break; }
+    }
+    var langItem = langItems.find(function (it) { return it.getAttribute("data-target-lang") === target; });
+    if (preview && !langItem) langItem = langItems[0];
+    if (langItem && (preview || !picked)) {
+      if (shown.length) {
+        var link = langItem.querySelector("a"), chip = bar.querySelector("[data-sbar-chip]");
+        chip.href = link.href;
+        chip.hreflang = link.hreflang;
+        chip.lang = link.hreflang;
+        chip.setAttribute("data-lang-switch", link.getAttribute("data-lang-switch"));
+        chip.querySelector("[data-lang-chip-label]").textContent = link.textContent;
+        chip.hidden = false;
+      } else { langItem.hidden = false; shown.push(langItem); }
     }
     if (!shown.length) return;
     shown[0].setAttribute("data-on", "");

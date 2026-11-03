@@ -157,12 +157,12 @@ export function PromptCard({ requestId, fallback }) {
     </div>`)}
     ${pending && !single && html`<div class="answer">
       <input class="field" placeholder=${qs.some((q) => (q.options || []).length) ? t("chat.question.otherOptional") : t("chat.question.yourAnswer")} value=${custom}
-        onInput=${(e) => setCustom(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && !e.isComposing && sendAll()} />
+        onInput=${(e) => setCustom(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && !e.isComposing && e.keyCode !== 229 && sendAll()} />
       <button type="button" class="btn primary" disabled=${busy || (!custom.trim() && !Object.values(picked).some((v) => v.length))} onClick=${sendAll}>${t("chat.question.submit")}</button>
     </div>`}
     ${pending && single && html`<div class="answer">
       <input class="field" placeholder=${t("chat.question.orOther")} value=${custom} onInput=${(e) => setCustom(e.target.value)}
-        onKeyDown=${(e) => e.key === "Enter" && !e.isComposing && custom.trim() && submit([{ id: qs[0].id, selected: [], custom: custom.trim() }])} />
+        onKeyDown=${(e) => e.key === "Enter" && !e.isComposing && e.keyCode !== 229 && custom.trim() && submit([{ id: qs[0].id, selected: [], custom: custom.trim() }])} />
     </div>`}
     ${!pending && html`<div class="meta"><${Badge} s=${row.status} /></div>`}
   </div>`;

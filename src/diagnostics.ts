@@ -12,6 +12,7 @@ import { logFilePath, logger, readLogTail, redactText, redactValue } from "./log
 import { bareModel } from "./modelflare.js";
 import { pwshProbe, pwshReportLine } from "./agent/pwsh.js";
 import { t, type MessageKey, t as tr } from "./i18n/index.js";
+import { explainLocalProxyError, localProxyFailureHint } from "./network-error.js";
 
 const log = logger("diagnostics");
 
@@ -54,7 +55,7 @@ function describeFetchError(e: unknown, timeoutMs: number): string {
 function errorText(j: any, text: string): string {
   const m = j?.error?.message ?? j?.error ?? j?.message;
   const body = typeof m === "string" && m ? `${m}${j?.error?.code ? `（${j.error.code}）` : ""}` : text;
-  return redactText(String(body).slice(0, 2000));
+  return redactText(explainLocalProxyError(String(body)).slice(0, 2000));
 }
 
 /** 发一个最小的非流式对话请求，记录状态码、耗时、回显的模型名；失败时带回错误体。 */
@@ -109,6 +110,8 @@ export async function pickModel(app: App, botId?: string, explicit?: string): Pr
 
 
 function modelVerdict(g: ProbeResult, d: ProbeResult): string {
+  const proxyHint = localProxyFailureHint(g.error || "");
+  if (proxyHint) return proxyHint;
   if (g.skipped) return d.ok ? t("diag.verdict_endpoint_ok") : t("diag.verdict_endpoint_error", { error: d.status ? `HTTP ${d.status}` : d.error });
   if (g.ok && d.ok) return t("diag.verdict_both_ok");
   if (g.ok && !d.ok) return d.skipped ? t("diag.verdict_gateway_ok") : t("diag.verdict_direct_failed");
@@ -208,7 +211,7 @@ export async function testAgent(app: App, opts: { botId?: string; model?: string
     const s = st(id);
     if (s.status !== "pending") return;
     s.status = status;
-    if (detail) s.detail = redactText(detail).slice(0, 1500);
+    if (detail) s.detail = redactText(explainLocalProxyError(detail)).slice(0, 1500);
     s.ms = ms ?? (begun[id] !== undefined ? Date.now() - begun[id]! : undefined);
     // 下一步从这里开始计时
     const next = STAGES[STAGES.findIndex(([x]) => x === id) + 1]?.[0];
@@ -313,7 +316,7 @@ export async function testAgent(app: App, opts: { botId?: string; model?: string
       if (st("model").status === "pending") mark("model", "ok", t("diag.no_response_seen"));
       mark("reply", outcome.r.text.trim() ? "ok" : "fail", outcome.r.text.trim() ? result.reply : t("diag.no_text_reply"));
     } else if (outcome.kind === "error") {
-      result.error = redactText(outcome.e.message.slice(0, 1500));
+      result.error = redactText(explainLocalProxyError(outcome.e.message).slice(0, 1500));
       // 已经有一步明确失败（启动失败、上游报错）时不再往后记
       const pending = failedAlready() ? undefined : stages.find((s) => s.status === "pending");
       if (pending) mark(pending.id, "fail", result.error);

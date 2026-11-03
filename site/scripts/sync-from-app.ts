@@ -26,6 +26,12 @@ fs.copyFileSync(path.join(app, "CHANGELOG.md"), path.join(site, "src/data/change
 const changelogEn = fs.readFileSync(path.join(app, "CHANGELOG_en.md"), "utf8").split("\n").filter((line) => !/wechat|weixin|feishu/i.test(line)).join("\n");
 fs.writeFileSync(path.join(site, "src/data/changelog.en.md"), changelogEn);
 
+// Additional languages are independently authored; only the English channel policy filters its own changelog.
+for (const lang of ["ja", "ko", "ru"]) {
+  if (fs.existsSync(path.join(app, `THIRD_PARTY_NOTICES_${lang}.md`))) fs.copyFileSync(path.join(app, `THIRD_PARTY_NOTICES_${lang}.md`), path.join(site, `src/data/third-party.${lang}.md`));
+  if (fs.existsSync(path.join(app, `CHANGELOG_${lang}.md`))) fs.copyFileSync(path.join(app, `CHANGELOG_${lang}.md`), path.join(site, `src/data/changelog.${lang}.md`));
+}
+
 export function botCharsHash(src: string) {
   const m = src.match(/export const BOT_CHARS = (\{[\s\S]*?\n\});/);
   if (!m) return null;

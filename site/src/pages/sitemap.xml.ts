@@ -1,13 +1,13 @@
 // sitemap（§15）：首页与附属页的中英文版本，带 hreflang 互指。
 import type { APIRoute } from "astro";
 import { ORIGIN } from "../lib/site";
-import { href } from "../i18n";
+import { href, READY_LANGS, LOCALES } from "../i18n";
 
-const PATHS = ["/", "/download", "/security", "/pricing", "/changelog", "/privacy", "/licenses"];
+const PATHS = ["/", "/download", "/security", "/pricing", "/partners", "/changelog", "/privacy", "/licenses"];
 export const GET: APIRoute = () => {
   const urls = PATHS.flatMap((p) =>
-    (["zh", "en"] as const).map((lang) => {
-      const alt = (["zh", "en"] as const).map((l) => `<xhtml:link rel="alternate" hreflang="${l === "zh" ? "zh-CN" : "en"}" href="${ORIGIN}${href(l, p)}"/>`).join("");
+    READY_LANGS.map((lang) => {
+      const alt = READY_LANGS.map((l) => `<xhtml:link rel="alternate" hreflang="${LOCALES[l].tag}" href="${ORIGIN}${href(l, p)}"/>`).join("");
       return `<url><loc>${ORIGIN}${href(lang, p)}</loc>${alt}<xhtml:link rel="alternate" hreflang="x-default" href="${ORIGIN}${href("zh", p)}"/></url>`;
     }),
   );

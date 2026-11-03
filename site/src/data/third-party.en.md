@@ -1,5 +1,7 @@
 # Third-Party Notices
 
+[简体中文](./THIRD_PARTY_NOTICES.md) | English | [日本語](./THIRD_PARTY_NOTICES_ja.md) | [한국어](./THIRD_PARTY_NOTICES_ko.md) | [Русский](./THIRD_PARTY_NOTICES_ru.md)
+
 anymodel bot itself is released under the MIT License (see LICENSE). The components below are distributed with or ported into this program, and each keeps its original license.
 
 Some code is ported or adapted from Fei2411/DS-Bot (Apache-2.0); see the "DS Bot" section below.

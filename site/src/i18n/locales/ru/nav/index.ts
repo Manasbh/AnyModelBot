@@ -1,0 +1,21 @@
+import type { Dict } from "../../../zh";
+export default {
+  main: "Основная навигация",
+  bots: "Боты",
+  features: "Возможности",
+  data: "Данные",
+  models: "Модели",
+  pricing: "Цены",
+  docs: "Документация",
+  skip: "Перейти к содержимому",
+  home: "Главная AnyModelBot",
+  menu: "Меню",
+  close: "Закрыть",
+  github: "GitHub",
+  lang: "Язык",
+  langLabel: "Изменить язык",
+  theme: "Оформление",
+  themeLight: "Светлое",
+  themeDark: "Тёмное",
+  themeSystem: "Как в системе",
+} satisfies Dict["nav"];

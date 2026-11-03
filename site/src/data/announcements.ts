@@ -1,3 +1,4 @@
+import type { Lang } from "../i18n/locales";
 // 顶部公告条（components/SiteBanner.astro）的内容：发版下载提示 + 宣传 / 公告。改这一个文件就行，页面里不写死。
 //
 // - 同时有效的条目轮播：6 秒一条，鼠标悬停 / 键盘聚焦 / 标签页在后台时暂停，系统开了"减少动态效果"就不自动轮播；
@@ -34,6 +35,9 @@ export interface Announcement {
   countdown?: boolean;
   zh: BannerCopy;
   en: BannerCopy;
+  ja: BannerCopy;
+  ko: BannerCopy;
+  ru: BannerCopy;
 }
 
 /** 发版提示：版本号和下载地址取自 releases.json；按钮按访客的系统直接下载对应安装包（识别不出时去 /download）。 */
@@ -43,8 +47,14 @@ export const RELEASE = {
   days: 30,
   /** 各版本的一句话亮点（可选），没有就显示"AnyModelBot {version} 已发布" */
   highlights: {
-    "0.1.10": { zh: "机器人能收微信里的图片和文件了", en: "Bots can now see the images and files you send" },
-  } as Record<string, { zh: string; en: string }>,
+    "0.1.10": {
+      zh: "机器人能收微信里的图片和文件了",
+      en: "Bots can now see the images and files you send",
+      ja: "送信した画像やファイルをボットが読み取れるようになりました",
+      ko: "이제 보낸 이미지와 파일을 봇이 읽을 수 있습니다",
+      ru: "Теперь боты могут просматривать отправленные изображения и файлы",
+    },
+  } satisfies Record<string, Record<Lang, string>>,
 };
 
 /** 轮播间隔（毫秒） */
@@ -57,6 +67,9 @@ export const ANNOUNCEMENTS: Announcement[] = [
     kind: "promo",
     zh: { tag: "免费开源", text: "一个 Key 用上 {modelCount} 个模型", cta: { label: "看价格", href: "/pricing" } },
     en: { tag: "Free app", text: "One key for {modelCount} models", cta: { label: "Pricing", href: "/pricing" } },
+    ja: { tag: "無料・オープンソース", text: "1つのキーで{modelCount}のモデルを利用", cta: { label: "料金", href: "/pricing" } },
+    ko: { tag: "무료 오픈 소스", text: "키 하나로 모델 {modelCount}개 이용", cta: { label: "요금", href: "/pricing" } },
+    ru: { tag: "Бесплатное приложение", text: "Моделей с одним ключом: {modelCount}", cta: { label: "Цены", href: "/pricing" } },
   },
   // 公告示例（维护通知）：到点自动出现、过期自动消失，复制后改 id、时间和文案即可
   // {

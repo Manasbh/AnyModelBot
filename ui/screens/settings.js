@@ -6,7 +6,8 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, Seg, Switch, Sheet, CopyButton, Skeleton, MenuButton } from "../components/ui.js";
 import { AccountButton } from "./sidebar.js";
 import { PickModel, shortModel, showsStrategy, strategyOptions } from "../components/model-picker.js";
-import { KeyForm, lineOptions } from "./onboarding.js";
+import { KeyForm } from "./onboarding.js";
+import { DomainConnection } from "../components/domain-connection.js";
 import { LoginSheet, NotificationsSheet, UsageSheet } from "./account.js";
 import { api } from "../lib/api.js";
 import { MF_CONSOLE, MF_DOCS_LINK, MF_TOPUP, usd } from "../lib/links.js";
@@ -18,7 +19,7 @@ import { canNotify, requestNotify } from "../lib/notify.js";
 import { TroubleshootPane } from "./troubleshoot.js";
 import { ConnectionSheets, connectionRows, useConnections } from "./connections.js";
 import { PwshHint } from "../components/pwsh-hint.js";
-import { t, has, useLang, getLangPref, onLangChange, changeLang, LANG_NAMES } from "../lib/i18n.js";
+import { t, has, useLang, getLangPref, onLangChange, changeLang, LANGS, LANG_NAMES } from "../lib/i18n.js";
 import { fmtTimeOfDay } from "../lib/format.js";
 
 /** [id, 标题的文案键, 图标]；标题渲染时再 t()（tabLabel） */
@@ -48,7 +49,7 @@ const TEXT_SIZES = () => ["sm", "md", "lg", "xl"].map((v) => [v, t(`settings.tex
 const FONTS = () => ["system", "serif", "custom"].map((v) => [v, t(`settings.font.${v}`)]);
 const WIDTHS = () => ["normal", "wide", "full"].map((v) => [v, t(`settings.width.${v}`)]);
 const AUTO_ON_OFF = () => [["system", t("common.system")], ["on", t("common.on")], ["off", t("common.off")]];
-const LANG_OPTIONS = () => [["system", t("common.lang.system")], ["zh-CN", LANG_NAMES["zh-CN"]], ["en", LANG_NAMES.en]];
+const LANG_OPTIONS = () => [["system", t("common.lang.system")], ...LANGS.map((lang) => [lang, LANG_NAMES[lang]])];
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD_ENTER = isMac ? "⌘Enter" : "Ctrl+Enter";
 // 本机没开放字体列表（queryLocalFonts）时的候选：常见的中文 / 西文界面字体与等宽字体
@@ -123,7 +124,7 @@ function SaveInput({ id, value = "", secret, label, placeholder, onSave }) {
   };
   return html`<input ref=${ref} id=${id} class="field mono key-in" type=${secret ? "password" : "url"} autocomplete="off" spellcheck="false"
     aria-label=${label} placeholder=${placeholder} value=${v} onInput=${(e) => setV(e.target.value)} onBlur=${commit}
-    onKeyDown=${(e) => e.key === "Enter" && (e.preventDefault(), e.currentTarget.blur())} />`;
+    onKeyDown=${(e) => e.key === "Enter" && !e.isComposing && e.keyCode !== 229 && (e.preventDefault(), e.currentTarget.blur())} />`;
 }
 
 /** 外观分页顶部的预览：一问一答 + 一行代码，跟着字体大小、字体、代码字体和代码换行实时变 */
@@ -137,9 +138,13 @@ function AppearancePreview() {
 
 function NoticesSheet({ onClose }) {
   const [d, setD] = useState(null);
+  const lang = useLang();
   useEffect(() => {
-    api("/notices").then(setD).catch((e) => setD({ license: e.message, notices: "" }));
-  }, []);
+    let active = true;
+    setD(null);
+    api("/notices").then((value) => active && setD(value)).catch((e) => active && setD({ license: e.message, notices: "" }));
+    return () => { active = false; };
+  }, [lang]);
   return html`<${Sheet} title=${t("settings.rows.licenses.name")} wide onClose=${onClose}>
     <pre class="doc">${d ? `${d.license}\n\n${d.notices}` : t("common.loading")}</pre>
     <div class="actions"><button type="button" class="btn" data-autofocus onClick=${onClose}>${t("common.close")}</button></div>
@@ -156,7 +161,7 @@ export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, acc
     <label class="side-search">
       <${Icon} name="search" size="sm" />
       <input type="search" placeholder=${t("settings.side.search")} aria-label=${t("settings.side.search")} value=${query} onInput=${(e) => onQuery(e.target.value)}
-        onKeyDown=${(e) => e.key === "Escape" && query && (e.stopPropagation(), onQuery(""))} />
+        onKeyDown=${(e) => e.key === "Escape" && !e.isComposing && e.keyCode !== 229 && query && (e.stopPropagation(), onQuery(""))} />
     </label>
     <nav class="side-list side-nav" aria-label=${t("settings.side.nav")}>
       ${TABS.map(([id, label, icon]) => {
@@ -169,7 +174,7 @@ export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, acc
   </aside>`;
 }
 
-export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, mf, onMfChanged, onSettings, models, modelsError, reloadModels, status, bots, onOpenBotSettings, account: acct, onAccount }) {
+export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, mf, onMfChanged, onSettings, models, modelsError, reloadModels, status, update, bots, onOpenBotSettings, account: acct, onAccount }) {
   const [s, setS] = useState(null);
   const g = useStore(guide);
   const [rekey, setRekey] = useState(false);
@@ -313,7 +318,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
     const alertLines = ALERT_LINES();
     return [
       { tab: "general", id: "language", name: t("common.lang.label"), sub: t("settings.rows.language.sub"), keys: t("settings.rows.language.keys"),
-        ctl: html`<${Seg} label=${t("common.lang.label")} value=${langPref} onChange=${(v) => changeLang(v).then(() => saved()).catch(failed)} options=${LANG_OPTIONS()} />` },
+        ctl: html`<${MenuButton} width=${220} label=${t("common.lang.label")} value=${langPref} onChange=${(v) => changeLang(v).then(() => saved()).catch(failed)} options=${LANG_OPTIONS()} />` },
       { tab: "general", id: "send-key", name: t("settings.rows.sendKey.name"), sub: t("settings.rows.sendKey.sub", { key: p.sendKey === "mod" ? "Enter" : "Shift+Enter" }), keys: t("settings.rows.sendKey.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.sendKey.name")} value=${p.sendKey} onChange=${(v) => { setPrefs({ sendKey: v }); saved(); }} options=${[["enter", "Enter"], ["mod", MOD_ENTER]]} />` },
       canNotify && { tab: "general", id: "notify", name: t("settings.rows.notify.name"), sub: t("settings.rows.notify.sub"), keys: t("settings.rows.notify.keys"),
@@ -388,7 +393,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       showsStrategy(acct) && { tab: "modelflare", id: "key-quality", name: t("settings.rows.keyQuality.name"), sub: t("settings.rows.keyQuality.sub"), keys: t("settings.rows.keyQuality.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.keyQuality.name")} value=${acct.keyQuality.strategy} onChange=${putKeyQuality} options=${strategyOptions()} />` },
       managed && { tab: "modelflare", id: "line", name: t("settings.rows.line.name"), sub: t("settings.rows.line.sub"), keys: t("settings.rows.line.keys"),
-        ctl: html`<${Seg} label=${t("settings.rows.line.name")} value=${mf.line} onChange=${setLine} options=${lineOptions()} />` },
+        ctl: html`<${DomainConnection} value=${mf.line} onChange=${setLine} />` },
       { tab: "modelflare", id: "default-model", name: t("settings.rows.defaultModel.name"), sub: t("settings.rows.defaultModel.sub"), keys: t("settings.rows.defaultModel.keys"),
         ctl: html`<${PickModel} value=${s.defaultModel} models=${models} modelsError=${modelsError} reloadModels=${reloadModels} resetLabel=${t("settings.rows.defaultModel.auto")}
           onChange=${(m) => put({ defaultModel: m }, { defaultModel: m })} />` },
@@ -437,7 +442,11 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
         ctl: html`<span class="val" title=${s.dataDir}>${s.dataDir}</span><${CopyButton} text=${s.dataDir} label=${t("settings.rows.dataDir.copy")} />
           ${desktop && html`<button type="button" class="text" onClick=${() => api("/desktop/open-data-dir", { method: "POST", body: {} }).catch(failed)}>${t("common.open")}</button>`}` },
 
-      { tab: "about", id: "version", name: t("settings.rows.version.name"), keys: t("settings.rows.version.keys"), ctl: html`<span class="val">${status ? status.version : ""}</span>` },
+      { tab: "about", id: "version", name: t("settings.rows.version.name"), keys: t("settings.rows.version.keys"),
+        sub: update && update.latest ? (update.available ? t("settings.rows.version.available", { version: update.latest }) : t("settings.rows.version.latest")) : "",
+        ctl: html`<span class="val">${status ? status.version : ""}</span>
+          ${update && update.available && html`<a class="text" href=${update.downloadUrl} target="_blank" rel="noopener noreferrer">${t("settings.rows.version.download")}</a>
+            <a class="text" href=${update.releaseUrl} target="_blank" rel="noopener noreferrer">${t("settings.rows.version.notes")}</a>`}` },
       { tab: "about", id: "licenses", name: t("settings.rows.licenses.name"), sub: t("settings.rows.licenses.sub"), keys: t("settings.rows.licenses.keys"),
         ctl: html`<button type="button" class="text" onClick=${() => setNotices(true)}>${t("common.view")}</button>` },
       { tab: "about", id: "diagnostics", name: t("settings.rows.diagnostics.name"),
@@ -450,7 +459,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       { tab: "about", id: "links", name: "Modelflare", sub: t("settings.rows.links.sub"),
         ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">modelflare.dev ↗</a><a class="text" href=${MF_DOCS_LINK} target="_blank" rel="noopener noreferrer">${t("settings.rows.links.docs")}</a>` },
     ].filter(Boolean);
-  }, [s, mf, mode, p, models, modelsError, cu, status, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts]);
+  }, [s, mf, mode, p, models, modelsError, cu, status, update, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts]);
 
   const needle = q.trim().toLowerCase();
   const shown = needle ? rows.filter((r) => `${r.name} ${r.sub || ""} ${r.keys || ""}`.toLowerCase().includes(needle)) : rows.filter((r) => r.tab === tab);

@@ -113,6 +113,7 @@ export function useDismiss(ref, onClose, active = true, ignore) {
       onClose();
     };
     const key = (e) => {
+      if (e.isComposing || e.keyCode === 229) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
@@ -503,6 +504,7 @@ export function Sheet({ title, onClose, children, wide, label, leaving }) {
     const prev = document.activeElement;
     requestAnimationFrame(() => (ref.current?.querySelector("[data-autofocus]") || ref.current?.querySelector("button, input, textarea"))?.focus());
     const key = (e) => {
+      if (e.isComposing || e.keyCode === 229) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         onClose();

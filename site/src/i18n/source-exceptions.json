@@ -1,0 +1,10 @@
+{
+  "home.bots.personas.german.user": {
+    "value": "Gestern ich bin ins Kino.",
+    "reason": "The German tutor demonstrates correcting this deliberately incorrect German sentence; translate the explanation, not the exercise."
+  },
+  "download.items.mac-arm64": {
+    "value": "macOS Apple silicon",
+    "reason": "Operating system and processor platform names, retained as technical product identifiers."
+  }
+}

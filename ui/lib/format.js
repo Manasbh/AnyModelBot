@@ -1,5 +1,5 @@
 // 时间与时长的显示，跟着界面语言（文案在 ui/locales/<语言>/time.js，日期部分交给 Intl）。
-import { t, locale } from "./i18n.js";
+import { t, locale, fmtNum } from "./i18n.js";
 
 const pad = (n) => String(n).padStart(2, "0");
 const hm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -60,5 +60,5 @@ export function fmtSize(n) {
   let x = v / 1024;
   let i = 0;
   while (x >= 1024 && i < units.length - 1) (x /= 1024), i++;
-  return `${x >= 10 ? Math.round(x) : x.toFixed(1)} ${units[i]}`;
+  return `${fmtNum(x >= 10 ? Math.round(x) : Number(x.toFixed(1)), { maximumFractionDigits: 1 })} ${units[i]}`;
 }

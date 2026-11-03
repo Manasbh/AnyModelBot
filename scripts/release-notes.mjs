@@ -29,7 +29,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exit(2);
   }
   const parts = [];
-  for (const file of ["CHANGELOG.md", "CHANGELOG_en.md"]) {
+  const locales = JSON.parse(fs.readFileSync(path.join(root, "ui/locales/manifest.json"), "utf8")).locales;
+  for (const { code } of locales.filter((l) => l.ready)) {
+    const file = code === "zh-CN" ? "CHANGELOG.md" : `CHANGELOG_${code}.md`;
     const section = changelogSection(fs.readFileSync(path.join(root, file), "utf8"), version);
     if (!section) {
       console.error(`${file} has no entry for ${version}. Write it before tagging the release.`);

@@ -219,6 +219,7 @@ function ModelList({ models, error, current, onPick, onClose, reset, foot, onRet
     else onPick(it.m);
   };
   const onKey = (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     const it = flat[sel];
     if (e.key === "ArrowDown") {
       e.preventDefault();

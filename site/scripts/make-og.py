@@ -17,6 +17,17 @@ BOTS = ["主-蓝色", "黄色小萌", "绿草", "红魔", "紫钻", "橙色探�
 COPY = {
     "zh": {"h1": ["你的 AI 搭子，", "住在你自己的电脑里。"], "mark": "住在你自己的电脑里", "sub": "任意模型，每台设备，数据留在你电脑上。", "chips": ["对话存本机", "按量付费 · App 免费", "MIT 开源"]},
     "en": {"h1": ["AI teammates that", "live on your machine."], "mark": "live on your machine", "sub": "Any model. Every device. Your data, your machine.", "chips": ["Chats stay local", "Pay per use · App is free", "MIT open source"]},
+    "ja": {"h1": ["あなたの AI パートナーを、", "あなたのパソコンに。"], "mark": "あなたのパソコンに", "sub": "好きなモデルで。チャットは手元に保存。", "chips": ["チャットは本機に保存", "アプリ無料・従量課金", "MIT オープンソース"]},
+    "ko": {"h1": ["내 컴퓨터에서 함께하는", "나만의 AI 어시스턴트."], "mark": "나만의 AI 어시스턴트", "sub": "원하는 모델로. 대화는 내 기기에 저장.", "chips": ["대화는 내 기기에", "앱 무료 · 사용량 과금", "MIT 오픈 소스"]},
+    "ru": {"h1": ["Ваш ИИ-помощник", "на вашем компьютере."], "mark": "на вашем компьютере", "sub": "Любая модель. Разговоры хранятся у вас.", "chips": ["История у вас", "Приложение бесплатно", "Открытый код · MIT"]},
+}
+
+# Source fonts from google/fonts (SIL OFL), supplied at generation time. The website
+# keeps using system fonts; these large font files are not shipped to visitors.
+LOCAL_FONTS = {
+    "ja": os.environ.get("AMB_OG_FONT_JA", "/usr/share/fonts/truetype/noto-cjk/NotoSansJP.ttf"),
+    "ko": os.environ.get("AMB_OG_FONT_KO", "/usr/share/fonts/truetype/noto-cjk/NotoSansKR.ttf"),
+    "ru": os.environ.get("AMB_OG_FONT_RU", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
 }
 
 
@@ -34,7 +45,7 @@ def mark(size, plate=LIME, eye=INK, scale=4):
 
 def font(path, size, weight=None):
     f = ImageFont.truetype(path, size)
-    if weight and path == CJK:
+    if weight:
         try:
             f.set_variation_by_axes([weight])
         except Exception:
@@ -68,6 +79,21 @@ def og(lang):
     head = font(CJK, 64, 600) if lang == "zh" else font(GEIST, 68)
     sub = font(CJK, 28, 400) if lang == "zh" else font(GEIST_R, 28)
     chip = font(CJK, 20, 400) if lang == "zh" else font(MONO, 18)
+    if lang in LOCAL_FONTS:
+        face = LOCAL_FONTS[lang]
+        if not os.path.isfile(face):
+            raise FileNotFoundError(f"Set AMB_OG_FONT_{lang.upper()} to a font supporting {lang}: {face}")
+        size = 62
+        head = font(face, size, 600)
+        while max(d.textlength(line, font=head) for line in c["h1"]) > 680:
+            size -= 1
+            head = font(face, size, 600)
+        sub = font(face, 26, 400)
+        size = 20
+        chip = font(face, size, 500)
+        while sum(d.textlength(text, font=chip) + 32 for text in c["chips"]) + 24 > 680:
+            size -= 1
+            chip = font(face, size, 500)
     brand = font(GEIST, 34)
     # 品牌锁定组合
     m = mark(56)
@@ -113,7 +139,12 @@ def og(lang):
 
 
 if __name__ == "__main__":
-    icons()
-    for lang in ("zh", "en"):
+    # Specify languages to regenerate only those sharing cards, leaving icons intact.
+    selected = sys.argv[1:] or list(COPY)
+    if not sys.argv[1:]:
+        icons()
+    for lang in selected:
+        if lang not in COPY:
+            raise SystemExit(f"Unknown language: {lang}; choose {', '.join(COPY)}")
         og(lang)
     sys.exit(0)

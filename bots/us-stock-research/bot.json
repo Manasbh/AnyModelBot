@@ -1,0 +1,43 @@
+{
+  "id": "us-stock-research",
+  "version": "1.0.0",
+  "minAppVersion": "0.1.20",
+  "name": {
+    "zh-CN": "美股研报",
+    "en": "US Stock Research"
+  },
+  "summary": {
+    "zh-CN": "查美股财报和申报文件，写出每个数字都能追溯的研究报告",
+    "en": "Research US-listed companies from SEC filings, with every number traceable"
+  },
+  "about": {
+    "zh-CN": [
+      "用 SEC EDGAR 的财报和申报文件研究美国上市公司：列计划、取数、自检、写报告",
+      "取数记录和原始数据都留在你的工作区；没有股价、PE 和筛选器",
+      "研究流程灵感来自开源项目 Dexter，不含其代码，也无关联。仅供参考，不构成投资建议"
+    ],
+    "en": [
+      "Researches US-listed companies from SEC EDGAR filings: plans, fetches, checks, then writes a report",
+      "Fetch logs and raw data stay in your workspace. It has no prices, PE ratios or stock screener",
+      "Inspired by the open-source Dexter project, with none of its code and no affiliation. Not investment advice"
+    ]
+  },
+  "avatar": "purple",
+  "permissions": [
+    "workspace-write",
+    "network"
+  ],
+  "starters": {
+    "zh-CN": [
+      "研究英伟达近五年的收入和毛利率趋势，生成报告",
+      "对比微软和 Alphabet 近三年的收入和营业利润率",
+      "读特斯拉最新 10-K 的风险因素，总结最重要的五条"
+    ],
+    "en": [
+      "Research NVIDIA's revenue and gross margin trends over five years into a report",
+      "Compare Microsoft and Alphabet on revenue and operating margin over three years",
+      "Read Tesla's latest 10-K risk factors and summarize the top five"
+    ]
+  },
+  "skills": []
+}

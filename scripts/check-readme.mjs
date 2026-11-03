@@ -62,7 +62,8 @@ const warnings = [];
 const err = (file, msg) => errors.push(`${file}: ${msg}`);
 const warn = (file, msg) => warnings.push(`${file}: ${msg}`);
 
-const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8");
+// Git may check Markdown out as CRLF on Windows. Validate logical lines uniformly.
+const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8").replace(/\r\n?/g, "\n");
 const exists = (rel) => fs.existsSync(path.join(ROOT, rel));
 const fmtSize = (n) => (n >= MB ? `${(n / MB).toFixed(2)} MB` : `${(n / KB).toFixed(1)} KB`);
 

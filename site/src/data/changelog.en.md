@@ -4,6 +4,16 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.18 - 2026-11-03
+
+### New
+
+- This release includes full five-language support, manual API-domain selection and latency checks, update reminders, local proxy diagnostics, and the website, download and partner-page updates. See the 0.1.17 section below for feature details.
+
+### Fixed
+
+- Fixed a documentation check that misidentified roadmap content in Windows checkouts using CRLF line endings. Regression tests now cover LF, CRLF and CR. Application behavior is unchanged by this fix.
+
 ## 0.1.17 - 2026-11-03
 
 ### New

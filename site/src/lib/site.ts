@@ -3,6 +3,7 @@ import { z } from "zod";
 import releasesJson from "../data/releases.json";
 import snapshotJson from "../data/pricing.snapshot.json";
 import githubJson from "../data/github.json";
+import type { Lang } from "../i18n/locales";
 import type { Snapshot } from "./pricing";
 
 const env = (k: string) => (import.meta.env[k] as string | undefined) || process.env[k] || `{${k}}`;
@@ -22,13 +23,19 @@ export const githubStars = z.object({ stars: z.number().int().nonnegative() }).p
 /** 跳到 Modelflare 的链接都带来源参数：全项目统一 utm_source=anymodelbot&utm_campaign=amb_<位置>，官网是 amb_homepage */
 export const MF_UTM = "utm_source=anymodelbot&utm_campaign=amb_homepage";
 const mf = (url: string) => `${url}${url.includes("?") ? "&" : "?"}${MF_UTM}`;
+/** Modelflare 的公开页：英文在根路径（/en/pricing 会 301 到 /pricing），其他语言带前缀 */
+const mfPage = (lang: Lang, path: string) => mf(`https://modelflare.dev${lang === "en" ? path || "/" : `/${lang}${path}`}`);
 
 export const MF = {
-  home: mf("https://modelflare.dev/"),
-  pricing: mf("https://modelflare.dev/pricing"),
+  home: (lang: Lang) => mfPage(lang, ""),
+  pricing: (lang: Lang) => mfPage(lang, "/pricing"),
   docs: mf("https://docs.modelflare.dev/"),
-  /** 合作伙伴申请：Modelflare 控制台里的 AnyModelBot 合作页，没登录时先去登录 */
-  partnerApply: mf("https://modelflare.dev/affiliate-program?tab=anymodelbot"),
+  /**
+   * 合作伙伴申请：进 Modelflare 控制台里的 AnyModelBot 合作页。
+   * 控制台路径没有语言前缀（/zh/affiliate-program 是 404），要从 /<语言>/sign-in 进：它先设好界面语言再登录，已登录的人直接跳到 redirect。
+   * 账号里存过语言的，进控制台后以账号语言为准；管理员账号会被 Modelflare 带去管理后台，不到合作页。
+   */
+  partnerApply: (lang: Lang) => mf(`https://modelflare.dev/${lang}/sign-in?redirect=${encodeURIComponent("/affiliate-program?tab=anymodelbot")}`),
 };
 
 const Bin = z.object({ url: z.string().min(1), sha256: z.string().min(1), sizeMB: z.number().nonnegative() });

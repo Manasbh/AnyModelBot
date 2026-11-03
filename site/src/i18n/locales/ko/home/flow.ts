@@ -45,7 +45,7 @@ export default {
     }
   },
   "retentionLink": "Modelflare ‘데이터 보존’ 문서",
-  "retentionUrl": "https://docs.modelflare.dev/guides/features/data-retention/?utm_source=anymodelbot&utm_campaign=amb_homepage",
+  "retentionUrl": "https://docs.modelflare.dev/ko/guides/features/data-retention/?utm_source=anymodelbot&utm_campaign=amb_homepage",
   "compare": {
     "caption": "AnyModelBot과 일반적인 클라우드 도우미 비교",
     "head": [

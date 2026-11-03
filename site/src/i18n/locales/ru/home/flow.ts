@@ -46,7 +46,7 @@ export default {
   },
   retentionLink: "Документация Modelflare о хранении данных",
   retentionUrl:
-    "https://docs.modelflare.dev/guides/features/data-retention/?utm_source=anymodelbot&utm_campaign=amb_homepage",
+    "https://docs.modelflare.dev/ru/guides/features/data-retention/?utm_source=anymodelbot&utm_campaign=amb_homepage",
   compare: {
     caption: "AnyModelBot и типичные облачные помощники",
     head: ["", "AnyModelBot", "Типичные облачные помощники"],

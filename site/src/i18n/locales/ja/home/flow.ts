@@ -46,7 +46,7 @@ export default {
   },
   retentionLink: "Modelflare のデータ保持に関するドキュメント",
   retentionUrl:
-    "https://docs.modelflare.dev/guides/features/data-retention/?utm_source=anymodelbot&utm_campaign=amb_homepage",
+    "https://docs.modelflare.dev/ja/guides/features/data-retention/?utm_source=anymodelbot&utm_campaign=amb_homepage",
   compare: {
     caption: "AnyModelBot と一般的なクラウド型アシスタントの比較",
     head: ["", "AnyModelBot", "一般的なクラウド型アシスタント"],

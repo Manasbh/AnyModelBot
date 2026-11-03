@@ -30,7 +30,7 @@ const page = href(lang, "/pricing");
     <p class="pcard__note">{fmt(c.usage.note, { model: s.model, output: s.output, officialIn: s.officialIn, officialOut: s.officialOut })}</p>
     {compact
       ? <a class="pcard__link" href={page} data-track="pricing_cta_click" data-track-location="home-cards">{fmt(t.pricing.table.more, v)}</a>
-      : <a class="btn btn--secondary" href={MF.pricing} target="_blank" rel="noopener" data-track="pricing_cta_click" data-track-location="cards">{c.usage.cta}</a>}
+      : <a class="btn btn--secondary" href={MF.pricing(lang)} target="_blank" rel="noopener" data-track="pricing_cta_click" data-track-location="cards">{c.usage.cta}</a>}
     {!compact && <ul class="ticks small" role="list">{c.usage.points.map((x) => <li>{x}</li>)}</ul>}
   </li>
   <li class="card pcard reveal" style="--reveal-delay:120ms">

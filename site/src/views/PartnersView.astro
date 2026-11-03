@@ -21,6 +21,7 @@ const t = dict(lang);
 const p = t.partners;
 const a = p.apply;
 const vars = buildVars(lang);
+const applyUrl = MF.partnerApply(lang);
 const whoIcons = ["monitor", "chat", "server"] as const;
 // 模型数最多的几家，有标志的才放
 const count = (vd: string) => pricing.rows.filter((r) => r.vendor === vd).length;
@@ -41,7 +42,7 @@ const share = lang === "zh" ? { ogImage: { url: `${ORIGIN}/og/wechat-share.png`,
           <h1><span>{p.h1}</span> <em>{p.h1Hl}</em></h1>
           <p class="lead">{p.lead}</p>
           <div class="pt-hero__cta">
-            <a class="btn btn--primary" href={MF.partnerApply} target="_blank" rel="noopener" data-track="cta_click" data-track-location="partners-hero">{p.cta}</a>
+            <a class="btn btn--primary" href={applyUrl} target="_blank" rel="noopener" data-track="cta_click" data-track-location="partners-hero">{p.cta}</a>
             <a class="btn btn--secondary" href={href(lang, "/")} data-track="cta_click" data-track-location="partners-product">{p.ctaProduct}</a>
           </div>
           <ul class="pt-hero__points" role="list">
@@ -75,7 +76,7 @@ const share = lang === "zh" ? { ogImage: { url: `${ORIGIN}/og/wechat-share.png`,
             </li>
           ))}
         </ol>
-        <a class="btn btn--primary pt-path__cta" href={MF.partnerApply} target="_blank" rel="noopener" data-track="cta_click" data-track-location="partners-steps">{p.cta}</a>
+        <a class="btn btn--primary pt-path__cta" href={applyUrl} target="_blank" rel="noopener" data-track="cta_click" data-track-location="partners-steps">{p.cta}</a>
       </section>
 
       <section class="pt-sec" aria-labelledby="pt-who-h">
@@ -144,7 +145,7 @@ const share = lang === "zh" ? { ogImage: { url: `${ORIGIN}/og/wechat-share.png`,
             <h3 class="h3">{a.panel.title}</h3>
             <p class="pt-body">{a.panel.body}</p>
             <div class="pt-panel__actions">
-              <a class="btn btn--primary" href={MF.partnerApply} target="_blank" rel="noopener" data-track="cta_click" data-track-location="partners-apply">{a.panel.action}</a>
+              <a class="btn btn--primary" href={applyUrl} target="_blank" rel="noopener" data-track="cta_click" data-track-location="partners-apply">{a.panel.action}</a>
             </div>
           </div>
         </div>

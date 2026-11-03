@@ -1,12 +1,12 @@
 export default {
-  "pageTitle": "AnyModelBot Partners — sell with us and earn a revenue share",
-  "pageDescription": "Training providers, content creators, sales teams and service providers can apply to sell AnyModelBot with us and earn a revenue share. Apply, and we'll work out the details one-on-one.",
+  "pageTitle": "AnyModelBot Partner Program",
+  "pageDescription": "Training providers, content creators, service providers and channel partners can apply to join the AnyModelBot partner program, introduce it to the people who trust them, and share in the revenue those users bring.",
   "footer": "Partners",
   "eyebrow": "Partners",
   "h1": "Partner with us to bring AnyModelBot to more people.",
-  "lead": "Run training, make content, or already have clients? Sell AnyModelBot with us and earn a revenue share. Apply, and we'll work out the details one-on-one.",
+  "lead": "Whether you run training, create content or serve your own clients, you can introduce AnyModelBot to the people who trust you. We share the revenue those users bring with you. We'll work out the details one-on-one.",
   "cta": "Apply to partner",
-  "ctaProduct": "See the product",
+  "ctaProduct": "Learn about the product",
   "who": {
     "title": "Who it's for",
     "items": [
@@ -19,13 +19,13 @@ export default {
         "body": "Recommend it to your readers and members."
       },
       {
-        "title": "Sales teams and service providers",
-        "body": "Sell it to your clients and help them deploy it."
+        "title": "Service providers and channel partners",
+        "body": "Add AnyModelBot to what you offer your clients and help them deploy it."
       }
     ]
   },
   "why": {
-    "title": "Why it's easy to sell",
+    "title": "Why it's worth recommending",
     "dataLink": "Where data goes",
     "items": [
       {
@@ -51,24 +51,24 @@ export default {
       },
       {
         "title": "Talk it through",
-        "body": "We'll contact you and settle the partnership model and revenue share together."
+        "body": "We'll contact you and agree on a partnership plan and revenue arrangement that fit your clients and channels."
       },
       {
-        "title": "Start promoting",
-        "body": "Once we agree, we'll send you product materials and you're ready to go."
+        "title": "Get started",
+        "body": "We'll send you product materials. When users you bring generate revenue, we share it with you as agreed."
       }
     ]
   },
   "apply": {
     "title": "Apply to partner",
-    "lead": "Share some basics and how to reach you. We'll get in touch once we've read it.",
+    "lead": "Share some basics and how to reach you, and we'll be in touch.",
     "mailLabel": "Or email us directly",
     "optional": "Optional",
     "type": "Which describes you best",
     "types": {
       "training": "Training provider or instructor",
       "creator": "Content creator or community",
-      "sales": "Sales team or service provider",
+      "sales": "Service provider or channel partner",
       "other": "Other"
     },
     "name": "Your name",

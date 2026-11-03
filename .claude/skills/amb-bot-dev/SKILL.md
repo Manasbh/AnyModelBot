@@ -20,7 +20,7 @@ A catalog bot is a folder. The full reference is `docs/bot-framework_en.md` (Chi
 4. UI: import only from `/amb/botapp/kit/kit.js` and your own folder. Render `useBot().state`, and change data only with `send(text, action)`. Put strings in `ui/locales/zh-CN.json` and `en.json`.
 5. Run `npm run bot -- check bots/<id>` and fix every rule it names. Repeat until it passes.
 6. Preview: with the app running, `npm run bot -- dev bots/<id>`, then open the URL it prints.
-7. Before proposing the bot: `npm run bot -- check bots/<id> --full`.
+7. When it's ready: `npm run bot -- check bots/<id> --full`, then ask someone to judge whether it's worth shipping. Commit directly to master, including the screenshots in `.check/`. Don't open a PR.
 
 ## Rules the checks enforce
 

@@ -6,16 +6,29 @@
 
 目录为空时，现有用户看不到任何变化：侧边栏没有新入口，新手流程和原来一样。
 
-## 五分钟上手
+## 上手
+
+先准备环境，需要 Node.js 22.13+ 和 Go 1.26.8+：
+
+```bash
+git clone git@github.com:modelflare-ai/AnyModelBot.git
+cd AnyModelBot
+npm install
+npm run setup
+npm start                          # 打开 http://127.0.0.1:3600/，登录 Modelflare
+```
+
+另开一个终端，开始做 Bot：
 
 ```bash
 npm run bot -- new <id>            # 从模板起一个目录：bots/<id>/
 npm run bot -- check bots/<id>     # 静态检查，模板里的 TODO 填完才能过
-npm start                          # 另开一个终端启动 App
 npm run bot -- dev bots/<id>       # 把这个目录登记到运行中的 App
 ```
 
 `dev` 会打印一个地址，打开就能看到这个 Bot。改界面文件后刷新就能看到；改了技能或人设，要在侧边栏移除实例再发消息，才会重新安装。
+
+做好后跑一遍 `check --full`，请人看一眼值不值得上，然后直接提交到 master，连同 `.check/` 里的截图一起提交。不用提 PR。
 
 ## 架构
 
@@ -187,7 +200,7 @@ npm run bot -- check bots/<id> --full   # 再跑渲染和真实模型，上架�
 
 `--full` 需要两样东西：
 
-- 渲染用 Playwright，不是 App 的依赖：`npm i --no-save playwright && npx playwright install chromium`。截图留在 `.check/`，打包时用作发现页缩略图。
+- 渲染用 Playwright，不是 App 的依赖：`npm i --no-save playwright && npx playwright install chromium`。截图留在 `.check/`，打包时用作发现页缩略图，要一起提交。
 - 评测连到运行中的 App（`--app <地址>`，默认本机配置的端口；有令牌时设 `AMB_UI_TOKEN`），会真实安装并调用模型，跑完清掉。
 
 评测任务写在 `evals/tasks.json`：`{ id, prompt, changed?, contains?, notContains? }`，至少 3 个。注入用例写在 `evals/injection.json`：`{ id, prompt, file?: { name, text }, mustNotContain }`，至少 1 个。
@@ -211,7 +224,7 @@ npm run bot -- who-uses <技能> --root .
 - `pack` 把每个 Bot 过一遍静态检查，有一个不过就什么都不写。产物是 `index.json`、`index.json.sig`、`bundles/`、`thumbs/`，放到目录地址下就算发布。
 - 客户端启动时和之后每 6 小时拉一次（带 ETag），验签失败不更新；缓存也要验签。界面和技能按 sha256 校验。
 - 下架后重新 `pack` 并发布，24 小时内客户端生效。普通下架只提示用户；`--security` 会立刻停掉进程、删掉技能，用户的数据不动。
-- `.github/workflows/bot-catalog.yml` 在 `bots/**` 或 `catalog.json` 变化时检查并打包，产物作为 CI artifact；怎么放到线上由发布环境决定。
+- `.github/workflows/bot-catalog.yml` 在 `bots/**` 或 `catalog.json` 推到 master 时检查并打包，产物作为 CI artifact；怎么放到线上由发布环境决定。仓库还没配置 `AMB_CATALOG_PRIVATE_KEY` 时只检查，不打包。
 
 ### 上线目录要做的事
 

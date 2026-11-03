@@ -6,16 +6,29 @@ A bot is a folder. The app contains no code for any single bot, so shipping a ne
 
 While the catalog is empty, existing users see no change: no new sidebar entries, and the same onboarding.
 
-## Quick start
+## Getting started
+
+First set up the environment. You need Node.js 22.13+ and Go 1.26.8+:
+
+```bash
+git clone git@github.com:modelflare-ai/AnyModelBot.git
+cd AnyModelBot
+npm install
+npm run setup
+npm start                          # open http://127.0.0.1:3600/ and sign in to Modelflare
+```
+
+In another terminal, start on the bot:
 
 ```bash
 npm run bot -- new <id>            # scaffold bots/<id>/ from the template
 npm run bot -- check bots/<id>     # static checks; fails until every TODO is filled in
-npm start                          # start the app in another terminal
 npm run bot -- dev bots/<id>       # register this folder with the running app
 ```
 
 `dev` prints a URL that opens the bot. Refresh to see UI changes. After changing skills or the persona, remove the instance from the sidebar and send a message to reinstall.
+
+When it's ready, run `check --full`, ask someone to judge whether it's worth shipping, then commit directly to master, including the screenshots in `.check/`. There's no need for a PR.
 
 ## Architecture
 
@@ -187,7 +200,7 @@ Failures name the exact rule. When a new kind of problem turns up, add a rule to
 
 `--full` needs two things:
 
-- Rendering uses Playwright, which isn't an app dependency: `npm i --no-save playwright && npx playwright install chromium`. Screenshots stay in `.check/` and become Discover thumbnails when packing.
+- Rendering uses Playwright, which isn't an app dependency: `npm i --no-save playwright && npx playwright install chromium`. Screenshots stay in `.check/`, become Discover thumbnails when packing, and should be committed.
 - Evals connect to a running app (`--app <url>`, by default the configured local port; set `AMB_UI_TOKEN` if it has a token). They really install the bot and call the model, then clean up.
 
 Eval tasks go in `evals/tasks.json`: `{ id, prompt, changed?, contains?, notContains? }`, at least 3. Injection cases go in `evals/injection.json`: `{ id, prompt, file?: { name, text }, mustNotContain }`, at least 1.
@@ -211,7 +224,7 @@ npm run bot -- who-uses <skill> --root .
 - `pack` runs the static checks on every bot and writes nothing if any fails. It produces `index.json`, `index.json.sig`, `bundles/` and `thumbs/`. Putting them at the catalog URL publishes them.
 - Clients fetch at startup and every 6 hours (with ETag) and ignore anything that fails verification, including the local cache. UI and skills are verified by sha256.
 - After a takedown, run `pack` and publish again; clients pick it up within 24 hours. A normal takedown only notifies users. `--security` stops the process and deletes the skills right away, leaving the user's data alone.
-- `.github/workflows/bot-catalog.yml` checks and packs when `bots/**` or `catalog.json` changes, and keeps the output as a CI artifact. How it reaches production is up to the release environment.
+- `.github/workflows/bot-catalog.yml` checks and packs when `bots/**` or `catalog.json` is pushed to master, and keeps the output as a CI artifact. How it reaches production is up to the release environment. Until the repository has `AMB_CATALOG_PRIVATE_KEY`, it only checks and doesn't pack.
 
 ### Going live
 

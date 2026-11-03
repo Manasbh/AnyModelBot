@@ -410,7 +410,7 @@ export default {
     webSearch: {
       name: "Web search",
       sub: "Free search by default. A key you add is used first",
-      keys: "search web internet tavily exa bocha zhipu searxng",
+      keys: "search web internet tavily exa bocha zhipu keenable searxng",
       auto: "Auto",
       bocha: "Bocha",
       zhipu: "Zhipu",

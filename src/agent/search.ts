@@ -18,11 +18,11 @@ const log = logger("agent.search");
 
 // ---------- 设置 ----------
 
-export const SEARCH_PROVIDERS = ["auto", "tavily", "exa", "bocha", "zhipu", "searxng"] as const;
+export const SEARCH_PROVIDERS = ["auto", "tavily", "exa", "bocha", "zhipu", "keenable", "searxng"] as const;
 export type SearchProvider = (typeof SEARCH_PROVIDERS)[number];
 /** 带 Key 的接口 */
 export type KeyedProvider = Exclude<SearchProvider, "auto" | "searxng">;
-const KEYED: readonly KeyedProvider[] = ["tavily", "exa", "bocha", "zhipu"];
+const KEYED: readonly KeyedProvider[] = ["tavily", "exa", "bocha", "zhipu", "keenable"];
 
 /** 应用级（不分机器人）：存在 SQLite 的 kv 表，和渠道令牌一样只靠数据目录的权限保护；Key 按接口分开存，切换不丢 */
 export interface WebSearchSettings {
@@ -583,6 +583,12 @@ export function keyedRequest(s: WebSearchSettings, query: string, count: number)
         url: "https://open.bigmodel.cn/api/paas/v4/web_search",
         init: json({ authorization: `Bearer ${key}` }, { search_query: query.slice(0, 70), search_engine: "search_std", search_intent: false, count: Math.min(count, 50) }),
         parse: (j) => list(j?.search_result).filter((r) => httpUrl(r?.link)).map((r) => source(r.link, str(r.title), str(r.content), str(r.publish_date))),
+      };
+    case "keenable":
+      return {
+        url: "https://api.keenable.ai/v1/search",
+        init: json({ "x-api-key": key, "x-keenable-title": "AnyModelBot" }, { query, max_results: Math.min(count, 20) }),
+        parse: (j) => list(j?.results).filter((r) => httpUrl(r?.url)).map((r) => source(r.url, str(r.title), str(r.description) || str(r.snippet))),
       };
   }
 }

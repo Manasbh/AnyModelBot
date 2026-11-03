@@ -389,6 +389,18 @@ describe("带 Key 的接口", () => {
     expect(r.parse({ search_result: [{ title: "Z", link: "https://z/", content: "zc", publish_date: "2025-06-07" }] })).toEqual([{ url: "https://z/", title: "Z", snippet: "zc", publishedAt: "2025-06-07" }]);
   });
 
+  it("Keenable：x-api-key + x-keenable-title，query + max_results（≤20）；results[].title / url / description|snippet", () => {
+    const r = keyedRequest(cfg("keenable"), "q", 30)!;
+    expect(r.url).toBe("https://api.keenable.ai/v1/search");
+    expect(headers(r)["x-api-key"]).toBe("k-123456");
+    expect(headers(r)["x-keenable-title"]).toBe("AnyModelBot");
+    expect(body(r)).toEqual({ query: "q", max_results: 20 });
+    expect(r.parse({ results: [{ title: "K", url: "https://k/", description: "d", snippet: "s" }, { title: "L", url: "https://l/", snippet: "s2" }, { title: "bad", url: "ftp://x" }] })).toEqual([
+      { url: "https://k/", title: "K", snippet: "d" },
+      { url: "https://l/", title: "L", snippet: "s2" },
+    ]);
+  });
+
   it("SearXNG：GET <地址>/search?q=…&format=json，不用 Key；results[].url / title / content / publishedDate", () => {
     const r = keyedRequest(normalizeWebSearch({ provider: "searxng", url: "https://searx.example/sub" }), "a b", 8)!;
     expect(r.url).toBe("https://searx.example/sub/search?q=a%20b&format=json");

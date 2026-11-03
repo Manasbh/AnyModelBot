@@ -7,16 +7,17 @@ import Security from "../../views/SecurityView.astro";
 import Licenses from "../../views/LicensesView.astro";
 import Changelog from "../../views/ChangelogView.astro";
 import Partners from "../../views/PartnersView.astro";
+import Catalog from "../../views/CatalogView.astro";
 import NotFound from "../../views/NotFoundView.astro";
 import { READY_LANGS, type Lang } from "../../i18n";
 
 export function getStaticPaths() {
   return [...READY_LANGS.filter((l) => l !== "zh" && l !== "en").flatMap((lang) =>
-    [undefined, "download", "pricing", "privacy", "security", "licenses", "changelog", "partners", "404"].map((path) => ({ params: { lang, path } })),
+    [undefined, "download", "pricing", "privacy", "security", "licenses", "changelog", "partners", "bots", "404"].map((path) => ({ params: { lang, path } })),
   ), { params: { lang: "en", path: "404" } }];
 }
 const lang = Astro.params.lang as Lang;
-const views = { home: Home, download: Download, pricing: Pricing, privacy: Privacy, security: Security, licenses: Licenses, changelog: Changelog, partners: Partners, "404": NotFound };
+const views = { home: Home, download: Download, pricing: Pricing, privacy: Privacy, security: Security, licenses: Licenses, changelog: Changelog, partners: Partners, bots: Catalog, "404": NotFound };
 const View = views[(Astro.params.path || "home") as keyof typeof views];
 ---
 <View lang={lang} />

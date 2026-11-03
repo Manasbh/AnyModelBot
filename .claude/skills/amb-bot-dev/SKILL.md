@@ -14,12 +14,12 @@ A catalog bot is a folder. The full reference is `docs/bot-framework_en.md` (Chi
    - `bot.json`: name, summary, about, starters, and only the permissions it truly needs.
    - `persona.md`: who the bot is, what job it does, how it knows the job is done. Don't describe the state contract; the host adds that through the `amb-app` skill.
    - `state.schema.json`: the smallest shape the UI needs.
-   - `sample.zh-CN.json` and `sample.en.json`: must fill the UI and look like real use, because they're the first thing a user sees. Write each one in its own language. `sample.ja.json`, `sample.ko.json` and `sample.ru.json` are optional and fall back to English.
+   - `sample.zh-CN.json` and `sample.en.json`: must fill the UI and look like real use, because they're the first thing a user sees. Write each one in its own language, and add `sample.ja.json`, `sample.ko.json` and `sample.ru.json` too.
    - `evals/`: at least 3 real tasks and 1 injection case.
 3. Skills: write your own in `skills/<name>/SKILL.md`, or copy a skill in and list it under `skills` in `bot.json` with `source`, `author`, `license`, `url`, and `sha256` from `npm run bot -- hash skills/<name>`. Only MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC or CC0-1.0. A repository with no license can't be used.
-4. UI: import only from `/amb/botapp/kit/kit.js` and your own folder. Render `useBot().state`, and change data only with `send(text, action)`. Show images from `app/` with `readImage` and open outputs with `openFile`. Put strings in `ui/locales/zh-CN.json` and `en.json`.
+4. UI: import only from `/amb/botapp/kit/kit.js` and your own folder. Render `useBot().state`, and change data only with `send(text, action)`. Show images from `app/` with `readImage` and open outputs with `openFile`. Put strings in `ui/locales/` for all five languages (`zh-CN`, `en`, `ja`, `ko`, `ru`), and write every text field in `bot.json` in all five.
 5. Run `npm run bot -- check bots/<id>` and fix every rule it names. Repeat until it passes.
-6. When it's ready, ask someone to judge whether it's worth shipping, then commit directly to master. Don't open a PR. Don't run `check --full` unless someone asks for it.
+6. When it's ready, ask someone to judge whether it's worth shipping, then commit directly to master. Don't open a PR. Don't run `check --full` unless someone asks for it. Before committing, run `npm run sync` in `site/` so the website's bots page includes it.
 
 ## Rules the checks enforce
 

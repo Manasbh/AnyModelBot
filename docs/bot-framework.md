@@ -71,7 +71,7 @@ bots/<id>/
 | `permissions` | 见下表 |
 | `skills` | 引入的技能：`name`、`source`、`sha256`（`amb-bot hash` 算）、`author`、`license`、`url`。自己写的不用列 |
 
-文案字段都写成 `{ "zh-CN": …, "en": … }`，这两种必填；`ja`、`ko`、`ru` 可选，缺了退回 `en`。
+文案字段都写成 `{ "zh-CN": …, "en": … }`。框架要求这两种，`ja`、`ko`、`ru` 缺了退回 `en`。这个仓库里上架的 Bot 五种语言都要有，文案、界面和示例数据都算，`test/bot-catalog-site.unit.test.ts` 会检查。
 
 ### 权限
 
@@ -238,6 +238,7 @@ App 里写着目录的公钥和地址（`src/botkit/config.ts`），地址是 `h
 - **私钥**只放在发布机器上（`AMB_CATALOG_PRIVATE_KEY`），不要提交。丢了就要换公钥并发版，所以要另外备份。
 - **发布**：在发布机器上拉最新的 master，运行 `pack`，把产物放到目录地址下。上架和更新 Bot 都不用发版，除非 Bot 要用新版 App 才有的能力。
 - **`catalog.lock.json`** 留在发布机器上，每次 `pack` 前放回仓库根目录。
+- **官网**：`/bots` 页面的内容来自 `site/src/data/catalog-bots.json`。上架或改了 Bot 的文案后，在 `site/` 运行 `npm run sync` 并提交，再部署官网。
 - **关闭目录**：设环境变量 `AMB_CATALOG=off`，App 不联网，目录是空的。测试就是这样跑的。
 
 本地联调可以不改代码：设环境变量 `AMB_CATALOG_URL` 和 `AMB_CATALOG_PUBKEY`。

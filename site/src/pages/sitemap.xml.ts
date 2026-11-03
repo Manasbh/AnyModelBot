@@ -3,7 +3,7 @@ import type { APIRoute } from "astro";
 import { ORIGIN } from "../lib/site";
 import { href, READY_LANGS, LOCALES } from "../i18n";
 
-const PATHS = ["/", "/download", "/security", "/pricing", "/partners", "/changelog", "/privacy", "/licenses"];
+const PATHS = ["/", "/download", "/security", "/pricing", "/partners", "/bots", "/changelog", "/privacy", "/licenses"];
 export const GET: APIRoute = () => {
   const urls = PATHS.flatMap((p) =>
     READY_LANGS.map((lang) => {

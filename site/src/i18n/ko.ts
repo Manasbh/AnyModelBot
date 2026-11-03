@@ -12,5 +12,6 @@ import changelog from './locales/ko/changelog';
 import notFound from './locales/ko/notFound';
 import ui from './locales/ko/ui';
 import partners from './locales/ko/partners';
+import catalog from './locales/ko/catalog';
 import type { Dict } from './zh';
-export const ko: Dict = { home, meta, nav, banner, pricing, footer, download, security, privacy, licenses, changelog, notFound, ui, partners };
+export const ko: Dict = { home, meta, nav, banner, pricing, footer, download, security, privacy, licenses, changelog, notFound, ui, partners, catalog };

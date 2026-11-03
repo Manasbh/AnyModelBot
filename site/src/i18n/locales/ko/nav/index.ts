@@ -1,6 +1,7 @@
 export default {
   "main": "주요 메뉴",
   "bots": "봇",
+  "catalog": "둘러보기",
   "features": "기능",
   "data": "데이터",
   "models": "모델",

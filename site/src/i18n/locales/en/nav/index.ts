@@ -1,6 +1,7 @@
 export default {
   "main": "Main",
   "bots": "Bots",
+  "catalog": "Discover",
   "features": "Features",
   "data": "Data",
   "models": "Models",

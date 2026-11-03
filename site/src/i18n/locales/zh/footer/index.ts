@@ -6,7 +6,8 @@ export default {
         "功能",
         "价格",
         "下载",
-        "更新日志"
+        "更新日志",
+        "现成的 Bot"
       ]
     },
     "resources": {

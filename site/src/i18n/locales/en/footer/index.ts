@@ -6,7 +6,8 @@ export default {
         "Features",
         "Pricing",
         "Download",
-        "Changelog"
+        "Changelog",
+        "Ready-made bots"
       ]
     },
     "resources": {

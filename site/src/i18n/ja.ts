@@ -13,6 +13,7 @@ import changelog from "./locales/ja/changelog";
 import notFound from "./locales/ja/notFound";
 import ui from "./locales/ja/ui";
 import partners from "./locales/ja/partners";
+import catalog from "./locales/ja/catalog";
 export const ja = {
   home,
   meta,
@@ -28,4 +29,5 @@ export const ja = {
   notFound,
   ui,
   partners,
+  catalog,
 } satisfies Dict;

@@ -12,5 +12,6 @@ import changelog from './locales/zh/changelog';
 import notFound from './locales/zh/notFound';
 import ui from './locales/zh/ui';
 import partners from './locales/zh/partners';
-export const zh = { home, meta, nav, banner, pricing, footer, download, security, privacy, licenses, changelog, notFound, ui, partners };
+import catalog from './locales/zh/catalog';
+export const zh = { home, meta, nav, banner, pricing, footer, download, security, privacy, licenses, changelog, notFound, ui, partners, catalog };
 export type Dict = typeof zh;

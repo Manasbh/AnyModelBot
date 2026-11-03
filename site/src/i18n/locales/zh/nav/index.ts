@@ -1,6 +1,7 @@
 export default {
   "main": "主导航",
   "bots": "机器人",
+  "catalog": "发现",
   "features": "功能",
   "data": "数据",
   "models": "模型",

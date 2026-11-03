@@ -13,6 +13,7 @@ import changelog from "./locales/ru/changelog";
 import notFound from "./locales/ru/notFound";
 import ui from "./locales/ru/ui";
 import partners from "./locales/ru/partners";
+import catalog from "./locales/ru/catalog";
 export const ru = {
   home,
   meta,
@@ -28,4 +29,5 @@ export const ru = {
   notFound,
   ui,
   partners,
+  catalog,
 } satisfies Dict;

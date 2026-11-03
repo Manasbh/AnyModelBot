@@ -12,5 +12,6 @@ import changelog from './locales/en/changelog';
 import notFound from './locales/en/notFound';
 import ui from './locales/en/ui';
 import partners from './locales/en/partners';
+import catalog from './locales/en/catalog';
 import type { Dict } from './zh';
-export const en: Dict = { home, meta, nav, banner, pricing, footer, download, security, privacy, licenses, changelog, notFound, ui, partners };
+export const en: Dict = { home, meta, nav, banner, pricing, footer, download, security, privacy, licenses, changelog, notFound, ui, partners, catalog };

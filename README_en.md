@@ -200,6 +200,16 @@ A bot is more than a chat window: it has a persona, a default model, its own wor
   <img src="docs/assets/features/agent-files.gif" alt="A bot tidies a messy folder: it lists the files, proposes a plan, and an approval card asks before moving files outside its workspace" width="100%">
 </p>
 
+## 🧩 Ready-made bots
+
+If you don't want to write a persona, use a ready-made bot from Discover. Each has its own view. Opening one shows a sample, and it's only installed when you send your first message.
+
+- **Company Research:** Local company diligence with parallel research, curation, and sourced reports
+- **PPT Master:** Turn documents or topics into editable PPTX decks, or edit decks you have
+- **US Stock Research:** Research US-listed companies from SEC filings, with every number traceable
+
+See the [bots page on our website](https://anymodel.bot/en/bots) for details.
+
 ## ⏳ Works in the background, and comes to you only when needed
 
 - **Background tasks.** For work that takes a while (research, a report, sorting files), or when you say "do it in the background", the bot starts a background task and you keep chatting. The result comes back to the conversation that asked for it.

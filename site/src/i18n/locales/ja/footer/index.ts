@@ -2,7 +2,7 @@ export default {
   cols: {
     product: {
       title: "製品",
-      links: ["機能", "料金", "ダウンロード", "変更履歴"],
+      links: ["機能", "料金", "ダウンロード", "変更履歴", "既製の Bot"],
     },
     resources: {
       title: "リソース",

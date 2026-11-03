@@ -214,6 +214,12 @@ describe("约束检查", () => {
     write(dir, "ui/app.js", 'import { html, Link } from "/amb/botapp/kit/kit.js";\nhtml`<${Link} href="https://x.test">x<//>`;\n');
     expect(rules(dir)).toContain("ui.min-app-version");
   });
+  it("写了其他语言的界面文案，键要和 en 对得上", () => {
+    write(dir, "ui/locales/ja.json", JSON.stringify({ empty: "空", extra: "余分" }));
+    expect(checkStatic(dir).issues).toContainEqual(expect.objectContaining({ rule: "ui.locales", message: expect.stringContaining("ja") }));
+    write(dir, "ui/locales/ja.json", JSON.stringify({ empty: "空" }));
+    expect(rules(dir)).not.toContain("ui.locales");
+  });
   it("脚本联网要声明权限", () => {
     write(dir, "skills/s/SKILL.md", "---\nname: s\n---\n");
     write(dir, "skills/s/run.py", "import requests\nrequests.get('x')\n");

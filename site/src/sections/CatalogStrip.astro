@@ -1,0 +1,25 @@
+---
+// 首页的 Bot 目录入口：放在「认识你的机器人」后面，不编号，也不算首页的一节。文案来自 bots/*/bot.json。
+import { dict, href, type Lang } from "../i18n";
+import { catalogBots, stillOf, textOf } from "../lib/catalog";
+import "../styles/catalog.css";
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const c = dict(lang).catalog.strip;
+const page = href(lang, "/bots");
+---
+<section class="cb-strip container" aria-labelledby="cb-strip-title">
+  <header class="cb-strip__head">
+    <h2 id="cb-strip-title">{c.title}</h2>
+    <p>{c.lead}</p>
+  </header>
+  <div class="cb-strip__list">
+    {catalogBots.map((b) => (
+      <a class="cb-mini" href={`${page}#${b.id}`}>
+        <img src={stillOf(b)} alt="" width="48" height="48" loading="lazy" decoding="async" />
+        <span class="cb-mini__text"><strong>{textOf(b.name, lang)}</strong><span>{textOf(b.summary, lang)}</span></span>
+      </a>
+    ))}
+  </div>
+  <p class="cb-strip__all"><a class="btn btn--secondary" href={page}>{c.all}</a></p>
+</section>

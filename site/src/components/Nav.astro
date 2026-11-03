@@ -16,6 +16,7 @@ const home = href(lang, "/");
 const anchor = (id: string) => (path === "/" ? `#${id}` : `${home}#${id}`);
 const links = [
   { href: anchor("bots"), label: t.nav.bots },
+  { href: href(lang, "/bots"), label: t.nav.catalog, current: path === "/bots" },
   { href: anchor("features"), label: t.nav.features },
   { href: anchor("models"), label: t.nav.models },
   { href: anchor("data"), label: t.nav.data },

@@ -71,7 +71,7 @@ bots/<id>/
 | `permissions` | See below |
 | `skills` | Imported skills: `name`, `source`, `sha256` (from `amb-bot hash`), `author`, `license`, `url`. Your own skills aren't listed |
 
-Text fields are `{ "zh-CN": …, "en": … }`, both required. `ja`, `ko` and `ru` are optional and fall back to `en`.
+Text fields are `{ "zh-CN": …, "en": … }`, both required. The framework requires these two; `ja`, `ko` and `ru` fall back to `en`. Bots listed in this repository need all five languages, including text, UI and sample data, and `test/bot-catalog-site.unit.test.ts` checks this.
 
 ### Permissions
 
@@ -238,6 +238,7 @@ The app ships with the catalog's public key and address (`src/botkit/config.ts`)
 - **Private key:** It's kept only on the release machine (`AMB_CATALOG_PRIVATE_KEY`) and never committed. Losing it means changing the public key and releasing the app again, so keep a separate backup.
 - **Publishing:** On the release machine, pull the latest master, run `pack`, and put the output at the catalog address. Adding or updating a bot doesn't need an app release unless the bot uses something only a newer app has.
 - **`catalog.lock.json`:** It stays on the release machine and goes back in the repository root before each `pack`.
+- **Website:** The `/bots` page comes from `site/src/data/catalog-bots.json`. After adding a bot or changing its text, run `npm run sync` in `site/`, commit, and deploy the website.
 - **Turning the catalog off:** Set `AMB_CATALOG=off`. The app stays off the network for this, and the catalog is empty. Tests run this way.
 
 To test locally without changing code, set `AMB_CATALOG_URL` and `AMB_CATALOG_PUBKEY`.

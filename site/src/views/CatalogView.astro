@@ -1,0 +1,38 @@
+---
+// Bot 目录页：列出发现页里现成的 Bot。文案来自 bots/*/bot.json，新增 Bot 时不用改这里。
+import Base from "../layouts/Base.astro";
+import { dict, href, type Lang } from "../i18n";
+import { catalogBots, stillOf, textOf } from "../lib/catalog";
+import "../styles/pages.css";
+import "../styles/catalog.css";
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const c = dict(lang).catalog;
+---
+<Base lang={lang} path="/bots" title={c.title} description={c.description}>
+  <div class="container page">
+    <header class="page__head">
+      <h1>{c.h1}</h1>
+      <p class="lead">{c.lead}</p>
+    </header>
+    <div class="cb-list">
+      {catalogBots.map((b) => (
+        <article class="cb-bot" id={b.id}>
+          <img class="cb-face" src={stillOf(b)} alt="" width="96" height="96" loading="lazy" decoding="async" />
+          <div class="cb-body">
+            <h2>{textOf(b.name, lang)}</h2>
+            <p class="cb-summary">{textOf(b.summary, lang)}</p>
+            <ul class="ticks" role="list">{textOf(b.about, lang).map((line) => <li>{line}</li>)}</ul>
+            <h3>{c.tryLabel}</h3>
+            <ul class="cb-try" role="list">{textOf(b.starters, lang).map((line) => <li>{line}</li>)}</ul>
+          </div>
+        </article>
+      ))}
+    </div>
+    <section class="page__section">
+      <h2>{c.howTitle}</h2>
+      <ol class="cb-how">{c.how.map((step) => <li>{step}</li>)}</ol>
+    </section>
+    <p class="page__cta"><a class="btn btn--primary" href={href(lang, "/download")}>{c.cta}</a></p>
+  </div>
+</Base>

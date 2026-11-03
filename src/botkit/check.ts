@@ -149,6 +149,11 @@ function lintUi(dir: string): Issue[] {
     const en = keys("en");
     const diff = [...zh.filter((k) => !en.includes(k)), ...en.filter((k) => !zh.includes(k))];
     if (diff.length) issues.push({ rule: "ui.locales", message: `zh-CN 和 en 的键不一致：${diff.slice(0, 5).join("、")}`, file: "ui/locales" });
+    for (const lang of BOT_LANGS.filter((l) => !(REQUIRED_LANGS as readonly string[]).includes(l) && fs.existsSync(path.join(ui, "locales", `${l}.json`)))) {
+      const own = keys(lang);
+      const off = [...en.filter((k) => !own.includes(k)), ...own.filter((k) => !en.includes(k))];
+      if (off.length) issues.push({ rule: "ui.locales", message: `${lang} 和 en 的键不一致：${off.slice(0, 5).join("、")}`, file: "ui/locales" });
+    }
   } catch {
     /* 文件缺失由 structure 规则报 */
   }

@@ -1,0 +1,31 @@
+/* Bot 目录页和首页入口。层次靠留白和细线，不用色条，也不加动效。 */
+@layer components {
+  .cb-list { display: grid; }
+  .cb-bot { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--space-6, 24px); padding-block: clamp(32px, 5vw, 48px); border-top: 1px solid var(--line); scroll-margin-top: 96px; }
+  .cb-bot:first-child { border-top: 0; padding-top: 0; }
+  .cb-face { width: 96px; height: 96px; }
+  .cb-body { display: grid; gap: 12px; min-width: 0; max-width: 760px; }
+  .cb-body h2 { font-size: var(--fs-h3); line-height: 1.3; }
+  .cb-body h3 { margin-top: 12px; font-size: inherit; font-weight: 600; }
+  .cb-summary { color: var(--text-2); }
+  .cb-body .ticks { margin-top: 0; }
+  .cb-try { display: grid; gap: 8px; }
+  .cb-try li { color: var(--text-2); }
+  .cb-how { display: grid; gap: 8px; padding-inline-start: 1.5em; list-style: decimal; }
+
+  .cb-strip { display: grid; gap: 24px; padding-block: var(--section-y); }
+  .cb-strip__head { display: grid; gap: 8px; max-width: 760px; }
+  .cb-strip__head h2 { font-size: var(--fs-h3); line-height: 1.3; }
+  .cb-strip__head p { color: var(--text-2); }
+  .cb-strip__list { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+  .cb-mini { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: start; padding: 16px; color: inherit; text-decoration: none; border: 1px solid var(--line); border-radius: var(--r-card); }
+  .cb-mini:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
+  .cb-mini img { width: 48px; height: 48px; }
+  .cb-mini__text { display: grid; gap: 4px; min-width: 0; }
+  .cb-mini__text span { color: var(--text-2); }
+
+  @media (max-width: 560px) {
+    .cb-bot { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .cb-face { width: 72px; height: 72px; }
+  }
+}

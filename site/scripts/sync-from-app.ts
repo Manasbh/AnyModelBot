@@ -34,6 +34,23 @@ for (const lang of ["ja", "ko", "ru"]) {
   if (fs.existsSync(path.join(app, `CHANGELOG_${lang}.md`))) fs.copyFileSync(path.join(app, `CHANGELOG_${lang}.md`), path.join(site, `src/data/changelog.${lang}.md`));
 }
 
+// Bot 目录页（/bots）：名称、简介、说明和可点的话都来自 bots/*/bot.json，官网和 App 用同一份文案。容器里没有 bots/，用已提交的副本
+const removed = (() => {
+  try {
+    return Object.keys(JSON.parse(fs.readFileSync(path.join(app, "catalog.json"), "utf8")).removed ?? {});
+  } catch {
+    return [] as string[];
+  }
+})();
+const catalogBots = fs.readdirSync(path.join(app, "bots"), { withFileTypes: true })
+  .filter((e) => e.isDirectory() && fs.existsSync(path.join(app, "bots", e.name, "bot.json")))
+  .map((e) => e.name)
+  .sort()
+  .map((id) => JSON.parse(fs.readFileSync(path.join(app, "bots", id, "bot.json"), "utf8")))
+  .filter((m) => !removed.includes(m.id))
+  .map(({ id, avatar, name, summary, about, starters }) => ({ id, avatar, name, summary, about, starters }));
+fs.writeFileSync(path.join(site, "src/data/catalog-bots.json"), `${JSON.stringify(catalogBots, null, 2)}\n`);
+
 export function botCharsHash(src: string) {
   const m = src.match(/export const BOT_CHARS = (\{[\s\S]*?\n\});/);
   if (!m) return null;

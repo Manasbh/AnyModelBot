@@ -388,10 +388,23 @@ const track = (n: string, p?: object) => { try { (window as any).umami?.track(n,
   hosts.forEach((h) => io.observe(h));
 })();
 
-// —— 演示导览与循环示意动画 ——
+// —— 演示导览（DemoTour 现在没有渲染，这里找不到就跳过）与循环示意动画 ——
 const tour = document.getElementById("demo-tour") as HTMLDialogElement | null;
 if (tour) mountTour(tour);
 $$("[data-loop]").forEach(mountLoop);
+
+// —— 演示视频：点开就播（减少动态效果时由用户自己按播放），关掉就停、回到开头 ——
+const demo = document.getElementById("demo-video") as HTMLDialogElement | null;
+const demoPlayer = demo?.querySelector("video");
+if (demo && demoPlayer) {
+  new MutationObserver(() => {
+    if (demo.open && !matchMedia("(prefers-reduced-motion: reduce)").matches) demoPlayer.play().catch(() => {});
+  }).observe(demo, { attributes: true, attributeFilter: ["open"] });
+  demo.addEventListener("close", () => {
+    demoPlayer.pause();
+    demoPlayer.currentTime = 0;
+  });
+}
 
 // —— 打瞌睡：[data-doze] 里的机器人，你半天不动就挨个睡着，一动就惊醒 ——
 mountDoze();

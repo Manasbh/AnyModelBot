@@ -44,7 +44,8 @@ Astro 5 静态站，Preact 只用在价格表、计算器（含可搜索的模�
 | `pricing.css` | `views/PricingView.astro` | 对照表、价格表岛、计算器岛 |
 | `pages.css` | 下载、合作伙伴、安全、许可、404 | 各附属页专用版式 |
 | `bots.css` | `components/BotFace.astro` | 毛绒机器人头像（移植自 App） |
-| `tour.css` | `components/DemoTour.astro` | 演示导览 |
+| `demo-video.css` | `components/DemoVideo.astro` | 首页的演示视频弹窗 |
+| `tour.css` | `components/DemoTour.astro` | 旧的动画导览（现在没有渲染） |
 
 ### 配色
 
@@ -235,5 +236,5 @@ docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
 - **GitHub 星数**：线上的 builder 每 2 分钟向 GitHub 取一次，写到 `/srv/site/live/stars.json`，不用重新构建；页面打开时取站内的 `/stars.json`（`src/scripts/stars.ts`，缓存 1 分钟），所以数字最多晚 3 分钟左右。`scripts/fetch-github-stars.ts` 在 `npm run build` 时另取一次写进 `src/data/github.json`，作为页面的初始值和 `/stars.json` 取不到时的备用值；取不到就沿用上一个值，不影响构建。不在浏览器里请求 GitHub：不把访客 IP 发给第三方。
 - **机器人**：`scripts/sync-from-app.ts` 从 `../ui/design/bots/*.webp` 复制精灵图、从 `../THIRD_PARTY_NOTICES.md` 同步许可（Docker 构建上下文里没有应用目录，用已提交的副本）；几何（`src/lib/bots.ts`）与 `../ui/components/avatar.js` 的 `BOT_CHARS` 不一致时会警告。头像样式 `src/styles/bots.css` 移植自 `../ui/design/components/avatar.css`。
   - 精灵图另有同分辨率的 AVIF 版（`public/bots/*.avif`，约为 WebP 的一半），支持的浏览器经 `image-set()` 优先用它，其他照旧用 WebP。AVIF 必须从原图编码（`npm run bots:avif`：重跑 `../scripts/build-bot-avatars.py --png` 拿无损精灵图，q58 的画质按 PSNR 不低于 WebP q86），不能拿 WebP 再转。生成时把对应 WebP 的哈希记在 `src/data/bots-avif.json`；WebP 更新了而 AVIF 没重做，`check-images` 会失败。
-- **演示**：Hero 的"看演示"和"它能动手"都是动画（`src/components/DemoTour.astro`、`src/scripts/tour.ts`），不依赖视频文件。"看演示"点开就自动轮播、播完从头循环，没有播放 / 暂停 / 翻页按钮，底部进度条可点跳步。
+- **演示**：Hero 的"看演示"弹窗播放真实录屏（`src/components/DemoVideo.astro`，五种语言各一个 MP4，构建时从 `docs/assets/demo/` 同步到 `public/demo/`）。点开就播、关掉就停，没点的人不下载；减少动态效果时不自动播放。"它能动手"仍是动画（`src/scripts/tour.ts`）。旧的动画导览 `src/components/DemoTour.astro` 已不再渲染。
 - **文案**：`src/i18n/locales/<语言>/`，页面里不写死文案。首页使用 `home.hero.*`、`home.features.*` 等多级键；各语言入口文件只组装模块。新增译文由维护者逐条撰写和本土化，不使用翻译接口。`manifest.json` 的 `ready` 标识控制正式语言入口，生产构建检查全部目标语言的原始词典，不能用回退文案冒充翻译完成。例外是两种语言内容本来就不同的：聊天渠道（`src/data/channels.ts`）和公告（`src/data/announcements.ts`），各写各的，禁词扫描同样覆盖 `src/data`。

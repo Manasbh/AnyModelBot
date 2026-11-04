@@ -34,6 +34,12 @@ for (const lang of ["ja", "ko", "ru"]) {
   if (fs.existsSync(path.join(app, `CHANGELOG_${lang}.md`))) fs.copyFileSync(path.join(app, `CHANGELOG_${lang}.md`), path.join(site, `src/data/changelog.${lang}.md`));
 }
 
+// 首页的演示视频：只要 MP4（GIF 大 3 倍多，官网不用）
+fs.mkdirSync(path.join(site, "public/demo"), { recursive: true });
+for (const f of fs.readdirSync(path.join(app, "docs/assets/demo")).filter((f) => f.endsWith(".mp4"))) {
+  fs.copyFileSync(path.join(app, "docs/assets/demo", f), path.join(site, "public/demo", f));
+}
+
 // Bot 目录页（/bots）：名称、简介、说明和可点的话都来自 bots/*/bot.json，官网和 App 用同一份文案。容器里没有 bots/，用已提交的副本
 const removed = (() => {
   try {

@@ -1,0 +1,9 @@
+@layer tokens, base, components, app, utilities;
+/* 首页的演示视频弹窗（components/DemoVideo.astro 引入，只在首页）。窄屏沿用 .sheet 的底部全宽样式。 */
+@layer app {
+  @media (min-width: 768px) {
+    dialog.demo-video { width: min(960px, 100% - 32px); }
+  }
+  /* 还没加载时也占好 16:9 的位置，视频本身是黑底淡入，所以背景也用黑色 */
+  .demo-video__player { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--r-pop); background: #000; }
+}

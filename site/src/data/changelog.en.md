@@ -4,6 +4,22 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.22 - 2026-11-04
+
+### New
+
+- **Use your own official API keys:** You no longer need an account. On first launch, click Use your own API key, or go to Settings → Models and enter a key from OpenAI, Anthropic, Google Gemini, xAI, DeepSeek, Kimi, GLM, Qwen, MiniMax or Mistral. Model requests go straight to the provider, the provider bills you, and the key stays on this device. Image and video generation is still only available through Modelflare.
+- **Keenable for web search:** Choose it in Settings → Network & access and enter a key.
+
+### Improvements and fixes
+
+- The Modelflare tab in Settings is now called Models, and you can sign in to Modelflare there if you aren't signed in.
+- Company Research, US Stock Research and PPT Master now support Japanese, Korean and Russian.
+
+### Privacy
+
+- With only official API keys and no sign-in, the app doesn't read Modelflare's account data or price catalog. The built-in gateway reads the public model catalog from models.dev, and that request carries no keys or conversation content.
+
 ## 0.1.21 - 2026-11-03
 
 ### New

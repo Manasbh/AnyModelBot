@@ -4,6 +4,22 @@
 
 这里只写用户能感受到的变化。更早的版本见 [GitHub 发布页](https://github.com/modelflare-ai/AnyModelBot/releases)。
 
+## 0.1.22 - 2026-11-04
+
+### 新增
+
+- **用自己的官方 API Key：** 不注册账户也能用了。首次启动点「使用自己的 API Key」，或在 设置 → 模型 里填写 OpenAI、Anthropic、Google Gemini、xAI、DeepSeek、Kimi、GLM、Qwen、MiniMax 或 Mistral 的 Key。模型请求直接发给厂商，费用由厂商收取，Key 只保存在这台设备上。生图和生视频目前仍然只能通过 Modelflare 使用。
+- **联网搜索新增 Keenable：** 在 设置 → 网络与访问 里选择它并填入 Key。
+
+### 改进与修复
+
+- 设置里的「Modelflare」分页改名为「模型」，没有登录时也可以在这里登录 Modelflare。
+- 尽调助手、美股研报和 PPT 大师支持日语、韩语和俄语。
+
+### 隐私
+
+- 只用官方 API Key、没有登录时，应用不读取 Modelflare 的账户和价格目录。内置网关会从 models.dev 读取公开的模型目录，这个请求不带 Key 和对话内容。
+
 ## 0.1.21 - 2026-11-03
 
 ### 新增

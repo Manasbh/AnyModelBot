@@ -53,6 +53,8 @@ export interface AgentManagerOptions {
   reviewDelayMs?: number;
   /** 生图 / 生视频（amb-media 插件经 bridge 调用）；缺省时工具返回不可用 */
   media?: MediaService;
+  /** 生图 / 生视频现在能不能用（要连着 Modelflare：只填了官方 Key 时不能）。缺省 = 有 media 就能用 */
+  mediaReady?: () => boolean;
   /** 联网搜索（amb-web-search 插件经 bridge 调用，DSH 的 web_search 用它）；缺省时搜索返回不可用 */
   search?: SearchService;
   /** 已授权账号（全局，amb-connections 插件经 bridge 调用）；缺省时机器人没有这些工具 */
@@ -220,6 +222,10 @@ export class AgentManager {
   }
 
   /** 生图 / 生视频服务；未接内置网关时没有 */
+  private mediaOn(): boolean {
+    return !!this.o.media && (this.o.mediaReady?.() ?? true);
+  }
+
   get media(): MediaService | undefined {
     return this.o.media;
   }
@@ -246,7 +252,8 @@ export class AgentManager {
         turnTimeoutMs: this.o.turnTimeoutMs,
         settings: () => this.settings(botId),
         onNotice: this.o.onNotice,
-        media: !!this.o.media,
+        // 拉起进程时读：登录或退出 Modelflare 之后的新进程跟着变
+        media: this.mediaOn(),
         connections: () => this.o.connections?.available() ?? {},
         contextWindow: this.o.contextWindow,
         apiInfo: this.o.apiInfo,
@@ -719,7 +726,7 @@ export class AgentManager {
     if (/^(task|rule)-/.test(String(b?.sessionId ?? ""))) return { error: "生成图片和视频暂时只能在聊天里用，后台任务里不行；需要的话在结果里告诉用户。" };
     if (!this.hosts.has(botId) || !this.activeConvs.get(botId)?.size) return { error: "unknown bot" };
     const media = this.o.media;
-    if (!media) return { error: "生成图片和视频需要连接 Modelflare" };
+    if (!media || !this.mediaOn()) return { error: "生成图片和视频需要连接 Modelflare" };
     const op = String(b?.op ?? "");
     const args = (b?.args ?? {}) as Record<string, unknown>;
     try {

@@ -5,7 +5,7 @@
 ソースからの実行、パッケージ作成、開発への参加を考えている方のためのガイドです。アプリを使うだけなら [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) からインストーラーを入手してください。[README](../README_ja.md#-ダウンロード) に手順があります。
 
 - ボットは役割、既定のモデル、記憶から構成されます。アカウントは設定 › 接続で全体管理し、全ボットで共有します。サービスごとにいくつでも追加できます。一人での個人利用を想定しています。
-- モデルは [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) が提供します。初回起動でログインまたは登録するとモデル一覧が自動表示されます。リクエストは同梱の [magpie](https://github.com/yetone/magpie) ゲートウェイを通ります。
+- モデルは Modelflare アカウントまたは自分の公式 API キーで利用します。[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) が提供します。初回起動でログインまたは登録するとモデル一覧が自動表示されます。リクエストは同梱の [magpie](https://github.com/yetone/magpie) ゲートウェイを通ります。
 - 同じコードを **デスクトップ（Electron）**、**CLI `npm start`**、**Docker** の 3 通りで実行できます。
 
 ## リポジトリの構成
@@ -22,6 +22,7 @@ src/
   account/       Modelflare：PKCE ループバックログイン、トークン更新、残高と通知、ボット別予算キー、モデル機能と参考価格
   web/           コンソールサーバー（JSON API+SSE の会話ストリーミング）
   cli/           初回設定 init、weixin-login
+  official-providers.ts  公式 API：提供元の一覧（アドレス固定）、モデル ID、キー確認に失敗したときの説明
   modelflare.ts  Modelflare の経路、キー検証（GET /v1/models）、モデル振り分けと出所表示
   guide.ts       初回ガイドの進捗
   i18n/          サーバーの多言語化：エラー、状態、トレイ、システムメッセージ（messages/<namespace>.ts）
@@ -91,9 +92,9 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> を�
 - 初回は Modelflare へのログイン・登録ボタンを表示します。標準ブラウザーでログインまたは登録して認可し、アプリに戻ると専用 API キーを発行・接続します。既定モデルを選べば会話を始められます。Docker・リモート環境はブラウザーのコールバックを受けられないため、ログイン後に移動する開けない `127.0.0.1` アドレスのリンクを初回画面に貼り付けます（`POST /amb/api/account/login/complete`、state と PKCE の検証は同じ）。以前のバージョンで API キーを入力しログインしていない場合、アップグレード時にキーを端末から削除し、ログインが必要になります。
 - 認証方式：RFC 8252 に沿うネイティブアプリの OIDC 認可コード+PKCE（RFC 7636）。公開クライアント（`client_id` は `anymodel-bot`）で、クライアントシークレットは持たず不要です。結果は `127.0.0.1` の一時ポートへ返します。Modelflare プロフィールの認可済みアプリから取り消すと、アプリが検知してログイン画面に戻ります。
 - リフレッシュトークンはデータ内の `modelflare-account.json`（モード 600）に保存し、デスクトップでは OS キーチェーン（Electron safeStorage）で暗号化します。画面にはアカウント名だけを渡します。ログアウトは端末の認可を取り消し、ログイン時に端末とボットへ発行したキーを Modelflare が削除します。
-- 残高は常時表示せず、左下のアバターか設定 → Modelflare で確認します。いずれもウォレット残高を表示します。チャージは Modelflare を開き、アプリへ戻ると残高を更新します。既定 1 米ドルの通知基準（変更・無効化可能）を下回ると一度知らせ、WeChat・Feishu にも送れます。
-- 推論の強さ：モデル選択パネルまたは設定 → Modelflare で選びます（自動 / 低 / 中 / 高）。全体で 1 つの設定で、次のターンから適用されます。自動ではパラメーターを送らず、モデルの既定値を使います。対応モデルにのみ適用されます。Responses API の推論モデルと、モデルプロファイルで推論対応とされた Chat と Claude です（Claude 4.6 以降は adaptive と `output_config.effort`、それ以前は `budget_tokens`）。
-- ログインすると設定 → Modelflare に日別・モデル別使用量、Modelflare の通知、招待リンクも出ます。
+- 残高は常時表示せず、左下のアバターか設定 → モデル で確認します。いずれもウォレット残高を表示します。チャージは Modelflare を開き、アプリへ戻ると残高を更新します。既定 1 米ドルの通知基準（変更・無効化可能）を下回ると一度知らせ、WeChat・Feishu にも送れます。
+- 推論の強さ：モデル選択パネルまたは設定 → モデル で選びます（自動 / 低 / 中 / 高）。全体で 1 つの設定で、次のターンから適用されます。自動ではパラメーターを送らず、モデルの既定値を使います。対応モデルにのみ適用されます。Responses API の推論モデルと、モデルプロファイルで推論対応とされた Chat と Claude です（Claude 4.6 以降は adaptive と `output_config.effort`、それ以前は `budget_tokens`）。
+- ログインすると設定 → モデル に日別・モデル別使用量、Modelflare の通知、招待リンクも出ます。
 - ボットの予算（ログイン必須）：ボット設定 → 予算で有効にすると、指定額を上限とする専用キー（ゲートウェイの別 provider）を使い、無効にすると共有キーへ戻ります。
 - 画像・動画：エージェントに `media_models`（モデル、既定値、引数範囲、参考価格）、`media_docs`（docs.modelflare.dev からリクエスト形式を取得）、`generate_image`、`generate_video` と内蔵スキルを提供します。モデル別の形式を文書で確認してリクエスト本文を作り、ワークスペースの参考画像は `workspace:path` と表します。キーはアプリから出さず、アプリがボットのキーで呼び出し、結果を `media/` に保存して会話へ届けます。
 - 生成前の確認：既定では直ちに生成します。既定以外のモデルや曖昧な依頼を理由に質問せず、妥当に解釈して作成し、使った条件を一行で述べます。見積もりが 0.5 米ドルを超えるときだけ、モデル、プロンプト、条件、参考価格、確認理由を提示します。画像枚数、動画時間・解像度で計算し、費用不明の動画も確認対象です。承認・変更・中止ができ、WeChat は番号・モデル名、Feishu と Web はクリックで回答します。10 分応答がなければ生成しません。毎回確認するには、ボット設定 → 画像・動画 → 生成前に確認で常に確認する設定を選びます。
@@ -102,14 +103,14 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> を�
 - 接続アカウント（`src/agent/accounts.ts`）：全ボットが設定 › 接続の一つの一覧を共有し、同サービスの複数アカウントを使えます。「1 つ目と 2 つ目の Feishu を調べて」と頼めます。`amb-connections` がブリッジで呼び出しをアプリに渡すためトークンはエージェントに届きません。`account` 引数で番号・名前を選び、`connected_accounts` で一覧化します。アカウントがあるサービスだけツールを出します。読み取り専用のボットと観察モードのルールは書き込めず、ホストも再検査します。チャネルアカウントは別項目で扱います。
   - **Notion**（`notion.ts`）：ワンクリック認可またはトークンを選びます。トークンは REST API、認可は PKCE・動的登録付き OAuth でローカル `/oauth/notion/callback` に戻り、公式リモート MCP（`mcp.notion.com`）を呼びます。どちらも `notion_search`、`notion_read_page`、`notion_query_database` を提供し、読み取り専用でなければ `notion_create_page` と `notion_update_page` も出します。削除ツールはありません。
   - **Feishu**（`feishu-account.ts`）：公式 lark-cli と同様、スキャンして個人アプリを作るか自分のアプリを入力し、デバイス認可でユーザートークンを取得します。`feishu_list_chats`、`feishu_read_chat`、`feishu_search_messages` の読み取り専用です。
-- 既定の画像・動画モデルは初回にテキストモデルと一緒に選び、後から設定 → Modelflare で変更できます。自動では、推奨順のうち参考素材が不要な最初のモデルを使います。
+- 既定の画像・動画モデルは初回にテキストモデルと一緒に選び、後から設定 → モデル で変更できます。自動では、推奨順のうち参考素材が不要な最初のモデルを使います。
 - モデル選択にはコンテキスト長、画像認識・ツール・推論機能、公開料金表の入力・出力 100 万トークン当たりの最低参考価格を出します。最終的な金額は請求書が基準です。
-- コストと品質（ログイン必須）：アプリのキー（端末キーと予算キー）には Modelflare Smart Key の `routing_strategy` を付けます。低コスト `low_cost` は最低倍率から、バランス `balanced` は中間から（既定）、品質 `stable` は最高倍率から試します。設定 → Modelflare、またはモデル選択の最初のスライダーで変えると、既存キーも `PATCH /api/connected-app/api-keys/<id>` で更新し、DB の `account.routing` に保存します。未選択の既存ユーザーには最初のキー検査で一度だけバランスを適用します（ログは `applied the default key routing strategy`）。応答に `routing_strategy` が返る場合だけ対応と判定します。400/422 で拒否されたらそのフィールドなしで再発行し、キー発行・検査・予算を失敗させません。無視された場合も未対応とし、設定を隠して 1 日後に再検査します。
+- コストと品質（ログイン必須）：アプリのキー（端末キーと予算キー）には Modelflare Smart Key の `routing_strategy` を付けます。低コスト `low_cost` は最低倍率から、バランス `balanced` は中間から（既定）、品質 `stable` は最高倍率から試します。設定 → モデル、またはモデル選択の最初のスライダーで変えると、既存キーも `PATCH /api/connected-app/api-keys/<id>` で更新し、DB の `account.routing` に保存します。未選択の既存ユーザーには最初のキー検査で一度だけバランスを適用します（ログは `applied the default key routing strategy`）。応答に `routing_strategy` が返る場合だけ対応と判定します。400/422 で拒否されたらそのフィールドなしで再発行し、キー発行・検査・予算を失敗させません。無視された場合も未対応とし、設定を隠して 1 日後に再検査します。
 - 知能（2 番目のスライダー）：利用可能かつ Artificial Analysis データのあるモデルから、知能指数（高いほど良い）とタスク単価（低いほど良い）のパレート境界を求めます。最大 5 段階で、最安と最高知能を必ず含めます。実際の推論強度に合わせ、Responses API の推論モデルは既定 medium なので AA の medium、ほかは既定行を使います（`src/account/model-quality.ts`）。費用は AA の公式価格でのタスク単価×現在の品質設定での価格係数（公開グループの倍率×販売倍率）です。低コストは最低、品質は最高、バランスは中間、企業専用グループは除外し、未ログイン・未対応時はバランスとみなします。スライダーでモデルを切り替え、名前を押すと全一覧が開き、段階にないモデルはカスタム表示です。2 段階未満なら一覧だけになります。計算は `ui/lib/frontier.js` です。
 - AA データは `assets/model-quality.json`（`updatedAt`、`source`、必要フィールドのみ、Modelflare ID に変換済み）で配布します。`node scripts/update-model-quality.mjs` は https://artificialanalysis.ai/leaderboards/models と Modelflare の公開料金表を取得します。`AA_API_KEY` があれば公式 API を使いますが、その応答フィールドはキー付きでは未検証です。`--html <file>`、`--pricing <file>` は保存済みデータ、`--dry-run` は表示のみです。列欠落、行形式変更、数値の解釈失敗、行数・対応モデル不足では理由を出して終了コード 1 で止まり、既存スナップショットを変更しません。規則で対応付けできないモデル名は `OVERRIDES` に入れます。出典は選択画面の下に表示します。
 - 出所表示：Modelflare のリクエストには `X-Modelflare-Skill: anymodel-bot/<version>`、リンクには `utm_source=anymodelbot&utm_campaign=amb_<placement>` を付けます。アプリ内は `amb_signup`、`amb_topup`、`amb_console` など、README・リポジトリ文書は `amb_readme`、サイトは `amb_homepage` です。形式を `test/utm.unit.test.ts` で固定します。
-- API ドメイン：設定 → Modelflare → API ドメインで `https://modelflare.dev/v1`、`https://origin.modelflare.dev/v1`、`https://cf.modelflare.dev/v1` を選べます。手動テストは実行中の端末から 3 ドメインの `/v1/models` に認証なしで 3 回ずつ接続し、中央値と成功数を表示します。HTTP 401 は応答として数えますが、キーの有効性や生成速度の証明ではありません。自動切り替えはありません。旧設定 `auto` / `global` はメイン、`cn` は origin、`cf` は cf を選びます。これらは互換値で、地域や品質の意味はありません。
-- 設定 → Modelflare ではアカウント、残高とチャージ、残高通知、使用量、通知、招待、費用対効果、推論の強さ、既定モデル、一覧更新を扱います。
+- API ドメイン：設定 → モデル → API ドメインで `https://modelflare.dev/v1`、`https://origin.modelflare.dev/v1`、`https://cf.modelflare.dev/v1` を選べます。手動テストは実行中の端末から 3 ドメインの `/v1/models` に認証なしで 3 回ずつ接続し、中央値と成功数を表示します。HTTP 401 は応答として数えますが、キーの有効性や生成速度の証明ではありません。自動切り替えはありません。旧設定 `auto` / `global` はメイン、`cn` は origin、`cf` は cf を選びます。これらは互換値で、地域や品質の意味はありません。
+- 設定 → モデル ではアカウント、残高とチャージ、残高通知、使用量、通知、招待、費用対効果、推論の強さ、既定モデル、一覧更新を扱います。
 - 入力欄の右側のモデルボタンで現在のセッションのモデルを変え、ボットの既定値にもできます。`/model`、`/reset`、`/new`、`/status`、`/stop`、`/help` も使えます。
 - アクティビティ：モデルのリクエスト（時間・トークン）、ツール（引数・結果）、再試行、サブエージェントなど全手順を返信上の時間表示に折りたたみ、クリックで開けます。WeChat・Feishu は情報パネルの最近のセッションから進行中の処理を見て中止できます。
 - 停滞したメッセージ：全チャネルの `/stop`、または情報パネルの停止で現在のターンを直ちに終えます。10 分進捗がない場合（モデル応答もツールもなく再試行だけ。承認・回答待ちは除外）や 1 ターン 30 分の上限で自動中止します（`AMB_AGENT_IDLE_TIMEOUT_MS`、`AMB_AGENT_TURN_TIMEOUT_MS`）。プロセス内の amb-control プラグインがそのターンだけを取り消し、同ボットの他の会話は続きます。10 秒（`AMB_STOP_GRACE_MS`）以内に止まらなければプロセスを再起動します。`/status` で現在の手順と最後の進捗からの時間を見られます。Web でボットを切り替えたり再読み込みしても進行中の処理は止まらず、戻ると送信内容、途中の返信、アクティビティを復元します。キュー待ち、エージェント起動中、承認待ち、通常会話でも停止できます。
@@ -122,6 +123,15 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> を�
 - 内蔵ゲートウェイ：magpie はデータ内の独自 HOME・設定ディレクトリを使う `--gateway` モードです。既存の Claude/Codex サブスクリプション認証情報は**読まず**、エージェント設定も**変更しません**。自動更新・アカウント検出は無効です。アプリのプロセス内部からだけ呼び、コンソールは magpie のページや `/v1` を中継しません。
 - API キーは隔離したゲートウェイ設定だけに保存し、コマンドラインやログに載せません。画面には末尾だけを渡します。
 - 開発・テスト：`AMB_MAGPIE_BASE_URL` で任意の OpenAI 互換先を指定すると、ゲートウェイを起動せず接続済みとして扱い、アカウント機能は使えません。`AMB_MODELFLARE_BASE_URL` は Modelflare、`AMB_MODELFLARE_ISSUER` はログイン・アカウント API をローカルのモックに向けます。
+
+## 公式 API キー
+
+- 初回画面の「自分の API キーを使う」と「設定 → モデル」で入力できます。対応する提供元とアドレスは `src/official-providers.ts` に固定され、API（`GET /amb/api/official`、`PUT`/`DELETE /amb/api/official/<id>`）は一覧の ID だけを受け付け、アドレスは指定できません。
+- それぞれ内蔵ゲートウェイの provider で、ID は `official-<提供元>`、モデル ID は `official-<提供元>/<モデル>` です。Modelflare の同名モデルとは区別されます。キーはコマンドライン引数を通らず、ゲートウェイのローカル API のリクエスト本文で隔離された設定に書き込まれます。
+- 確認にはゲートウェイのモデル一覧を使い（プロキシや提供元ごとの認証方式はゲートウェイ側にあります）、通過した場合のみ保存します。モデルは 1 時間ごとに提供元の一覧と照合し、会話できないモデル（音声、画像、埋め込みなど）は選択肢に入れません。
+- エージェントの API は提供元で決まります。OpenAI は Responses、Anthropic は Messages、その他は Chat Completions です。コンテキスト長、価格、推論の対応はゲートウェイのモデルカタログ（`/v1/models`）から取得します。公式キーのみのときは Modelflare のカタログとアカウントを読み取りません。
+- 公式 API のモデルには `X-Modelflare-Skill` を付けず、サーバー側の圧縮も行わず（圧縮エンドポイントは Modelflare のカタログ由来）、ボットの予算の対象にもなりません（予算は Modelflare キーの枠です）。画像・動画の生成は Modelflare 接続時のみ利用できます。
+- テスト：`AMB_OFFICIAL_BASE_URL` ですべての提供元をローカルのモックに向けます（`test/official-providers.integration.test.ts`）。
 
 ## インターフェース
 

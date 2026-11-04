@@ -4,6 +4,7 @@ export default {
   "bodyTooLarge": "요청 본문이 너무 큽니다",
   "needToken": "접근 토큰이 필요합니다: /?token=<token>을 여세요",
   "externalNoConnection": "외부 엔드포인트 모드에서는 Modelflare 연결을 관리하지 않습니다",
+  "officialBadKey": "키는 비워 둘 수 없으며 공백을 포함할 수 없습니다",
   "externalNoAccount": "외부 엔드포인트 모드에서는 Modelflare 계정을 관리하지 않습니다",
   "lowBalanceRange": "알림 기준은 $0~$1,000 사이여야 합니다",
   "badZoom": "지원하지 않는 배율입니다",

@@ -54,6 +54,8 @@ export default {
   "error": {
     "stopFailed": "停止できませんでした：{error}",
     "fixKey": "ログイン",
+    "fixOfficialKey": "キーを変更",
+    "officialKeyInvalid": "{name} がこの API キーを拒否しました。無効か、取り消された可能性があります。",
     "authInvalid": "Modelflare へのアクセス許可が無効か、取り消されています。もう一度ログインしてください。",
     "loadHistory": "メッセージ履歴を読み込めませんでした：{error}"
   },

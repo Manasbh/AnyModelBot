@@ -43,9 +43,10 @@ import {
   type ModelflareLine,
   type VerifyResult,
 } from "./modelflare.js";
+import { OFFICIAL_PROVIDERS, officialFailure, officialModelName, officialOf, officialPicks, officialProvider, officialProviderId, type OfficialFailure, type OfficialProvider } from "./official-providers.js";
 import { AccountManager } from "./account/manager.js";
 import { AccountVault, type SecretBox } from "./account/vault.js";
-import { loadModelInfo, type ModelInfo, type Rates } from "./account/model-info.js";
+import { gatewayModelInfo, loadModelInfo, type ModelInfo, type Rates } from "./account/model-info.js";
 import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
@@ -86,9 +87,12 @@ export interface DesktopHooks {
 }
 
 export interface ModelflareStatus {
-  /** managed：经内置网关连接 Modelflare；external：使用环境变量指定的端点（开发/测试），界面不做连接管理 */
+  /** managed：经内置网关连接模型；external：使用环境变量指定的端点（开发/测试），界面不做连接管理 */
   mode: "managed" | "external";
+  /** 连上了 Modelflare */
   connected: boolean;
+  /** 填了至少一家官方 API 的 Key：这时没有 Modelflare 也能用 */
+  official: boolean;
   keyTail: string;
   line: ModelflareLine;
   baseUrl: string;
@@ -106,6 +110,19 @@ export function appVersion(): string {
   }
   return cachedVersion;
 }
+
+/** 设置页里的一家官方 API（只有 Key 尾号，不外传 Key） */
+export interface OfficialView {
+  id: string;
+  name: string;
+  region?: "cn" | "global";
+  keysUrl: string;
+  connected: boolean;
+  keyTail: string;
+  models: number;
+}
+
+export type OfficialConnectResult = { ok: true; models: string[] } | { ok: false; code: OfficialFailure; message: string };
 
 export interface AppOptions {
   /** 测试注入：替换飞书传输层 */
@@ -286,6 +303,7 @@ export class App {
             pricingUrl: () => `${modelflareIssuer()}/api/pricing`,
           })
         : undefined,
+      mediaReady: () => !!this.magpie?.modelflareInfo().connected,
       search: this.search,
       connections: this.connections,
       onNotice: (text) => this.notice("warn", text),
@@ -392,7 +410,8 @@ export class App {
    * 而不是悄悄删掉压缩项重试（那样会丢掉之前的上下文）。外部端点模式下代理只走 Chat（见 apiInfo），不做。
    */
   private compactEndpoint(model: string): CompactEndpoint | undefined {
-    if (!this.magpie) return undefined;
+    // 官方 API 不做：压缩端点是 Modelflare 的目录列出来的，请求头也是发给 Modelflare 的
+    if (!this.magpie || officialOf(model)) return undefined;
     // 网关里的模型名是 <provider id>/<上游模型名>；provider 必须正好是它（upstreamEndpoint 找不到时会退回共用连接）
     const i = model.indexOf("/");
     const id = i > 0 ? model.slice(0, i) : "";
@@ -411,13 +430,20 @@ export class App {
   }
 
   /**
-   * 发给内置网关的模型 id：限定到该机器人用的 provider——开了预算的机器人用自己的 Key，
-   * 其余用共用连接。外部端点模式原样发送。
+   * 发给内置网关的模型 id：官方 API 的模型发给那家厂商；其余限定到该机器人用的 provider——开了预算的
+   * 机器人用自己的 Key，其余用共用连接。外部端点模式原样发送。
+   * 选了官方 API 的模型，Key 被移除后也不换来源：改走 Modelflare 是另一份账单、另一条数据路径，不能悄悄发生，让网关报错，用户自己选。
+   * 反过来，不带来源的模型名在没有 Modelflare 时可以找填了 Key 的厂商：那是直连，用的是用户自己给的 Key。
    */
   routeModel(botId: string, model: string): string {
     if (!this.magpie) return model;
+    if (officialOf(model)) return model.trim();
+    const name = bareModel(model.trim());
     const own = botProviderId(botId);
-    return routeModel(model, this.magpie.hasProvider(own) ? own : (this.magpie.modelflareProviderId ?? MODELFLARE_PROVIDER));
+    const shared = this.magpie.hasProvider(own) ? own : this.magpie.modelflareProviderId;
+    if (shared) return routeModel(name, shared);
+    const other = this.magpie.officialProviderIds().find((id) => this.magpie!.modelPicks(id).includes(name));
+    return other ? `${other}/${name}` : routeModel(model, MODELFLARE_PROVIDER);
   }
 
   /**
@@ -441,6 +467,9 @@ export class App {
       } catch (e) {
         log.warn("sync model picks failed", { provider: id, message: (e as Error).message });
       }
+    }
+    for (const p of OFFICIAL_PROVIDERS) {
+      await magpie.syncOfficialPicks(p).catch((e) => log.warn("sync model picks failed", { provider: p.id, message: (e as Error).message }));
     }
   }
 
@@ -561,6 +590,7 @@ export class App {
     const c = this.modelInfoCache;
     if (!c || Date.now() - c.at > 3600_000) void this.modelInfo().catch(() => undefined);
     if (!c) return undefined;
+    if (officialOf(model)) return c.data[model.trim()]?.rates;
     const bare = bareModel(model);
     return (c.data[bare] ?? c.data[bare.split("/").pop() ?? bare])?.rates;
   }
@@ -585,22 +615,41 @@ export class App {
     // 同时来的几次（代理启动时上下文长度和接口一起问）共用一次加载
     this.modelInfoLoading ??= (async () => {
       const key = this.magpie?.providerKey(this.magpie.modelflareProviderId ?? MODELFLARE_PROVIDER) ?? "";
-      const data = await loadModelInfo({
-        baseUrl: modelflareBaseUrl(this.config.modelflare.line),
-        apiKey: key,
-        headers: this.requestHeaders(),
-        pricingUrl: `${modelflareIssuer()}/api/pricing`,
-        quality: loadQualitySnapshot(),
-      });
-      this.modelInfoCache = { at: Date.now(), data };
+      // 只填了官方 Key 的用户和 Modelflare 没有关系：连公开价格目录也不去读（docs/privacy.md）
+      const official = this.magpie?.officialProviderIds().length ?? 0;
+      const data = {
+        ...(key || !official
+          ? await loadModelInfo({
+              baseUrl: modelflareBaseUrl(this.config.modelflare.line),
+              apiKey: key,
+              headers: this.requestHeaders(),
+              pricingUrl: `${modelflareIssuer()}/api/pricing`,
+              quality: loadQualitySnapshot(),
+            })
+          : {}),
+        ...(official ? await this.officialModelInfo() : {}),
+      };
+      // 网关的模型目录是启动后才同步好的：刚启动时官方 API 的模型可能还没有上下文长度，这种结果一分钟后就重读，不留一小时
+      const thin = Object.entries(data).some(([id, m]) => officialOf(id) && !m.context);
+      this.modelInfoCache = { at: thin ? Date.now() - 3600_000 + 60_000 : Date.now(), data };
       return data;
     })().finally(() => (this.modelInfoLoading = undefined));
     return this.modelInfoLoading;
   }
 
-  /** 某个模型的资料：去掉内置网关的 provider 前缀，再试最后一段（openai/x → x） */
+  /** 官方 API 模型的资料：网关的模型目录（不联网读）；读不到时这次先没有，选择器和代理都能没有它 */
+  private async officialModelInfo(): Promise<Record<string, ModelInfo>> {
+    const rows = await this.magpie!.gatewayModels().catch((e) => {
+      log.warn("reading gateway models failed", { message: (e as Error).message });
+      return [];
+    });
+    return gatewayModelInfo(rows, (id) => officialOf(id)?.api, officialModelName, loadQualitySnapshot());
+  }
+
+  /** 某个模型的资料：官方 API 的按完整 id；其余去掉内置网关的 provider 前缀，再试最后一段（openai/x → x） */
   private async infoOf(model: string): Promise<ModelInfo | undefined> {
     const info = await this.modelInfo();
+    if (officialOf(model)) return info[model.trim()];
     const bare = bareModel(model);
     return info[bare] ?? info[bare.split("/").pop() ?? bare];
   }
@@ -744,9 +793,47 @@ export class App {
 
   modelflareStatus(): ModelflareStatus {
     const line = this.config.modelflare.line;
-    if (!this.magpie) return { mode: "external", connected: true, keyTail: "", line, baseUrl: this.config.magpie.externalBaseUrl, gateway: "external" };
+    if (!this.magpie) return { mode: "external", connected: true, official: false, keyTail: "", line, baseUrl: this.config.magpie.externalBaseUrl, gateway: "external" };
     const info = this.magpie.modelflareInfo();
-    return { mode: "managed", connected: info.connected, keyTail: info.keyTail, line, baseUrl: info.baseUrl || modelflareBaseUrl(line), gateway: this.magpie.state };
+    return { mode: "managed", connected: info.connected, official: this.magpie.officialProviderIds().length > 0, keyTail: info.keyTail, line, baseUrl: info.baseUrl || modelflareBaseUrl(line), gateway: this.magpie.state };
+  }
+
+  // ---------- 官方 API（用户自己的 Key，src/official-providers.ts） ----------
+  officialStatus(): OfficialView[] {
+    return OFFICIAL_PROVIDERS.map((p) => ({ id: p.id, name: p.name, region: p.region, keysUrl: p.keysUrl, connected: false, keyTail: "", models: 0, ...this.magpie?.officialInfo(p) }));
+  }
+
+  /** 先问厂商这把 Key 能不能列出模型，通过后才写入网关；失败时什么都不改 */
+  async connectOfficial(id: string, apiKey: string): Promise<OfficialConnectResult> {
+    if (!this.magpie) throw new Error(t("app.external_mode"));
+    const p = this.requireOfficial(id);
+    const key = apiKey.trim();
+    const listed = await this.magpie.listOfficialModels(p, key);
+    if (!listed.ok) return { ok: false, ...officialFailure(p, listed.error, key) };
+    const picks = officialPicks(listed.models);
+    await this.magpie.connectOfficial(p, key, picks);
+    this.modelInfoCache = undefined;
+    log.info("official API connected", { provider: p.id, models: picks.length });
+    await this.runtime.listModels(true).catch(() => []);
+    void this.prewarmAgent();
+    return { ok: true, models: picks };
+  }
+
+  /** 移除一家官方 API 的 Key。默认模型指着它时清掉，不然新会话一直报"模型不存在" */
+  async disconnectOfficial(id: string): Promise<void> {
+    if (!this.magpie) throw new Error(t("app.external_mode"));
+    const p = this.requireOfficial(id);
+    await this.magpie.removeOfficial(p);
+    if (officialOf(this.config.llm.defaultModel)?.id === p.id) this.setDefaultModel("");
+    this.modelInfoCache = undefined;
+    log.info("official API removed", { provider: p.id });
+    await this.runtime.listModels(true).catch(() => []);
+  }
+
+  private requireOfficial(id: string): OfficialProvider {
+    const p = officialProvider(id);
+    if (!p) throw new Error(`unknown provider ${id}`);
+    return p;
   }
 
   /**

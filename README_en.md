@@ -50,7 +50,7 @@
 
 AnyModelBot is a local-first AI agent app for Windows, macOS and Linux. A bot is a persona with its own default model, workspace and memory. Chat with it in the app, or reach it from WeChat, Feishu, Telegram, Slack or Discord. Let it read and write files, run commands and operate your desktop, with an approval prompt whenever it steps outside its workspace.
 
-Your conversations, memory, files and API keys live on your device. Models come from [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme): one account, any model, priced per token. AnyModelBot itself has no subscription.
+Your conversations, memory, files and API keys live on your device. Models come from [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) (one account, any model, priced per token) or straight from OpenAI, Anthropic, Google and others with your own official API keys. AnyModelBot itself has no subscription.
 
 Like xAI's Grok Bot, OpenAI's dots and Anthropic's Claude Duet, it is an always-on personal AI agent: it works in the background and checks in when a decision is yours. The difference: AnyModelBot is open source (MIT), runs on your own computer or server, works with any model (GPT, Claude, Gemini, Grok and more) and is pay-per-use, with no single vendor's subscription ([full comparison](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet)).
 
@@ -66,7 +66,7 @@ It is a Super Agent out of the box: background tasks, scheduled rules and Needs 
   <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare banner: a stable, lower-cost LLM, image and video AI gateway; GPT discount group at 0.015x and Claude discount group at 0.03x; cache hit-rate guarantees of 65% · 75% · 85% on OpenAI groups, with shortfalls credited">
 </a>
 
-Every model in AnyModelBot comes from **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**: full-strength, stable models with nothing watered down, and global SOTA models at a lower cost. Modelflare is run by Havenbyte LLC, a US company, and has 200,000+ registered developers. One API key opens 70+ text, image and video models from 13 providers, including GPT, Claude, Gemini, Grok, DeepSeek, Kimi and GLM, over OpenAI, Anthropic, Gemini and other common API formats. Requests are routed across providers with automatic fallback, every request is recorded with its usage and cost, and the price list is public and billed per token.
+The easiest way to get models is **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**: one account, with no separate key to request from each provider (to go straight to a provider, see [Any model](#-any-model-through-modelflare-or-official-apis)). full-strength, stable models with nothing watered down, and global SOTA models at a lower cost. Modelflare is run by Havenbyte LLC, a US company, and has 200,000+ registered developers. One API key opens 70+ text, image and video models from 13 providers, including GPT, Claude, Gemini, Grok, DeepSeek, Kimi and GLM, over OpenAI, Anthropic, Gemini and other common API formats. Requests are routed across providers with automatic fallback, every request is recorded with its usage and cost, and the price list is public and billed per token.
 
 **Cache compensation** is a highlight: the price-first, stable and premium OpenAI groups guarantee daily cache hit rates of 65%, 75% and 85%. When eligible requests fall short, Modelflare credits the difference.
 
@@ -236,9 +236,10 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
   <img src="docs/assets/features/media-generation.gif" alt="A bot asks which model to use for an image, the user confirms, and the finished image arrives in the chat as a file and opens in a viewer" width="100%">
 </p>
 
-## 🌐 Any model, through Modelflare
+## 🌐 Any model, through Modelflare or official APIs
 
-- **Sign in once** and your Modelflare models appear automatically. Prefer a key? Paste one.
+- **Sign in once** and your Modelflare models appear automatically.
+- **Or bring your own official API keys.** OpenAI, Anthropic, Google Gemini, xAI, DeepSeek, Kimi, GLM, Qwen, MiniMax and Mistral are supported. Keys stay on your device, model requests go straight to the provider without passing through Modelflare, and the provider bills you. Image and video generation is only available through Modelflare for now.
 - **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, each with context length, capability tags and a reference price.
 - **Switch per conversation** or set a default per bot. Background chores such as tidying memory and context hand-offs can use a separate model of their own.
 - **Three API domains.** Choose `modelflare.dev`, `origin.modelflare.dev` or `cf.modelflare.dev` and compare their response times in Settings; AnyModelBot never switches automatically.
@@ -284,7 +285,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 </p>
 
 > [!NOTE]
-> Features depend on the model you choose, your operating system and the permissions you grant. Computer use requires a desktop session, and macOS computer use is in Beta. Model requests go through Modelflare to the provider you pick; see [How it works & privacy](#-how-it-works--privacy).
+> Features depend on the model you choose, your operating system and the permissions you grant. Computer use requires a desktop session, and macOS computer use is in Beta. Model requests go to the provider you pick (directly with your own official API key, otherwise through Modelflare); see [How it works & privacy](#-how-it-works--privacy).
 
 # 🆚 AnyModelBot vs Grok Bot, OpenAI dots and Claude Duet
 
@@ -294,7 +295,7 @@ In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](
 | :--- | :--- | :--- | :--- | :--- |
 | Open source | ✅ MIT | — | — | — |
 | Where the agent runs | Your own computer or server | xAI's cloud computer | OpenAI's cloud computer | Anthropic's cloud |
-| Models | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and 70+ more (through Modelflare) | Mainly xAI's Grok models | OpenAI's models | Claude (Opus 5.5) |
+| Models | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and 70+ more (through Modelflare or official APIs) | Mainly xAI's Grok models | OpenAI's models | Claude (Opus 5.5) |
 | Cost | Free app, models billed per token | Subscription | ChatGPT Pro / Business Premium subscription | Claude Pro / Max subscription |
 | Where you reach it | Desktop app (Windows, macOS, Linux), Docker, WeChat, Feishu, Telegram, Slack, Discord | Desktop app, iPhone | ChatGPT, Slack, Teams | iOS, Android, claude.ai |
 | Availability | Download it now | Beta | Select markets | Research preview, US waitlist |
@@ -313,7 +314,7 @@ AnyModelBot works in the background too: a task you hand over can finish in the 
 
 | Stays on your device | Leaves your device |
 | :--- | :--- |
-| Conversations and sessions (local SQLite database) | The prompts, files and tool results a model needs to answer, sent through Modelflare to the provider you chose |
+| Conversations and sessions (local SQLite database) | The prompts, files and tool results a model needs to answer, sent to the provider you chose (directly with your own official API key, otherwise through Modelflare) |
 | Memory (Markdown files) | Screenshots, when you ask a bot to look at your screen with computer use |
 | Files in each bot's workspace | Messages you exchange over chat channels, which pass through those platforms |
 | Your API key and sign-in tokens | Your sign-in with Modelflare, which happens at modelflare.dev |

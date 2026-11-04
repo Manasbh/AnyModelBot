@@ -19,6 +19,8 @@ import { canNotify, requestNotify } from "../lib/notify.js";
 import { TroubleshootPane } from "./troubleshoot.js";
 import { ConnectionSheets, connectionRows, useConnections } from "./connections.js";
 import { PwshHint } from "../components/pwsh-hint.js";
+import { OfficialKeyForm, officialName } from "../components/official-keys.js";
+import { AccountLogin } from "./onboarding.js";
 import { t, has, useLang, getLangPref, onLangChange, changeLang, LANGS, LANG_NAMES } from "../lib/i18n.js";
 import { fmtTimeOfDay } from "../lib/format.js";
 
@@ -206,7 +208,10 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
   const g = useStore(guide);
   const effort = useEffort();
   const [notices, setNotices] = useState(false);
-  const [sheet, setSheet] = useState(""); // usage | notifications
+  const [sheet, setSheet] = useState(""); // usage | notifications | login
+  // 官方 API：各家的连接状态；keySheet 是正在填 Key 的那一家
+  const [official, setOfficial] = useState(null);
+  const [keySheet, setKeySheet] = useState(null);
   const [invite, setInvite] = useState(null);
   const [unread, setUnread] = useState(null);
   const [cu, setCu] = useState(null);
@@ -320,7 +325,26 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
   };
   const managed = mf && mf.mode === "managed";
   const signedIn = !!(acct && acct.state === "signed_in");
-  // 登录后才有邀请码和通知；进入 Modelflare 分页时读一次
+  useEffect(() => {
+    if (managed && tab === "modelflare") api("/official").then((r) => setOfficial(r.providers)).catch(failed);
+  }, [managed, tab]);
+  const officialChanged = async (r) => {
+    setOfficial(r.providers);
+    setKeySheet(null);
+    onMfChanged();
+    reloadModels?.();
+    saved();
+  };
+  const removeOfficial = async (p) => {
+    const last = !(mf && mf.connected) && official.filter((x) => x.connected).length === 1;
+    if (!(await confirmSheet({ title: t("official.remove.title", { name: officialName(p) }), body: last ? t("official.remove.bodyLast") : t("official.remove.body"), confirmLabel: t("official.remove.confirm"), danger: true }))) return;
+    try {
+      await officialChanged(await api(`/official/${encodeURIComponent(p.id)}`, { method: "DELETE" }));
+    } catch (e) {
+      failed(e);
+    }
+  };
+  // 登录后才有邀请码和通知；进入模型分页时读一次
   useEffect(() => {
     if (!signedIn || tab !== "modelflare") return;
     api("/account/invite").then(setInvite).catch(() => setInvite(null));
@@ -378,7 +402,9 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
 
       managed && acct && { tab: "modelflare", searchOnly: true, id: "account", name: t("settings.rows.account.name"),
         sub: signedIn ? (acct.billedToEnterprise ? t("settings.rows.account.enterprise", { name: acctName }) : acctName) : acct.state === "unavailable" ? acct.error : t("settings.rows.account.signedOut"), keys: t("settings.rows.account.keys"),
-        ctl: signedIn ? html`<button type="button" class="text danger" onClick=${logout}>${t("settings.rows.account.logout")}</button>` : null },
+        ctl: signedIn
+          ? html`<button type="button" class="text danger" onClick=${logout}>${t("settings.rows.account.logout")}</button>`
+          : acct.state === "signed_out" ? html`<button type="button" class="btn" onClick=${() => setSheet("login")}>${t("settings.rows.account.login")}</button>` : null },
       !managed && { tab: "modelflare", id: "connection", name: t("settings.rows.connection.name"), sub: t("settings.rows.connection.subExternal"), keys: "",
         ctl: html`<span class="val" title=${mf && mf.baseUrl}>${mf && mf.baseUrl}</span>` },
       managed && acct && mf.connected && { tab: "modelflare", searchOnly: true, id: "balance", name: t("settings.rows.balance.name"),
@@ -397,7 +423,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
         ctl: html`<button type="button" class="text" onClick=${() => setSheet("notifications")}>${t("common.view")}</button>` },
       signedIn && invite && { tab: "modelflare", group: "account", id: "invite", name: t("settings.rows.invite.name"), sub: t("settings.rows.invite.sub"), keys: t("settings.rows.invite.keys"),
         ctl: html`<span class="val">${invite.code}</span><${CopyButton} text=${invite.url} label=${t("settings.rows.invite.copy")} />` },
-      { tab: "modelflare", group: "account", id: "console", name: t("settings.rows.console.name"), sub: t("settings.rows.console.sub"), keys: t("settings.rows.console.keys"),
+      (!managed || mf.connected) && { tab: "modelflare", group: "account", id: "console", name: t("settings.rows.console.name"), sub: t("settings.rows.console.sub"), keys: t("settings.rows.console.keys"),
         ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">${t("common.openExternal")}</a>` },
       { tab: "modelflare", group: "models", id: "default-model", name: t("settings.rows.defaultModel.name"), sub: t("settings.rows.defaultModel.sub"), keys: t("settings.rows.defaultModel.keys"),
         ctl: html`<${PickModel} value=${s.defaultModel} models=${models} modelsError=${modelsError} reloadModels=${reloadModels} resetLabel=${t("settings.rows.defaultModel.auto")}
@@ -416,7 +442,21 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
         ctl: html`<${Seg} label=${t("models.effort.name")} value=${effort} onChange=${(v) => setEffort(v).then((ok) => ok && saved())} options=${effortOptions()} />` },
       showsStrategy(acct) && { tab: "modelflare", group: "models", id: "key-quality", name: t("settings.rows.keyQuality.name"), sub: t("settings.rows.keyQuality.sub"), keys: t("settings.rows.keyQuality.keys"),
         ctl: html`<${Seg} label=${t("settings.rows.keyQuality.name")} value=${acct.keyQuality.strategy} onChange=${putKeyQuality} options=${strategyOptions()} />` },
-      managed && { tab: "modelflare", group: "line", id: "line", name: t("settings.rows.line.name"), sub: t("settings.rows.line.sub"), keys: t("settings.rows.line.keys"),
+      ...(managed && official
+        ? [
+            ...official.filter((p) => p.connected).map((p, i) => ({
+              tab: "modelflare", group: "official", groupNote: i === 0 ? t("official.note") : undefined, id: `official-${p.id}`, name: officialName(p),
+              sub: t("official.connected", { tail: p.keyTail, count: p.models }), keys: t("official.keys"),
+              ctl: html`<button type="button" class="text" onClick=${() => setKeySheet(p)}>${t("official.replace")}</button>
+                <button type="button" class="text danger" onClick=${() => removeOfficial(p)}>${t("official.removeButton")}</button>`,
+            })),
+            official.some((p) => !p.connected) && {
+              tab: "modelflare", group: "official", groupNote: official.some((p) => p.connected) ? undefined : t("official.note"), id: "official-add", name: t("official.addName"), sub: t("official.addSub"), keys: t("official.keys"),
+              ctl: html`<${MenuButton} label=${t("official.addName")} value="" onChange=${(id) => setKeySheet(official.find((p) => p.id === id))} options=${[["", t("official.choose")], ...official.filter((p) => !p.connected).map((p) => [p.id, officialName(p)])]} />`,
+            },
+          ]
+        : []),
+      managed && mf.connected && { tab: "modelflare", group: "line", id: "line", name: t("settings.rows.line.name"), sub: t("settings.rows.line.sub"), keys: t("settings.rows.line.keys"),
         ctl: html`<${DomainConnection} value=${mf.line} onChange=${setLine} />` },
 
       { tab: "computer", id: "cu-status", name: t("settings.rows.cuStatus.name"), sub: cu ? cu.reason : t("common.reading"), keys: t("settings.rows.cuStatus.keys"),
@@ -468,7 +508,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       { tab: "about", id: "links", name: "Modelflare", sub: t("settings.rows.links.sub"),
         ctl: html`<a class="text" href=${MF_CONSOLE} target="_blank" rel="noopener noreferrer">modelflare.dev ↗</a><a class="text" href=${MF_DOCS_LINK} target="_blank" rel="noopener noreferrer">${t("settings.rows.links.docs")}</a>` },
     ].filter(Boolean);
-  }, [s, mf, mode, p, models, modelsError, cu, status, update, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts, effort]);
+  }, [s, mf, mode, p, models, modelsError, cu, status, update, bots, acct, invite, unread, g, media, lang, langPref, conn.accounts, conn.channelAccounts, effort, official]);
 
   const needle = q.trim().toLowerCase();
   const shown = needle ? rows.filter((r) => !r.custom && `${r.name} ${r.sub || ""} ${r.keys || ""}`.toLowerCase().includes(needle)) : rows.filter((r) => r.tab === tab && !r.searchOnly);
@@ -500,5 +540,11 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
     <${ConnectionSheets} conn=${conn} bots=${bots} />
     ${sheet === "usage" && html`<${UsageSheet} onClose=${() => setSheet("")} />`}
     ${sheet === "notifications" && html`<${NotificationsSheet} onClose=${() => { setSheet(""); setUnread(null); }} />`}
+    ${sheet === "login" && html`<${Sheet} title=${t("settings.rows.account.login")} onClose=${() => setSheet("")}>
+      <${AccountLogin} manual=${!!(acct && acct.manualLogin)} onSignedIn=${(a) => { setSheet(""); if (a) onAccount(a); onMfChanged(); reloadModels?.(); }} />
+    <//>`}
+    ${keySheet && html`<${Sheet} title=${officialName(keySheet)} onClose=${() => setKeySheet(null)}>
+      <${OfficialKeyForm} provider=${keySheet} onConnected=${officialChanged} />
+    <//>`}
   </section>`;
 }

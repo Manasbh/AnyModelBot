@@ -2,7 +2,7 @@
 
 [简体中文](./privacy.md) | [English](./privacy_en.md) | [日本語](./privacy_ja.md) | 한국어 | [Русский](./privacy_ru.md)
 
-**핵심:** 대화, 기억, 파일, 키는 내 기기에 저장됩니다. 모델에 보내는 내용은 Modelflare를 거쳐 선택한 모델 제공업체로 전달됩니다. 데이터에 위험이 전혀 없다고 주장하지 않습니다. 모델에 전송한 정보는 기기를 벗어납니다.
+**핵심:** 대화, 기억, 파일, 키는 내 기기에 저장됩니다. 모델에 보내는 내용은 선택한 모델 제공업체로 전달됩니다. 공식 API 키는 직접, 그 외에는 Modelflare를 거칩니다. 데이터에 위험이 전혀 없다고 주장하지 않습니다. 모델에 전송한 정보는 기기를 벗어납니다.
 
 이 문서는 AnyModelBot이 무엇을 어디에 저장하고, 무엇이 기기 외부로 나가며, 어떻게 삭제하는지 설명합니다. 문의: [support@anymodel.bot](mailto:support@anymodel.bot).
 
@@ -25,6 +25,7 @@
 | 봇 작업 공간 파일 | `workspaces/<bot>/`(받은 파일 `inbox/`, 생성한 이미지·동영상 `media/` 포함) | 봇이 읽어 모델에 보낼 때 | 위와 동일 |
 | Modelflare 로그인 정보 | `modelflare-account.json`(권한 600, 데스크톱 앱은 시스템 키체인으로 암호화) | 토큰 갱신 시 modelflare.dev로만 | Modelflare |
 | API 키 | `magpie/config/`의 격리된 게이트웨이 설정 | 모든 모델 요청에서 Modelflare 인증용으로 | Modelflare |
+| 공식 API 키(입력한 경우) | `magpie/config/`의 격리된 게이트웨이 설정 | 모든 모델 요청에서 해당 제공업체 인증용으로 | 해당 모델 제공업체 |
 | WeChat 로그인 상태와 동기화 커서 | 데이터 폴더 내부(`weixin/` 등) | WeChat iLink API와 통신할 때 | Tencent WeChat |
 | Feishu 채팅 계정의 App ID / Secret | `anymodel.db` | Feishu Open Platform에 지속 연결할 때 | Feishu |
 | Telegram, Slack, Discord 토큰 | `anymodel.db` | 해당 플랫폼과 통신할 때 | 연결한 플랫폼 |
@@ -56,6 +57,14 @@
 - 요청에는 답변에 필요한 프롬프트, 대화 맥락, 사용 중인 기억, 파일 내용, 도구 결과와 컴퓨터 사용 시의 스크린샷이 포함됩니다.
 - Modelflare가 요청 출처를 식별하도록 `X-Modelflare-Skill: anymodel-bot/<version>` 헤더를 보냅니다. 앱에서 여는 Modelflare 링크에는 `utm_source=anymodelbot`이 포함됩니다.
 - Modelflare는 요청 로그를 보관합니다. 항목과 기간은 [Modelflare 신뢰 센터](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)를 확인하세요. 각 모델 제공업체의 데이터 처리는 자체 약관을 따릅니다.
+
+## 내 공식 API 키 사용
+
+- 시작 화면이나 설정 → 모델에서 OpenAI, Anthropic 등의 공식 키를 입력하면 해당 제공업체의 모델 요청은 내장 게이트웨이에서 바로 전송되며 Modelflare를 거치지 않고 `X-Modelflare-Skill` 헤더도 붙지 않습니다. 내용 보관은 해당 제공업체의 약관을 따릅니다.
+- 제공업체 주소는 앱에 고정되어 있어 화면이나 API에서 바꿀 수 없으므로 키가 다른 곳으로 전송되지 않습니다. 키는 게이트웨이의 격리된 설정(권한 600)에만 저장되고 로그나 명령줄 인수에 남지 않으며, 화면에는 마지막 4자만 표시됩니다.
+- 공식 키만 쓰고 로그인하지 않으면 앱은 Modelflare의 계정 데이터와 가격 목록을 읽지 않습니다. 키를 입력할 때 확인을 위해 모델 목록을 한 번 읽고, 이후 목록을 최신으로 유지하려고 1시간마다 읽습니다.
+- 내장 게이트웨이는 공개 모델 목록(컨텍스트 길이, 참고 가격)을 `models.dev`에서 읽습니다. 이 요청은 다운로드만 하며 키나 대화 내용을 포함하지 않습니다.
+- 이미지·동영상 생성은 Modelflare로만 사용할 수 있습니다.
 
 ## 텔레메트리
 

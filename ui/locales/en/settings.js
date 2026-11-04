@@ -3,7 +3,7 @@ export default {
   tabs: {
     general: "General",
     appearance: "Appearance",
-    modelflare: "Modelflare",
+    modelflare: "Models",
     computer: "Computer use",
     connections: "Connections",
     privacy: "Privacy & security",
@@ -165,6 +165,7 @@ export default {
     desktop: "Desktop app",
     account: "Account",
     models: "Models",
+    official: "Official API keys",
     line: "Connection",
     channels: "Chat channels",
     data: "Data accounts",
@@ -285,6 +286,7 @@ export default {
       signedOut: "Sign in to see usage, notifications and your invite link, and to set budgets for individual bots",
       keys: "account sign in sign up log in log out login",
       logout: "Sign out",
+      login: "Sign in",
     },
     connection: {
       name: "Connection",
@@ -383,7 +385,7 @@ export default {
     },
     keyStorage: {
       name: "Key storage",
-      sub: "Your Modelflare key lives only in the built-in gateway's isolated config on this computer, never in logs or command-line arguments",
+      sub: "API keys live only in the built-in gateway's isolated config on this computer, never in logs or command-line arguments",
       keys: "security key storage",
     },
     accountStorage: {

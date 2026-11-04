@@ -3,7 +3,7 @@ export default {
   tabs: {
     general: "常规",
     appearance: "外观",
-    modelflare: "Modelflare",
+    modelflare: "模型",
     computer: "电脑操作",
     connections: "连接",
     privacy: "隐私与安全",
@@ -165,6 +165,7 @@ export default {
     desktop: "桌面应用",
     account: "账户",
     models: "模型",
+    official: "官方 API Key",
     line: "连接",
     channels: "聊天渠道",
     data: "数据账号",
@@ -285,6 +286,7 @@ export default {
       signedOut: "登录后可以查看用量、通知和邀请链接，也能给机器人单独设预算",
       keys: "登录 注册 账户 退出 account login",
       logout: "退出登录",
+      login: "登录",
     },
     connection: {
       name: "连接",
@@ -383,7 +385,7 @@ export default {
     },
     keyStorage: {
       name: "密钥存放",
-      sub: "Modelflare 密钥只在本机内置网关的隔离配置里，不写日志、不进命令行参数",
+      sub: "API Key 只在本机内置网关的隔离配置里，不写日志、不进命令行参数",
       keys: "安全",
     },
     accountStorage: {

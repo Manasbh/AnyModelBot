@@ -2,7 +2,7 @@
 
 [简体中文](./privacy.md) | English | [日本語](./privacy_ja.md) | [한국어](./privacy_ko.md) | [Русский](./privacy_ru.md)
 
-**In one sentence:** conversations, memory, files and keys are stored on your device; whatever you send to a model goes through Modelflare to the model provider you chose. We do not claim your data is beyond all risk — anything sent to a model leaves your device.
+**In one sentence:** conversations, memory, files and keys are stored on your device; whatever you send to a model goes to the model provider you chose, directly with your own official API key and otherwise through Modelflare. We do not claim your data is beyond all risk — anything sent to a model leaves your device.
 
 This document explains what AnyModelBot stores where, what leaves your device, and how to delete it. Questions: [support@anymodel.bot](mailto:support@anymodel.bot).
 
@@ -25,6 +25,7 @@ This document explains what AnyModelBot stores where, what leaves your device, a
 | Bot workspace files | `workspaces/<bot>/` (including received files in `inbox/` and generated images and video in `media/`) | When a bot reads them and sends them to a model | Same as above |
 | Modelflare sign-in credential | `modelflare-account.json` (mode 600; encrypted with the system keychain in the desktop app) | Only to modelflare.dev when refreshing tokens | Modelflare |
 | API key | The gateway's isolated config in `magpie/config/` | As authentication on every model request to Modelflare | Modelflare |
+| Official API key (if you add one) | The gateway's isolated config in `magpie/config/` | As authentication on every model request to that provider | That model provider |
 | WeChat sign-in state and sync cursor | Inside the data directory (`weixin/` and others) | When talking to the WeChat iLink API | Tencent WeChat |
 | App ID / Secret of Feishu chat accounts | `anymodel.db` | When opening the long connection to the Feishu Open Platform | Feishu |
 | Telegram, Slack and Discord tokens | `anymodel.db` | When talking to that platform | The platform you connected |
@@ -56,6 +57,14 @@ This document explains what AnyModelBot stores where, what leaves your device, a
 - A request contains what the model needs to answer: the prompt, conversation context, memory in use, file contents, tool results and, with computer use, screenshots.
 - Requests carry an `X-Modelflare-Skill: anymodel-bot/<version>` header so Modelflare can identify the source; Modelflare links opened from the app carry `utm_source=anymodelbot`.
 - Modelflare keeps request logs; see the [Modelflare Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) for what is kept and for how long. How each model provider handles data is governed by its own terms.
+
+## Using your own official API keys
+
+- After you enter an official key from OpenAI, Anthropic or another provider on the welcome screen or in Settings → Models, the built-in gateway sends that provider's model requests straight to them. They don't pass through Modelflare and don't carry the `X-Modelflare-Skill` header. That provider's own terms govern how the content is kept.
+- Provider addresses are fixed in the app and can't be changed from the interface or its API, so your key isn't sent anywhere else. Keys live only in the gateway's isolated config (mode 600), never in logs or command-line arguments, and the interface shows only the last 4 characters.
+- With only official keys and no sign-in, the app doesn't read Modelflare's account data or price catalog. When you enter a key, the app uses it to read that provider's model list once to check it, then hourly to keep the list current.
+- The built-in gateway reads the public model catalog from `models.dev` (context lengths, reference prices). This request only downloads, and carries no keys or conversation content.
+- Image and video generation is only available through Modelflare.
 
 ## Telemetry
 

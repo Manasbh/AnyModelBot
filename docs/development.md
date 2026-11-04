@@ -5,7 +5,7 @@
 这份文档给想从源码运行、打包或参与开发的人看。普通用户直接从 [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) 下载安装包即可，见 [README](../README.md#-下载)。
 
 - 一个机器人 = 人设 + 默认模型 + 记忆。账号是全局的（设置 › 连接），所有机器人共用，同一个服务可以加多个。定位：自用、单用户。
-- 模型来自 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)：首次启动登录（或注册）Modelflare 账户，模型自动列出。请求经过内置的 [magpie](https://github.com/yetone/magpie) 网关转发。
+- 模型来自 Modelflare 账户或用户自己的官方 API Key。[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)：首次启动登录（或注册）Modelflare 账户，模型自动列出。请求经过内置的 [magpie](https://github.com/yetone/magpie) 网关转发。
 - 三种运行方式，同一套代码：**桌面版（Electron）**、**命令行 `npm start`**、**Docker**。
 
 ## 目录结构
@@ -22,6 +22,7 @@ src/
   account/       Modelflare 账户：PKCE 回环登录、令牌轮换、余额与提醒、机器人预算 Key、模型能力与参考价
   web/           管理界面服务（JSON API + 流式对话 SSE）
   cli/           init 首次设置向导、weixin-login
+  official-providers.ts  官方 API：厂商表（地址写死）、模型 id、校验失败时的说明
   modelflare.ts  Modelflare 线路、密钥校验（GET /v1/models）、模型路由与归因
   guide.ts       上手清单的进度
   i18n/          服务端多语言：报错、状态文字、托盘菜单、机器人发出的系统消息（messages/<命名空间>.ts）
@@ -91,10 +92,10 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 首次启动只有一个按钮「登录 / 注册 Modelflare」：在系统浏览器里登录（没有账户可当场注册）并点「继续」授权，回到本程序后自动为这台电脑签发一把专用 API Key 并连接 → 选默认模型 → 开始对话。Docker 或远程部署收不到浏览器登录的回调：登录后浏览器会跳到打不开的 `127.0.0.1` 地址，把地址栏里的链接贴回首次启动页即可（`POST /amb/api/account/login/complete`，state 和 PKCE 校验不变）。旧版本填过 API Key、没有登录的，升级后 Key 会从本机移除，需要重新登录。
 - 登录方式：OIDC 授权码 + PKCE（RFC 7636），按 RFC 8252 作为原生应用——本程序是公共客户端（`client_id` 为 `anymodel-bot`，没有也不需要客户端密钥），授权结果回调到本机 `127.0.0.1` 的临时端口。在 Modelflare 网页个人资料页的「已授权的应用」里可以随时撤销；撤销后本程序会发现并回到登录页。
 - 账户凭据（refresh token）存在数据目录的 `modelflare-account.json`（权限 600），桌面版用系统钥匙串加密（Electron safeStorage）；界面只拿到账户名称。「退出登录」会撤销这台电脑的授权，Modelflare 同时删除登录时为它和各机器人签发的 Key。
-- 余额：不常驻显示，点侧栏左下角的头像弹出，设置 → Modelflare 里也有，显示账户钱包余额；「充值」打开 Modelflare 网页，回到窗口时自动刷新。余额低于提醒线（默认 1 美元，可改或关闭）时在应用里提醒一次，也可以设置让机器人发到你的微信 / 飞书。
-- 登录后还能在 设置 → Modelflare 查看按天、按模型的用量，Modelflare 发来的通知，以及复制邀请链接。
+- 余额：不常驻显示，点侧栏左下角的头像弹出，设置 → 模型 里也有，显示账户钱包余额；「充值」打开 Modelflare 网页，回到窗口时自动刷新。余额低于提醒线（默认 1 美元，可改或关闭）时在应用里提醒一次，也可以设置让机器人发到你的微信 / 飞书。
+- 登录后还能在 设置 → 模型 查看按天、按模型的用量，Modelflare 发来的通知，以及复制邀请链接。
 - 机器人预算（需要登录）：机器人设置 → 预算，开启后这个机器人用自己的 Key（内置网关里单独的 provider），最多花设定的美元数；关闭后回到共用的 Key。
-- 推理强度：在模型选择面板或 设置 → Modelflare 里选（自动 / 低 / 中 / 高），全局一个，下一轮生效。自动时不发任何参数，用模型默认。只对支持的模型生效：Responses 接口的推理模型、模型资料标了推理的 Chat 和 Claude（Claude 4.6 起用 adaptive + `output_config.effort`，更早的用 `budget_tokens`）。
+- 推理强度：在模型选择面板或 设置 → 模型 里选（自动 / 低 / 中 / 高），全局一个，下一轮生效。自动时不发任何参数，用模型默认。只对支持的模型生效：Responses 接口的推理模型、模型资料标了推理的 Chat 和 Claude（Claude 4.6 起用 adaptive + `output_config.effort`，更早的用 `budget_tokens`）。
 - 生图 / 生视频：代理模式下机器人有 `media_models`（可用模型、默认模型、参数范围、参考价）、`media_docs`（从 docs.modelflare.dev 实时读该模型的请求格式）、`generate_image`、`generate_video` 四个工具，并自带一份 media 技能说明。各模型的参数格式不同，机器人按文档写请求体，工作区里的参考图写成 `workspace:路径` 即可；Key 始终只在本程序里，由本程序带着该机器人用的 Key 调 Modelflare，结果存进机器人工作区的 `media/`，再交付到聊天。
 - 生成前确认：直接生成，不打扰你。机器人选了不是默认的模型、要求没说清，都不问：它按最合理的理解生成，再说一句用了什么。只在预计花费超过 $0.5 时（按参考价、张数、视频时长和分辨率估算；视频估不出来也算）先在聊天里问你这次用哪个模型（附提示词、参数、参考价和为什么问）。可以确认、换成别的模型或取消；微信回复编号或模型名，飞书 / 网页点选。10 分钟内没回答就不生成。想每次都确认：机器人设置 → 生图 / 生视频 → 生成前确认 →「每次都问」。
 - 联网搜索：代理的 `web_search` 不用 DeepSeek 自带的搜索（它要 DeepSeek 的 Key），经 `amb-web-search` 插件交给本程序搜。默认免费、不用设置：依次试 Exa 的公开 MCP、必应、DuckDuckGo，上次成功的先试，出错的（限流、验证页、必应给出不相干的结果）跳过 10 分钟。设置 → 网络与访问 → 联网搜索 可以换成 Tavily、Exa、博查、智谱（填 Key）或自己的 SearXNG，填了就先用它，出错时退回免费的。Key 和渠道令牌一样存在本机数据库里，代理进程拿不到。桌面版搜索走系统代理；命令行版用 Node 的 fetch（设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）。
@@ -102,14 +103,14 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 已授权账号（`src/agent/accounts.ts`）：全局一份（设置 › 连接），所有机器人共用，同一个服务可以加多个账号，比如对任何机器人说「看我第一个飞书和第二个飞书的消息」。`amb-connections` 插件把每次工具调用经 bridge 交给本程序，令牌不进代理进程；账号用工具的 `account` 参数选（序号或名字），`connected_accounts` 列出来。有账号的服务才有工具。只读机器人和观察规则不能写，宿主也会再查一次。聊天渠道账号见下一条。
   - **Notion**（`notion.ts`）：用户添加时选一键授权或令牌。令牌走 REST API；一键授权用 OAuth + PKCE + 动态注册，回调到本机 `/oauth/notion/callback`，再由本程序调官方远程 MCP（`mcp.notion.com`）的工具。模型看到的是同一套工具：`notion_search`、`notion_read_page`、`notion_query_database`，不是只读的机器人再加 `notion_create_page`、`notion_update_page`。没有删除页面的工具。
   - **飞书**（`feishu-account.ts`）：和官方 lark-cli 同一套流程：扫码创建个人应用（也可以填已有的自建应用），再设备授权拿用户令牌。只读，工具是 `feishu_list_chats`、`feishu_read_chat`、`feishu_search_messages`。
-- 默认图片 / 视频模型：首次设置时和默认文本模型一起选，之后在 设置 → Modelflare 修改；选「自动」时用推荐顺序里第一个不需要参考素材的模型。
+- 默认图片 / 视频模型：首次设置时和默认文本模型一起选，之后在 设置 → 模型 修改；选「自动」时用推荐顺序里第一个不需要参考素材的模型。
 - 模型选择器里显示上下文长度、视觉 / 工具 / 推理能力，以及每百万 tokens 输入 / 输出的起步参考价（来自公开价格目录，以账单为准）。
-- 性价比（需要登录）：应用签发的 Key（本机 Key 和各机器人的预算 Key）都带 Modelflare Smart Key 的路由策略 `routing_strategy`——省钱 `low_cost`（倍率最低的分组先试）、均衡 `balanced`（默认，从价格居中的分组开始）、质量 `stable`（倍率最高的先试）。在 设置 → Modelflare → 性价比 或模型选择器的第一个滑块里改，改的时候连同已有的 Key 一起改（`PATCH /api/connected-app/api-keys/<id>`），选择存在本机数据库（`account.routing`）。没选过的老用户第一次核对 Key 时把均衡应用到已有的 Key 上，只这一次（日志 `applied the default key routing strategy`）。Modelflare 回显了 `routing_strategy` 才算支持；拒绝（400 / 422）时不带这个字段再签一次，签发、核对、预算都不会因此失败，忽略（不回显）也一样记为不支持，这时界面不显示这个设置，一天后再试一次。
+- 性价比（需要登录）：应用签发的 Key（本机 Key 和各机器人的预算 Key）都带 Modelflare Smart Key 的路由策略 `routing_strategy`——省钱 `low_cost`（倍率最低的分组先试）、均衡 `balanced`（默认，从价格居中的分组开始）、质量 `stable`（倍率最高的先试）。在 设置 → 模型 → 性价比 或模型选择器的第一个滑块里改，改的时候连同已有的 Key 一起改（`PATCH /api/connected-app/api-keys/<id>`），选择存在本机数据库（`account.routing`）。没选过的老用户第一次核对 Key 时把均衡应用到已有的 Key 上，只这一次（日志 `applied the default key routing strategy`）。Modelflare 回显了 `routing_strategy` 才算支持；拒绝（400 / 422）时不带这个字段再签一次，签发、核对、预算都不会因此失败，忽略（不回显）也一样记为不支持，这时界面不显示这个设置，一天后再试一次。
 - 模型智能（模型选择器的第二个滑块）：在这个账户能用、又有 Artificial Analysis 数据的模型里，按智能指数（越高越好）和每次任务的花费（越低越好）取帕累托前沿，最多 5 档，最便宜的和最强的总在。智能取应用实际用的那一档：走 Responses 接口的推理模型默认发 medium，就用 AA 的 medium 那一行，其余用 AA 的默认那一行（`src/account/model-quality.ts`）。花费 = AA 的每次任务花费（官方定价）× 这个模型在当前性价比下的价格比例（可用公开分组的倍率 × 售价倍率：省钱取最低，质量取最高，均衡取居中；企业专用分组不算；没登录或不支持时按均衡估）。拖到哪一档就把模型换成那个；点模型名进完整列表，照样手动选，选了不在档上的模型时滑块显示「自定义」。前沿不到两档时选择器直接是列表。算法在 `ui/lib/frontier.js`。
 - AA 数据在仓库里：`assets/model-quality.json`（`updatedAt`、`source`、只留用得到的字段，已经按 Modelflare 的模型 ID 对应好）。刷新：`node scripts/update-model-quality.mjs`，默认抓公开排行榜页面 https://artificialanalysis.ai/leaderboards/models 和 Modelflare 的公开价格目录；设了 `AA_API_KEY` 时改用官方 API（字段还没有拿 Key 核对过）。`--html <文件>`、`--pricing <文件>` 用保存下来的页面和目录，`--dry-run` 只打印。页面结构变了（找不到列、行的形状不对、数字解析不出来、行数太少、对上的模型太少）时退出码为 1 并说明是哪一项，原来的快照不动。名字按规则对不上的模型写在脚本的 `OVERRIDES` 里。数据来自 Artificial Analysis，选择器底部注明出处。
 - 调用归因：经 Modelflare 的请求都带 `X-Modelflare-Skill: anymodel-bot/<版本>`，链接都带 `utm_source=anymodelbot&utm_campaign=amb_<位置>`（应用内 `amb_signup`、`amb_topup`、`amb_console` 等，README 与仓库文档 `amb_readme`，官网 `amb_homepage`；格式由 `test/utm.unit.test.ts` 固定）。
-- API 域名：`https://modelflare.dev/v1`、`https://origin.modelflare.dev/v1` 和 `https://cf.modelflare.dev/v1` 均可选择。在 设置 → Modelflare → API 域名 中选择，也可手动测速。测速从运行 AnyModelBot 的设备发起，不带密钥访问三个域名的 `/v1/models`，显示三次探测的响应时间中位数和成功次数；401 表示已收到 API 响应，不代表密钥有效或模型生成速度。域名不会自动切换；历史配置 `auto` / `global` 仍指向主域名，`cn` 指向 origin，`cf` 指向 cf，兼容值不代表地域或质量差异。
-- 设置 → Modelflare：账户、余额与充值、余额提醒、用量、通知、邀请；性价比、推理强度；默认模型、刷新模型列表。
+- API 域名：`https://modelflare.dev/v1`、`https://origin.modelflare.dev/v1` 和 `https://cf.modelflare.dev/v1` 均可选择。在 设置 → 模型 → API 域名 中选择，也可手动测速。测速从运行 AnyModelBot 的设备发起，不带密钥访问三个域名的 `/v1/models`，显示三次探测的响应时间中位数和成功次数；401 表示已收到 API 响应，不代表密钥有效或模型生成速度。域名不会自动切换；历史配置 `auto` / `global` 仍指向主域名，`cn` 指向 origin，`cf` 指向 cf，兼容值不代表地域或质量差异。
+- 设置 → 模型：账户、余额与充值、余额提醒、用量、通知、邀请；性价比、推理强度；默认模型、刷新模型列表。
 - 对话中输入框右侧的模型按钮可为当前会话切换模型（也可设为机器人默认）；`/model`、`/reset`、`/new`、`/status`、`/stop`、`/help` 照常可用。
 - 处理过程：代理回合的每一步（模型请求及用时与 tokens、工具调用及参数与输出、重试、子代理）折叠在回复上方的"用时"一行里，点开查看；微信 / 飞书会话在信息面板 → 最近会话里看，正在处理的那一轮实时显示并可中止。
 - 卡住的消息：`/stop`（任何渠道）或信息面板里的「中止」立即结束正在处理的回合；代理 10 分钟没有任何进展（模型不回、工具不动、只在重试；等你批准或回答不算）会自动中止，单回合最长 30 分钟（`AMB_AGENT_IDLE_TIMEOUT_MS`、`AMB_AGENT_TURN_TIMEOUT_MS` 可调）。中止只停这个会话的回合（经代理进程里的 amb-control 插件取消它），同一机器人的其它会话照常进行；10 秒内没停下（`AMB_STOP_GRACE_MS`）才重启代理进程。`/status` 显示它走到了哪一步、多久没有进展。网页对话里切到别的机器人或刷新窗口不会打断正在处理的消息，回来时接着显示（你的消息、到目前为止的回复和处理过程）；停止按钮在排队、代理启动中、等你批准时也能用，纯对话也一样。
@@ -122,6 +123,15 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 内置网关：magpie 以 `--gateway` 模式运行，使用本程序数据目录内独立的 HOME/配置目录；**不读取**你电脑上已有的 Claude/Codex 等订阅凭据，**不改写**任何 agent 配置，关闭自动更新与账户发现。它只供本进程内部调用，界面不再反代它的页面或 `/v1`。
 - API Key 只保存在内置网关的隔离配置中，不经过命令行参数、不写日志，前端只拿到尾号。
 - 开发/测试：设置 `AMB_MAGPIE_BASE_URL` 可直接使用一个 OpenAI 兼容端点（不启动内置网关，界面视为已连接，账户功能不可用）；`AMB_MODELFLARE_BASE_URL` 可把 Modelflare 基址指向本地 mock，`AMB_MODELFLARE_ISSUER` 把登录与账户接口指向本地 mock。
+
+## 官方 API Key
+
+- 引导页的「使用自己的 API Key」和 设置 → 模型 都能填。支持的厂商和地址写死在 `src/official-providers.ts`，接口（`GET /amb/api/official`、`PUT`/`DELETE /amb/api/official/<id>`）只认表里的 id，不能填地址。
+- 每家是内置网关里的一个 provider，id 为 `official-<厂商>`，模型 id 为 `official-<厂商>/<模型>`，和 Modelflare 的同名模型分得开。Key 不经命令行参数：经网关本机接口的请求体写入隔离配置。
+- 校验走网关的模型列表接口（代理、各家的鉴权写法都在网关里），通过才保存。模型每小时和厂商的列表核对一次，不能对话的（语音、图片、向量……）不进选择器。
+- 代理的接口按厂商定：OpenAI 走 Responses，Anthropic 走 Messages，其余走 Chat Completions；上下文、价格、推理能力来自网关的模型目录（`/v1/models`）。只有官方 Key 时不读 Modelflare 的目录和账户。
+- 走官方 API 的模型不带 `X-Modelflare-Skill`，不做服务端压缩（压缩端点来自 Modelflare 的目录），也不受机器人预算限制（预算是 Modelflare Key 的额度）。生图、生视频只有连着 Modelflare 时才有。
+- 测试：`AMB_OFFICIAL_BASE_URL` 把所有厂商指向本地 mock（`test/official-providers.integration.test.ts`）。
 
 ## 界面
 

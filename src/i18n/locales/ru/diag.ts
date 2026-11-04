@@ -18,7 +18,8 @@ export default {
   gateway_state: "{error} (состояние встроенного шлюза: {state})",
   gateway_state_error:
     "{error} (состояние встроенного шлюза: {state}, {lastError})",
-  skip_not_connected: "Modelflare ещё не подключён",
+  skip_not_connected: "Источник этой модели ещё не подключён",
+  skip_no_chat: "У этого официального API нет Chat Completions, проверяется только встроенный шлюз",
   skip_external:
     "Режим внешнего API: боты обращаются к нему напрямую, без встроенного шлюза",
   stage_queue: "Очередь сообщений",

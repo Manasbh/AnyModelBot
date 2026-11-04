@@ -14,6 +14,7 @@ import diag from "./diag.js";
 import magpie from "./magpie.js";
 import media from "./media.js";
 import modelflare from "./modelflare.js";
+import official from "./official.js";
 import pwsh from "./pwsh.js";
 import rules from "./rules.js";
 import runtime from "./runtime.js";
@@ -35,7 +36,7 @@ export default { connections,
   diag,
   magpie,
   media,
-  modelflare,
+  modelflare, official,
   pwsh,
   rules,
   runtime,

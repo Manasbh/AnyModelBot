@@ -9,6 +9,7 @@ import { stdin, stdout } from "node:process";
 import { loadConfig } from "../config.js";
 import { App } from "../app.js";
 import { normalizeLine } from "../modelflare.js";
+import { OFFICIAL_PROVIDERS } from "../official-providers.js";
 import { t as tr } from "../i18n/index.js";
 
 /** 行队列：兼容交互终端与管道输入（管道时所有行会一次性到达） */
@@ -69,11 +70,15 @@ async function setup(app: App, rl: ReturnType<typeof lineReader>, dataDir: strin
     const account = app.ensureAccount();
     await app.retirePastedKey();
     const status = app.modelflareStatus();
-    if (status.connected) {
+    if (status.official && !status.connected) {
+      console.log(tr("cli.alreadyOfficial"));
+    } else if (status.connected) {
       console.log(tr("cli.alreadyConnected", { tail: status.keyTail, account: account.signedIn ? tr("cli.accountSuffix", { name: account.status().name || tr("cli.signedIn") }) : "" }));
     } else {
       const how = (await rl.ask(tr("cli.askHow"))).toLowerCase();
-      if (how !== "skip") {
+      if (how === "key") {
+        await officialKey(app, rl);
+      } else if (how !== "skip") {
         const line = normalizeLine((await rl.ask(tr("cli.askLine"))).trim().toLowerCase());
         await app.setModelflareLine(line);
         await loginInBrowser(app, rl, how === "remote");
@@ -88,6 +93,17 @@ async function setup(app: App, rl: ReturnType<typeof lineReader>, dataDir: strin
     app.store.updateBot(bot.id, { feishuAppId: appId, feishuAppSecret: secret });
     console.log(tr("cli.savedToBot", { name: bot.name }));
   }
+}
+
+/** 用自己的官方 API Key：选一家、填 Key；校验不过直接报错退出，什么都不保存 */
+async function officialKey(app: App, rl: ReturnType<typeof lineReader>): Promise<void> {
+  const label = (p: (typeof OFFICIAL_PROVIDERS)[number]) => (p.region ? `${p.name} (${tr(p.region === "cn" ? "cli.regionCn" : "cli.regionGlobal")})` : p.name);
+  OFFICIAL_PROVIDERS.forEach((p, i) => console.log(`  ${i + 1}. ${label(p)}`));
+  const p = OFFICIAL_PROVIDERS[Number(await rl.ask(tr("cli.askOfficial"))) - 1];
+  if (!p) return;
+  const r = await app.connectOfficial(p.id, await rl.ask(tr("cli.askOfficialKey", { name: label(p), url: p.keysUrl }), true));
+  if (!r.ok) throw new Error(r.message);
+  console.log(tr("cli.officialConnected", { name: label(p), count: r.models.length }));
 }
 
 /** 浏览器登录：回调落在本机 127.0.0.1。remote：浏览器在别的设备上（SSH 远程），回调到不了这里，把登录后的链接贴回来 */

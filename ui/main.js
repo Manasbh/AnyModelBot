@@ -1,5 +1,5 @@
 // AnyModelBot 界面：Preact + htm，无构建步骤（原生 ES 模块）。
-// 未连接 Modelflare → 整页引导；已连接 → 侧栏 + 对话（信息面板按需），设置与机器人设置占满主区。
+// 没有任何模型来源（Modelflare 或官方 API Key）→ 整页引导；已连接 → 侧栏 + 对话（信息面板按需），设置与机器人设置占满主区。
 import { render } from "preact";
 import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, DialogHost, Notice, Toasts, Splitter, tokenPx } from "./components/ui.js";
@@ -145,7 +145,7 @@ function App() {
   useEffect(() => {
     if (settings) adoptServerLang(settings.lang);
   }, [settings && settings.lang]);
-  const connected = !!(mf && (mf.mode === "external" || mf.connected));
+  const connected = !!(mf && (mf.mode === "external" || mf.connected || mf.official));
   const [botsData, botsErr, reloadBots, setBotsData] = useLoader(() => (connected ? api("/bots") : Promise.resolve(null)), [connected]);
   const [groupsData, , reloadGroups] = useLoader(() => (connected ? api("/groups") : Promise.resolve(null)), [connected]);
   const [groupSheet, setGroupSheet] = useState(null); // 建群 / 改群的弹窗：{ group? }

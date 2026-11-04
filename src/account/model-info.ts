@@ -151,6 +151,53 @@ export function estimateRates(entry: PricingEntry, catalog: PricingCatalog): Rat
   };
 }
 
+const perMillion = (v: unknown) => {
+  const n = typeof v === "string" || typeof v === "number" ? Number(v) : NaN;
+  return Number.isFinite(n) && n >= 0 ? round(n * 1_000_000) : undefined;
+};
+
+/** 网关 /v1/models 的一行：资料来自网关的模型目录，价格是厂商的官方价（OpenRouter 的写法：美元 / token 的字符串） */
+export interface GatewayModelRow {
+  id?: unknown;
+  context_length?: unknown;
+  reasoning?: unknown;
+  modalities?: { input?: unknown };
+  pricing?: { prompt?: unknown; completion?: unknown; input_cache_read?: unknown; input_cache_write?: unknown };
+}
+
+/**
+ * 官方 API 模型的资料：按完整 id（official-<厂商>/<模型>）给，不和 Modelflare 目录里的同名模型混。
+ * 走官方 API 付的就是官方价，所以三种性价比的倍率都是 1；endpoint 是这家厂商在代理上走的接口。
+ */
+export function gatewayModelInfo(rows: readonly GatewayModelRow[], endpointOf: (id: string) => string | undefined, nameOf: (id: string) => string, quality?: QualitySnapshot): Record<string, ModelInfo> {
+  const out: Record<string, ModelInfo> = {};
+  for (const r of rows) {
+    const id = typeof r.id === "string" ? r.id : "";
+    const endpoint = id ? endpointOf(id) : undefined;
+    if (!endpoint) continue;
+    const input = perMillion(r.pricing?.prompt);
+    const output = perMillion(r.pricing?.completion);
+    const cacheRead = perMillion(r.pricing?.input_cache_read);
+    const cacheWrite = perMillion(r.pricing?.input_cache_write);
+    const context = Number(r.context_length);
+    const modalities = r.modalities?.input;
+    const info: ModelInfo = {
+      ...(context > 0 ? { context } : {}),
+      ...(Array.isArray(modalities) ? { vision: modalities.includes("image") } : {}),
+      ...(typeof r.reasoning === "boolean" ? { reasoning: r.reasoning } : {}),
+      ...(input !== undefined ? { price: { input, ...(output !== undefined ? { output } : {}) } } : {}),
+      ...(input !== undefined ? { rates: { input, output: output ?? input, ...(cacheRead !== undefined ? { cacheRead } : {}), ...(cacheWrite !== undefined ? { cacheWrite } : {}) } } : {}),
+      endpoints: [endpoint],
+      factors: { low_cost: 1, balanced: 1, stable: 1 },
+    };
+    if (effortApplies(agentApi(info.endpoints), info.reasoning)) info.effort = true;
+    const q = qualityFor(quality?.models[nameOf(id)], info);
+    if (q) info.quality = q;
+    out[id] = info;
+  }
+  return out;
+}
+
 export async function loadModelInfo(o: {
   baseUrl: string;
   apiKey: string;

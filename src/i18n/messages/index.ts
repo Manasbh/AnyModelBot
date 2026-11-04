@@ -4,6 +4,7 @@ import * as desktop from "./desktop.js";
 import * as app from "./app.js";
 import * as diag from "./diag.js";
 import * as modelflare from "./modelflare.js";
+import * as official from "./official.js";
 import * as account from "./account.js";
 import * as magpie from "./magpie.js";
 import * as channel from "./channel.js";
@@ -22,4 +23,4 @@ import * as rules from "./rules.js";
 
 import * as connections from "./connections.js";
 
-export const catalogs = { connections, web, desktop, app, diag, modelflare, account, magpie, channel, runtime, agent, approvals, media, cu, pwsh, activity, tasks, access, delivery, cli, rules };
+export const catalogs = { connections, web, desktop, app, diag, modelflare, official, account, magpie, channel, runtime, agent, approvals, media, cu, pwsh, activity, tasks, access, delivery, cli, rules };

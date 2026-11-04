@@ -4,6 +4,7 @@ export default {
   "bodyTooLarge": "リクエスト本文が大きすぎます",
   "needToken": "アクセストークンが必要です。/?token=<token> を開いてください",
   "externalNoConnection": "外部エンドポイントモードでは、Modelflare 接続は管理しません",
+  "officialBadKey": "キーは空にできず、空白も含められません",
   "externalNoAccount": "外部エンドポイントモードでは、Modelflare アカウントは管理しません",
   "lowBalanceRange": "通知の基準額は $0～$1,000 の範囲にしてください",
   "badZoom": "このズーム倍率には対応していません",

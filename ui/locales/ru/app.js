@@ -20,8 +20,8 @@ export default {
     infoKeys: "сведения панель подробности",
     botSettings: "Настройки «{name}»",
     botSettingsKeys: "бот настройки параметры",
-    modelflare: "Настройки Modelflare",
-    modelflareKeys: "modelflare ключ api модель",
+    modelflare: "Настройки моделей",
+    modelflareKeys: "модели modelflare официальный ключ api",
     appearance: "Настройки оформления",
     appearanceKeys:
       "оформление шрифт текст размер анимация прозрачность размытие ширина",

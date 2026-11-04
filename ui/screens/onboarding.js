@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, Menu, Notice, Spinner, CopyButton } from "../components/ui.js";
 import { BotAvatar, MAIN_CHAR } from "../components/avatar.js";
 import { FamilyHead, PickModel, familyName, groupModels, useFamilies } from "../components/model-picker.js";
+import { OfficialStart } from "../components/official-keys.js";
 import { api } from "../lib/api.js";
 import { failed } from "../lib/store.js";
 import { LANGS, LANG_NAMES, changeLang, getLangPref, t, useLang } from "../lib/i18n.js";
@@ -210,6 +211,8 @@ export function Onboarding({ gateway, defaultModel, onDone, skipModelStep }) {
   }, []);
   const [face, setFace] = useState("idle");
   const [cue, setCue] = useState(null);
+  // 用自己的官方 API Key，不登录 Modelflare
+  const [ownKey, setOwnKey] = useState(false);
   const onFace = (f) => (f === "error" ? setCue({ kind: "error", at: Date.now() }) : setFace(f));
   const loadModels = () =>
     api("/models")
@@ -226,7 +229,10 @@ export function Onboarding({ gateway, defaultModel, onDone, skipModelStep }) {
       ${why && models === null && html`<${Notice} tone="amber">${why}<//>`}
       ${models !== null
         ? html`<${ModelStep} models=${models} initial=${defaultModel} onDone=${onDone} auto=${skipModelStep} />`
-        : html`<${AccountLogin} manual=${manual} onFace=${onFace} onSignedIn=${loadModels} />`}
+        : ownKey
+          ? html`<${OfficialStart} onConnected=${loadModels} onBack=${() => setOwnKey(false)} />`
+          : html`<${AccountLogin} manual=${manual} onFace=${onFace} onSignedIn=${loadModels} />
+              <div class="login-links"><button type="button" class="text" onClick=${() => setOwnKey(true)}>${t("official.useOwn")}</button></div>`}
     </div>
   </main>`;
 }

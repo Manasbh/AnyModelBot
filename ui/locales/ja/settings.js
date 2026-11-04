@@ -2,7 +2,7 @@ export default {
   "tabs": {
     "general": "一般",
     "appearance": "外観",
-    "modelflare": "Modelflare",
+    "modelflare": "モデル",
     "computer": "コンピューター操作",
     "connections": "接続",
     "privacy": "プライバシーとセキュリティ",
@@ -180,6 +180,7 @@ export default {
     "desktop": "デスクトップアプリ",
     "account": "アカウント",
     "models": "モデル",
+    "official": "公式 API キー",
     "line": "接続",
     "channels": "チャットチャネル",
     "data": "データアカウント",
@@ -300,6 +301,7 @@ export default {
       "signedOut": "ログインすると、利用状況、お知らせ、招待リンクを確認し、ボットごとに予算を設定できます",
       "keys": "アカウント ログイン 新規登録 ログアウト",
       "logout": "ログアウト",
+      "login": "ログイン",
     },
     "connection": {
       "name": "接続",
@@ -404,7 +406,7 @@ export default {
     },
     "keyStorage": {
       "name": "キーの保存",
-      "sub": "Modelflare のキーは、このパソコンの内蔵ゲートウェイ専用設定にだけ保存され、ログやコマンドライン引数には書き込まれません",
+      "sub": "API キーはこの端末の内蔵ゲートウェイの隔離された設定にのみ保存され、ログやコマンドライン引数には出ません",
       "keys": "セキュリティ キー 保存"
     },
     "accountStorage": {

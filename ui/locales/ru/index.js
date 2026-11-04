@@ -12,6 +12,7 @@ import guide from "./guide.js";
 import info from "./info.js";
 import markdown from "./markdown.js";
 import models from "./models.js";
+import official from "./official.js";
 import needs from "./needs.js";
 import newBot from "./newBot.js";
 import notify from "./notify.js";
@@ -26,6 +27,7 @@ import time from "./time.js";
 import troubleshoot from "./troubleshoot.js";
 import ui from "./ui.js";
 export default {
+  official,
   access,
   account,
   activity,

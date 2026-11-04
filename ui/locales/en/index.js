@@ -16,6 +16,7 @@ import botSettings from "./botSettings.js";
 import sidebar from "./sidebar.js";
 import avatar from "./avatar.js";
 import models from "./models.js";
+import official from "./official.js";
 import ui from "./ui.js";
 import guide from "./guide.js";
 import activity from "./activity.js";
@@ -27,4 +28,4 @@ import perms from "./perms.js";
 import group from "./group.js";
 import botapp from "./botapp.js";
 
-export default { botapp, group, common, app, time, settings, account, pwsh, chat, info, markdown, notify, troubleshoot, onboarding, newBot, botSettings, sidebar, avatar, models, ui, guide, activity, perms, access, tasks, needs, rules };
+export default { official, botapp, group, common, app, time, settings, account, pwsh, chat, info, markdown, notify, troubleshoot, onboarding, newBot, botSettings, sidebar, avatar, models, ui, guide, activity, perms, access, tasks, needs, rules };

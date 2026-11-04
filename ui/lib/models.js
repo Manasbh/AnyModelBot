@@ -5,6 +5,29 @@ export const normModel = (m) => (m && m.startsWith("modelflare/") ? m.slice("mod
 export const sameModel = (a, b) => !!a && !!b && normModel(a) === normModel(b);
 export const shortModel = (m) => (m && m.includes("/") ? m.slice(m.lastIndexOf("/") + 1) : m);
 
+/** 官方 API 的模型 id 是 official-<厂商>/<模型>（src/official-providers.ts）；这张表只管显示，test/official-providers.unit.test.ts 核对它和服务端的表一致 */
+const OFFICIAL_NAMES = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  google: "Google Gemini",
+  xai: "xAI",
+  deepseek: "DeepSeek",
+  "moonshot-cn": "Kimi",
+  moonshot: "Kimi",
+  zhipu: "GLM",
+  zai: "GLM",
+  "qwen-cn": "Qwen",
+  qwen: "Qwen",
+  "minimax-cn": "MiniMax",
+  minimax: "MiniMax",
+  mistral: "Mistral",
+};
+/** 官方 API 的模型是哪一家的；不是官方 API 的模型回空串 */
+export const officialSource = (m) => {
+  const x = /^official-([^/]+)\//.exec(m || "");
+  return x ? OFFICIAL_NAMES[x[1]] || x[1] : "";
+};
+
 // —— 模型族：按名字认（Modelflare 的 ID 不带厂商前缀，如 gpt-6-sol、claude-opus-5-5）。数组顺序就是显示顺序，认不出的归 OTHER_FAMILY 放最后 ——
 const FAMILIES = [
   ["GPT", /^(gpt|chatgpt|codex|o\d)/],
@@ -60,7 +83,10 @@ export function groupModels(models, q = "") {
     if (needle && !n.toLowerCase().includes(needle)) continue;
     const f = modelFamily(m);
     if (!groups.has(f)) groups.set(f, []);
-    groups.get(f).push([m, n.includes("/") ? n.slice(n.indexOf("/") + 1) : n]);
+    // 官方 API 的模型写明是哪一家：同一个模型可能既有 Modelflare 的也有官方的，走的是两条路、两份账单
+    const source = officialSource(m);
+    const label = n.includes("/") ? n.slice(n.indexOf("/") + 1) : n;
+    groups.get(f).push([m, source ? `${label} · ${source}` : label]);
   }
   for (const ms of groups.values()) ms.sort((a, b) => newerFirst(a[1], b[1]));
   return [...groups.entries()].sort((a, b) => ORDER.indexOf(a[0]) - ORDER.indexOf(b[0]));

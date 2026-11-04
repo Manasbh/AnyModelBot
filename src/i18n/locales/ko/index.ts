@@ -19,5 +19,6 @@ import account from "./account.js";
 import agent from "./agent.js";
 import runtime from "./runtime.js";
 import modelflare from "./modelflare.js";
+import official from "./official.js";
 import connections from "./connections.js";
-export default { connections, media, activity, magpie, app, cu, approvals, pwsh, desktop, tasks, channel, web, cli, rules, delivery, access, diag, account, agent, runtime, modelflare } satisfies TranslatedCatalog;
+export default { connections, media, activity, magpie, app, cu, approvals, pwsh, desktop, tasks, channel, web, cli, rules, delivery, access, diag, account, agent, runtime, modelflare, official } satisfies TranslatedCatalog;

@@ -5,7 +5,7 @@
 소스에서 AnyModelBot을 실행하거나 패키징하고 기여하려는 분을 위한 안내입니다. 앱을 사용하기만 하려면 [릴리스](https://github.com/modelflare-ai/AnyModelBot/releases)에서 설치 파일을 받으세요. [README](../README_ko.md#-다운로드)를 참고하세요.
 
 - 봇은 역할, 기본 모델, 기억으로 구성됩니다. 계정은 전역 설정(설정 › 연결)으로 관리하며 모든 봇이 공유합니다. 서비스별 계정 수는 자유롭게 추가할 수 있습니다. 한 사람이 개인적으로 사용하는 환경을 대상으로 합니다.
-- 모델은 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)에서 제공합니다. 처음 실행할 때 로그인하거나 가입하면 모델 목록이 자동으로 나타납니다. 요청은 내장 [magpie](https://github.com/yetone/magpie) 게이트웨이를 거칩니다.
+- 모델은 Modelflare 계정 또는 내 공식 API 키로 사용합니다. [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)에서 제공합니다. 처음 실행할 때 로그인하거나 가입하면 모델 목록이 자동으로 나타납니다. 요청은 내장 [magpie](https://github.com/yetone/magpie) 게이트웨이를 거칩니다.
 - 하나의 코드로 세 가지 방식으로 실행합니다: **데스크톱 앱(Electron)**, **명령줄 `npm start`**, **Docker**.
 
 ## 저장소 구조
@@ -22,6 +22,7 @@ src/
   account/       Modelflare 계정: PKCE 루프백 로그인, 토큰 교체, 잔액·알림, 봇별 예산 키, 모델 기능·참고 가격
   web/           콘솔 서버(JSON API+SSE 실시간 대화)
   cli/           첫 실행 init 마법사, weixin-login
+  official-providers.ts  공식 API: 제공업체 목록(주소 고정), 모델 ID, 키 확인 실패 시 안내
   modelflare.ts  Modelflare 경로, 키 검증(GET /v1/models), 모델 라우팅·출처 표시
   guide.ts       시작 체크리스트 진행 상태
   i18n/          서버 다국어: 오류, 상태 문구, 트레이 메뉴, 봇 시스템 메시지(messages/<namespace>.ts)
@@ -91,10 +92,10 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> 열�
 - 첫 화면의 ‘Modelflare 로그인 / 회원가입’을 누르면 시스템 브라우저에서 로그인·가입하고 계속 버튼으로 접근을 허용합니다. 앱으로 돌아오면 이 컴퓨터 전용 API 키를 발급·연결하고 기본 모델을 선택한 뒤 대화를 시작합니다. Docker·원격 배포는 브라우저 콜백을 받을 수 없으므로, 로그인 후 이동하는 열리지 않는 `127.0.0.1` 주소의 링크를 첫 화면에 붙여 넣습니다(`POST /amb/api/account/login/complete`, state와 PKCE 검증은 동일). 이전 버전에서 API 키를 입력하고 로그인하지 않은 경우 업그레이드할 때 키를 기기에서 제거하므로 로그인해야 합니다.
 - 로그인 방식은 RFC 8252의 네이티브 앱에 맞춘 OIDC 인증 코드+PKCE(RFC 7636)입니다. 공개 클라이언트(`client_id`: `anymodel-bot`)로서 클라이언트 비밀 값이 없고 필요하지도 않습니다. 결과는 `127.0.0.1`의 임시 포트로 전달됩니다. Modelflare 프로필의 인증된 앱에서 권한을 취소하면 앱이 이를 감지해 로그인 화면으로 돌아옵니다.
 - 갱신 토큰은 데이터 폴더의 `modelflare-account.json`(권한 600)에 저장합니다. 데스크톱은 시스템 키체인(Electron safeStorage)으로 암호화하며 화면에는 계정 이름만 전달합니다. 로그아웃하면 컴퓨터의 권한을 취소하고 Modelflare가 로그인 시 컴퓨터·봇에 발급한 키를 삭제합니다.
-- 잔액은 상시 표시하지 않습니다. 사이드바 왼쪽 아래 아바타 또는 설정 → Modelflare에서 지갑 잔액을 확인합니다. 충전은 Modelflare 웹사이트를 열고 앱으로 돌아오면 잔액을 갱신합니다. 알림 기준(기본 US$1, 변경·해제 가능) 아래가 되면 한 번 알리며 WeChat/Feishu로도 보낼 수 있습니다.
-- 로그인하면 설정 → Modelflare에 일별·모델별 사용량, Modelflare 알림, 초대 링크도 표시합니다.
+- 잔액은 상시 표시하지 않습니다. 사이드바 왼쪽 아래 아바타 또는 설정 → 모델에서 지갑 잔액을 확인합니다. 충전은 Modelflare 웹사이트를 열고 앱으로 돌아오면 잔액을 갱신합니다. 알림 기준(기본 US$1, 변경·해제 가능) 아래가 되면 한 번 알리며 WeChat/Feishu로도 보낼 수 있습니다.
+- 로그인하면 설정 → 모델에 일별·모델별 사용량, Modelflare 알림, 초대 링크도 표시합니다.
 - 봇 예산(로그인 필요): 봇 설정 → 예산. 켜면 설정 금액이 한도인 전용 키(게이트웨이의 별도 provider)를 쓰고 끄면 공유 키로 돌아갑니다.
-- 추론 강도: 모델 선택 패널 또는 설정 → Modelflare에서 고릅니다(자동 / 낮음 / 보통 / 높음). 전역 설정 하나이며 다음 턴부터 적용됩니다. 자동이면 매개변수를 보내지 않고 모델 기본값을 씁니다. 지원하는 모델에만 적용됩니다. Responses API의 추론 모델, 모델 프로필에 추론으로 표시된 Chat 및 Claude입니다(Claude 4.6 이상은 adaptive와 `output_config.effort`, 이전 모델은 `budget_tokens`).
+- 추론 강도: 모델 선택 패널 또는 설정 → 모델에서 고릅니다(자동 / 낮음 / 보통 / 높음). 전역 설정 하나이며 다음 턴부터 적용됩니다. 자동이면 매개변수를 보내지 않고 모델 기본값을 씁니다. 지원하는 모델에만 적용됩니다. Responses API의 추론 모델, 모델 프로필에 추론으로 표시된 Chat 및 Claude입니다(Claude 4.6 이상은 adaptive와 `output_config.effort`, 이전 모델은 `budget_tokens`).
 - 이미지·동영상 생성: 에이전트에 `media_models`(모델·기본값·매개변수 범위·참고 가격), `media_docs`(docs.modelflare.dev에서 요청 형식 실시간 조회), `generate_image`, `generate_video`와 내장 미디어 스킬을 제공합니다. 모델마다 형식이 달라 문서를 보고 요청 본문을 작성합니다. 작업 공간의 참고 이미지는 `workspace:path`로 지정합니다. 키는 앱을 벗어나지 않습니다. 앱이 봇 키로 Modelflare를 호출하고 작업 공간 `media/`에 결과를 저장해 대화로 전달합니다.
 - 생성 전 확인: 기본적으로 즉시 생성합니다. 기본 모델이 아니거나 요청이 모호하다는 이유만으로 묻지 않고 합리적으로 해석한 뒤 결과에서 사용한 내용을 한 줄로 설명합니다. 예상 비용이 $0.5를 넘을 때만 프롬프트·매개변수·참고 가격·확인 이유와 함께 모델을 묻습니다(이미지 수, 동영상 길이·해상도 등으로 계산하며 비용을 추정할 수 없는 동영상도 포함). 승인·모델 변경·취소가 가능하며 WeChat에서는 번호나 모델 이름으로, Feishu/웹에서는 클릭으로 답합니다. 10분 내 답이 없으면 생성하지 않습니다. 항상 확인하려면 봇 설정 → 이미지와 동영상 → 생성 전에 확인 → 항상 확인을 선택하세요.
 - 웹 검색: `web_search`는 DeepSeek 키가 필요한 자체 검색을 쓰지 않고 `amb-web-search` 플러그인을 통해 앱에 위임합니다. 기본 검색은 무료이며 Exa 공개 MCP, Bing, DuckDuckGo를 순서대로 시도하되 최근 성공한 것을 우선합니다. 실패한 제공업체(요청 제한, 봇 검사, 무관한 Bing 결과)는 10분간 건너뜁니다. 설정 → 네트워크 및 접근 → 웹 검색에서 Tavily, Exa, Bocha, Zhipu(키 필요), 자체 SearXNG를 지정하면 우선 사용하고 실패 시 무료 검색으로 대체합니다. 키는 채널 토큰처럼 로컬 DB에 저장하며 에이전트에 전달하지 않습니다. 데스크톱은 시스템 프록시, 명령줄은 Node fetch(`NODE_USE_ENV_PROXY=1`이면 `HTTPS_PROXY` 적용)를 사용합니다.
@@ -102,14 +103,14 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> 열�
 - 연결된 계정(`src/agent/accounts.ts`): 설정 › 연결의 전역 목록을 모든 봇이 공유하며 서비스별 여러 계정을 추가할 수 있습니다. 어떤 봇에게든 ‘첫 번째 Feishu와 두 번째 Feishu 확인해 줘’라고 요청할 수 있습니다. `amb-connections`가 브리지로 도구 호출을 앱에 전달하므로 토큰은 에이전트에 가지 않습니다. `account` 매개변수로 번호나 이름을 선택하고 `connected_accounts`로 목록을 조회합니다. 계정이 있는 서비스만 도구를 제공합니다. 읽기 전용 봇과 관찰 중인 규칙은 쓸 수 없고 호스트도 재검사합니다. 채팅 채널 계정도 별도로 관리합니다.
   - **Notion**(`notion.ts`): 한 번의 접근 허용 또는 토큰 중 선택합니다. 토큰은 REST API, 접근 허용은 PKCE·동적 등록을 사용하는 OAuth와 로컬 `/oauth/notion/callback`을 거쳐 Notion 원격 MCP(`mcp.notion.com`)를 호출합니다. 모델이 보는 도구는 둘 다 `notion_search`, `notion_read_page`, `notion_query_database`이며 읽기 전용이 아니면 `notion_create_page`, `notion_update_page`도 제공합니다. 삭제 도구는 없습니다.
   - **Feishu**(`feishu-account.ts`): 공식 lark-cli와 같은 흐름으로 스캔해 개인 앱을 만들거나 기존 앱을 입력한 뒤 기기 인증으로 사용자 토큰을 받습니다. `feishu_list_chats`, `feishu_read_chat`, `feishu_search_messages`의 읽기 전용 도구를 제공합니다.
-- 기본 이미지·동영상 모델은 첫 설정 때 텍스트 모델과 함께 선택하고 설정 → Modelflare에서 변경합니다. 자동은 추천 순서 중 참고 자료가 필요 없는 첫 모델을 사용합니다.
+- 기본 이미지·동영상 모델은 첫 설정 때 텍스트 모델과 함께 선택하고 설정 → 모델에서 변경합니다. 자동은 추천 순서 중 참고 자료가 필요 없는 첫 모델을 사용합니다.
 - 모델 선택기는 컨텍스트 길이, 이미지 이해·도구·추론 기능, 공개 가격표의 100만 입력/출력 토큰당 최저 참고 가격을 표시합니다. 최종 금액은 청구서 기준입니다.
-- 가성비(로그인 필요): 컴퓨터 키와 봇 예산 키에 Modelflare Smart Key의 `routing_strategy`를 넣습니다. 저렴한 가격 `low_cost`는 최저 배수부터, 균형 `balanced`는 중간 가격부터(기본값), 품질 `stable`은 최고 배수부터 시도합니다. 설정 → Modelflare → 가성비 또는 모델 선택기 첫 슬라이더에서 바꾸면 기존 키도 `PATCH /api/connected-app/api-keys/<id>`로 갱신하고 로컬 DB `account.routing`에 저장합니다. 선택 이력이 없는 로그인 사용자는 첫 키 검사 때 기존 키에 균형을 한 번 적용합니다(로그: `applied the default key routing strategy`). Modelflare가 `routing_strategy`를 응답에 돌려줘야 지원으로 판정합니다. 필드를 거부하면(400/422) 제외하고 다시 발급하므로 발급·검사·예산 기능이 실패하지 않습니다. 무시하여 응답에 없을 때도 미지원으로 보고 설정을 숨긴 뒤 하루 후 재시도합니다.
+- 가성비(로그인 필요): 컴퓨터 키와 봇 예산 키에 Modelflare Smart Key의 `routing_strategy`를 넣습니다. 저렴한 가격 `low_cost`는 최저 배수부터, 균형 `balanced`는 중간 가격부터(기본값), 품질 `stable`은 최고 배수부터 시도합니다. 설정 → 모델 → 가성비 또는 모델 선택기 첫 슬라이더에서 바꾸면 기존 키도 `PATCH /api/connected-app/api-keys/<id>`로 갱신하고 로컬 DB `account.routing`에 저장합니다. 선택 이력이 없는 로그인 사용자는 첫 키 검사 때 기존 키에 균형을 한 번 적용합니다(로그: `applied the default key routing strategy`). Modelflare가 `routing_strategy`를 응답에 돌려줘야 지원으로 판정합니다. 필드를 거부하면(400/422) 제외하고 다시 발급하므로 발급·검사·예산 기능이 실패하지 않습니다. 무시하여 응답에 없을 때도 미지원으로 보고 설정을 숨긴 뒤 하루 후 재시도합니다.
 - 지능(두 번째 슬라이더): 계정이 사용할 수 있고 Artificial Analysis 데이터가 있는 모델의 지능 지수(높을수록 좋음)와 작업당 비용(낮을수록 좋음)으로 파레토 경계를 구해 최대 5개 지점을 제시하며 최저가·최고 성능 모델을 항상 포함합니다. 실제 추론 강도를 기준으로 하므로 Responses API 추론 모델은 기본 medium에 맞는 AA 행, 그 외는 기본 행을 사용합니다(`src/account/model-quality.ts`). 비용은 AA 공식 가격 기준 작업당 비용 × 현재 가성비 설정의 가격 계수(사용 가능한 공개 그룹 배수 × 판매 배수)입니다. 저렴한 가격은 최저, 품질은 최고, 균형은 중간을 쓰고 기업 전용 그룹은 제외합니다. 로그아웃·미지원은 균형으로 계산합니다. 슬라이더로 모델을 전환하며 이름을 누르면 전체 목록에서 직접 선택합니다. 지점에 없는 모델은 사용자 지정으로 표시하고 지점이 두 개 미만이면 목록만 보여 줍니다. 계산은 `ui/lib/frontier.js`에 있습니다.
 - AA 데이터는 `assets/model-quality.json`(`updatedAt`, `source`, 필요한 필드만, Modelflare ID 매핑 완료)에 포함합니다. `node scripts/update-model-quality.mjs`는 공개 순위 https://artificialanalysis.ai/leaderboards/models 와 Modelflare 공개 가격표를 읽습니다. `AA_API_KEY`가 있으면 공식 API를 사용합니다(키로 반환 필드를 아직 검증하지 않음). `--html <file>`, `--pricing <file>`은 저장한 파일을 사용하고 `--dry-run`은 출력만 합니다. 열 누락, 행 형식 변경, 숫자 변환 실패, 행·매핑 모델 수 부족 시 문제를 알리고 종료 코드 1로 끝내며 기존 스냅샷은 유지합니다. 규칙으로 매핑되지 않는 이름은 스크립트의 `OVERRIDES`에 지정합니다. 데이터 출처 Artificial Analysis는 선택기 하단에 표시합니다.
 - 출처 표시: Modelflare 요청에는 `X-Modelflare-Skill: anymodel-bot/<version>`, 링크에는 `utm_source=anymodelbot&utm_campaign=amb_<placement>`를 넣습니다. 앱은 `amb_signup`, `amb_topup`, `amb_console` 등, README·저장소 문서는 `amb_readme`, 웹사이트는 `amb_homepage`를 사용합니다. `test/utm.unit.test.ts`가 형식을 검사합니다.
-- API 도메인: 설정 → Modelflare → API 도메인에서 `https://modelflare.dev/v1`, `https://origin.modelflare.dev/v1`, `https://cf.modelflare.dev/v1`을 선택합니다. 수동 검사는 앱 실행 기기에서 세 도메인의 `/v1/models`에 인증 없이 세 번 요청해 중앙 응답 시간과 성공 횟수를 표시합니다. HTTP 401은 API 응답으로 계산하며 키 유효성이나 생성 속도의 증거가 아닙니다. 자동 전환은 없습니다. 기존 설정 `auto`/`global`은 기본 도메인, `cn`은 origin, `cf`는 cf에 대응하며 지역·품질 의미가 아닙니다.
-- 설정 → Modelflare: 계정, 잔액·충전, 잔액 알림, 사용량, 알림, 초대, 가성비, 추론 강도, 기본 모델, 모델 목록 새로고침을 제공합니다.
+- API 도메인: 설정 → 모델 → API 도메인에서 `https://modelflare.dev/v1`, `https://origin.modelflare.dev/v1`, `https://cf.modelflare.dev/v1`을 선택합니다. 수동 검사는 앱 실행 기기에서 세 도메인의 `/v1/models`에 인증 없이 세 번 요청해 중앙 응답 시간과 성공 횟수를 표시합니다. HTTP 401은 API 응답으로 계산하며 키 유효성이나 생성 속도의 증거가 아닙니다. 자동 전환은 없습니다. 기존 설정 `auto`/`global`은 기본 도메인, `cn`은 origin, `cf`는 cf에 대응하며 지역·품질 의미가 아닙니다.
+- 설정 → 모델: 계정, 잔액·충전, 잔액 알림, 사용량, 알림, 초대, 가성비, 추론 강도, 기본 모델, 모델 목록 새로고침을 제공합니다.
 - 입력창 오른쪽의 모델 버튼은 현재 세션의 모델을 바꾸거나 봇 기본값으로 설정합니다. `/model`, `/reset`, `/new`, `/status`, `/stop`, `/help`도 사용할 수 있습니다.
 - 작업 내역: 모델 요청의 시간·토큰, 도구 인수·출력, 재시도, 하위 에이전트 등 모든 단계를 답변 위 시간 표시줄에 접어 둡니다. 클릭하면 펼칩니다. WeChat/Feishu 세션은 정보 패널 → 최근 세션에서 진행 상황을 실시간으로 보고 중지할 수 있습니다.
 - 멈춘 메시지: 모든 채널의 `/stop` 또는 정보 패널의 중지로 현재 대화 차례를 즉시 종료합니다. 10분 동안 모델 응답·도구 활동 없이 재시도만 하는 등 진행이 없으면 자동 중지하며 승인·답변 대기 시간은 제외합니다. 단일 차례의 상한은 30분입니다(`AMB_AGENT_IDLE_TIMEOUT_MS`, `AMB_AGENT_TURN_TIMEOUT_MS`). 프로세스 내부 amb-control 플러그인이 해당 차례만 취소하고 다른 대화는 계속합니다. 10초(`AMB_STOP_GRACE_MS`) 안에 멈추지 않을 때만 에이전트 프로세스를 다시 시작합니다. `/status`로 현재 단계와 마지막 진행 이후 시간을 봅니다. 웹에서 다른 봇으로 이동하거나 창을 새로고침해도 처리는 계속되며 돌아오면 내 메시지, 작성 중인 응답, 활동이 복원됩니다. 중지 버튼은 대기열·시작 중·승인 대기·일반 대화에서도 작동합니다.
@@ -122,6 +123,15 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> 열�
 - 내장 게이트웨이: magpie는 데이터 폴더 안의 독립 HOME·설정으로 `--gateway` 모드에서 실행합니다. 컴퓨터의 기존 Claude/Codex 구독 인증 정보를 **읽지 않고**, 에이전트 설정을 **수정하지 않으며**, 자동 업데이트·계정 검색도 끕니다. 앱 프로세스 내부에서만 호출하며 콘솔은 magpie 페이지나 `/v1`을 프록시하지 않습니다.
 - API 키는 격리된 게이트웨이 설정에만 저장합니다. 명령줄이나 로그에 기록하지 않고 프런트엔드에는 끝부분만 전달합니다.
 - 개발·테스트: `AMB_MAGPIE_BASE_URL`을 OpenAI 호환 엔드포인트로 지정하면 게이트웨이를 시작하지 않고 화면은 연결 상태가 되며 계정 기능은 사용할 수 없습니다. `AMB_MODELFLARE_BASE_URL`은 Modelflare 기본 URL, `AMB_MODELFLARE_ISSUER`는 로그인·계정 API를 로컬 모의 서버로 지정합니다.
+
+## 공식 API 키
+
+- 시작 화면의 ‘내 API 키 사용’과 설정 → 모델에서 입력할 수 있습니다. 지원 제공업체와 주소는 `src/official-providers.ts`에 고정되어 있고, API(`GET /amb/api/official`, `PUT`/`DELETE /amb/api/official/<id>`)는 목록의 ID만 받으며 주소는 지정할 수 없습니다.
+- 각각 내장 게이트웨이의 provider이며 ID는 `official-<제공업체>`, 모델 ID는 `official-<제공업체>/<모델>`입니다. Modelflare의 같은 이름 모델과 구분됩니다. 키는 명령줄 인수를 거치지 않고 게이트웨이 로컬 API의 요청 본문으로 격리된 설정에 기록됩니다.
+- 확인에는 게이트웨이의 모델 목록을 사용하고(프록시와 제공업체별 인증 방식은 게이트웨이에 있음), 통과해야만 저장합니다. 모델은 1시간마다 제공업체 목록과 대조하며 대화할 수 없는 모델(음성, 이미지, 임베딩 등)은 선택기에 넣지 않습니다.
+- 에이전트 API는 제공업체별로 정해집니다. OpenAI는 Responses, Anthropic은 Messages, 나머지는 Chat Completions입니다. 컨텍스트 길이, 가격, 추론 지원은 게이트웨이의 모델 목록(`/v1/models`)에서 가져옵니다. 공식 키만 있으면 Modelflare의 목록과 계정을 읽지 않습니다.
+- 공식 API 모델에는 `X-Modelflare-Skill`을 붙이지 않고, 서버 측 압축을 하지 않으며(압축 엔드포인트는 Modelflare 목록에서 옴), 봇 예산의 제한도 받지 않습니다(예산은 Modelflare 키의 한도입니다). 이미지·동영상 생성은 Modelflare에 연결된 동안에만 가능합니다.
+- 테스트: `AMB_OFFICIAL_BASE_URL`로 모든 제공업체를 로컬 모의 서버로 지정합니다(`test/official-providers.integration.test.ts`).
 
 ## 화면
 

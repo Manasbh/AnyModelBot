@@ -14,11 +14,11 @@ export default {
     },
     {
       "q": "Is my data uploaded to your servers?",
-      "a": "Chats, memory, files and keys are stored on your device. Model requests go through Modelflare to the provider you choose; log retention follows Modelflare's “Data retention” doc. Screen content seen during computer use is sent to the chosen model."
+      "a": "Chats, memory, files and keys are stored on your device. Model requests go to the provider you choose: directly with your own official API key, otherwise through Modelflare, where log retention follows its “Data retention” doc. Screen content seen during computer use is sent to the chosen model."
     },
     {
       "q": "Does it work offline?",
-      "a": "No. Models come from Modelflare; local models aren't supported."
+      "a": "No. Models come from Modelflare or the providers' official APIs; local models aren't supported."
     },
     {
       "q": "Can I use it on my phone?",
@@ -34,7 +34,7 @@ export default {
     },
     {
       "q": "I don't have a Modelflare account.",
-      "a": "At first launch, click Sign in / Sign up for Modelflare and sign up in your browser. The app connects itself when you come back, with no key to copy. On Docker or a remote server, paste the link you land on after signing in. All three API domains are available; compare response times and choose one in Settings."
+      "a": "At first launch, click Sign in / Sign up for Modelflare and sign up in your browser. The app connects itself when you come back, with no key to copy. On Docker or a remote server, paste the link you land on after signing in. All three API domains are available; compare response times and choose one in Settings. You can also skip the account: click Use your own API key and enter an official key from OpenAI, Anthropic, Google Gemini, DeepSeek or another provider, and model requests go straight to them."
     },
     {
       "q": "Is computer use safe?",

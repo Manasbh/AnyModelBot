@@ -2,7 +2,7 @@
 
 简体中文 | [English](./privacy_en.md) | [日本語](./privacy_ja.md) | [한국어](./privacy_ko.md) | [Русский](./privacy_ru.md)
 
-**一句话结论：** 对话、记忆、文件和密钥存在你的设备上；发给模型的内容会经过 Modelflare 转发到你选定的模型供应商。我们不声称能做到万无一失——凡是发给模型的内容，都会离开你的设备。
+**一句话结论：** 对话、记忆、文件和密钥存在你的设备上；发给模型的内容会发到你选定的模型供应商：用官方 API Key 时直连，否则经过 Modelflare 转发。我们不声称能做到万无一失——凡是发给模型的内容，都会离开你的设备。
 
 这份文档说明 AnyModelBot 把什么存在哪里、什么会离开你的设备、怎么删除。有问题可以发邮件到 [support@anymodel.bot](mailto:support@anymodel.bot)。
 
@@ -25,6 +25,7 @@
 | 机器人工作区文件 | `workspaces/<机器人>/`（含收到的文件 `inbox/`、生成的图片和视频 `media/`） | 机器人读取并发给模型时会 | 同上 |
 | Modelflare 登录凭据 | `modelflare-account.json`（权限 600；桌面版用系统钥匙串加密） | 只在刷新令牌时发给 modelflare.dev | Modelflare |
 | API Key | 内置网关的隔离配置 `magpie/config/` | 每次模型请求作为鉴权发给 Modelflare | Modelflare |
+| 官方 API Key（如果你填了） | 内置网关的隔离配置 `magpie/config/` | 每次模型请求作为鉴权发给对应的厂商 | 对应的模型厂商 |
 | 微信登录态与同步游标 | 数据目录内（`weixin/` 等） | 与微信 iLink 接口通信时会 | 腾讯微信 |
 | 飞书聊天账号的 App ID / Secret | `anymodel.db` | 与飞书开放平台建立长连接时会 | 飞书 |
 | Telegram、Slack、Discord 的 token | `anymodel.db` | 与对应平台通信时会 | 你接入的平台 |
@@ -56,6 +57,14 @@
 - 请求里包含模型回答所需的内容：提示词、对话上下文、被用到的记忆、文件内容、工具结果，以及电脑操作时的截图。
 - 请求带有 `X-Modelflare-Skill: anymodel-bot/<版本>` 头，用于在 Modelflare 侧标识来源；应用里打开的 Modelflare 链接带 `utm_source=anymodelbot`。
 - Modelflare 会保留请求日志；保留什么、保留多久，见 [Modelflare 信任中心](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)。各模型供应商对数据的处理，以它们各自的条款为准。
+
+## 用自己的官方 API Key
+
+- 在引导页或 设置 → 模型 填入 OpenAI、Anthropic 等厂商的官方 Key 后，这些厂商的模型请求由内置网关直接发给厂商，不经过 Modelflare，也不带 `X-Modelflare-Skill` 头。这些内容的保留方式以对应厂商的条款为准。
+- 厂商地址写死在应用里，界面和接口都不能改，Key 不会被发到别处。Key 只存在内置网关的隔离配置里（权限 600），不写日志、不进命令行参数，界面只显示末 4 位。
+- 只填官方 Key、没有登录时，应用不会读取 Modelflare 的账户数据和价格目录。填写 Key 时，应用会用它向厂商读取一次模型列表来校验，之后每小时读一次来更新列表。
+- 内置网关从 `models.dev` 读取公开的模型目录（上下文长度、参考价）。这个请求只下载，不带 Key 和对话内容。
+- 生图和生视频只能通过 Modelflare 使用。
 
 ## 遥测
 

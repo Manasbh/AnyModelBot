@@ -5,6 +5,7 @@ import { html, Icon, IconButton, CopyButton, Menu, Popover, Badge, Notice, Skele
 import { BotAvatar } from "../components/avatar.js";
 import { Markdown, Linkified } from "../components/markdown.js";
 import { ModelPicker, prefetchModelInfo, shortModel, sameModel } from "../components/model-picker.js";
+import { officialSource } from "../lib/models.js";
 import { PwshHint } from "../components/pwsh-hint.js";
 import { ActivityLine, currentStep, upsertStep } from "../components/activity.js";
 import { TaskChip } from "../components/tasks.js";
@@ -203,10 +204,10 @@ export function MsgActions({ text, at }) {
   return html`<div class="msg-actions"><${CopyButton} text=${text} label=${t("chat.copyMessage")} />${at && html`<span class="when num">${fmtClock(at)}</span>`}</div>`;
 }
 
-export function ErrorNotice({ text, onRetry, onFixKey }) {
+export function ErrorNotice({ text, onRetry, onFixKey, source = "" }) {
   const auth = isAuthError(text);
-  return html`<${Notice} tone="red" action=${html`${auth && onFixKey && html`<button type="button" class="btn" onClick=${onFixKey}>${t("chat.error.fixKey")}</button>`}
-    ${onRetry && html`<button type="button" class="btn" onClick=${onRetry}>${t("common.retry")}</button>`}`}>${auth ? t("chat.error.authInvalid") : text}<//>`;
+  return html`<${Notice} tone="red" action=${html`${auth && onFixKey && html`<button type="button" class="btn" onClick=${onFixKey}>${source ? t("chat.error.fixOfficialKey") : t("chat.error.fixKey")}</button>`}
+    ${onRetry && html`<button type="button" class="btn" onClick=${onRetry}>${t("common.retry")}</button>`}`}>${auth ? (source ? t("chat.error.officialKeyInvalid", { name: source }) : t("chat.error.authInvalid")) : text}<//>`;
 }
 
 export function ChatScreen({ bot, models, modelsError, reloadModels, defaultModel, infoOpen, onToggleInfo, onWorking, onOpenSettings, onOpenBotSettings, onBotUpdated, pending = 0, serverBusy = false, account, onAccount }) {
@@ -700,7 +701,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
           ${(it.activity?.length || it.steps) && html`<${WorkLine} workedMs=${it.workedMs} steps=${it.activity} count=${it.steps} load=${it.mid ? loadActivity(it.mid) : undefined} />`}
           ${it.interim?.length > 0 && html`<div class="msg"><${Markdown} text=${it.interim.join("\n\n")} /></div>`}
           ${files(it)}
-          <${ErrorNotice} text=${it.text} onRetry=${it.retry ? () => send(it.retry) : undefined} onFixKey=${() => onOpenSettings("modelflare", "account")} />
+          <${ErrorNotice} text=${it.text} onRetry=${it.retry ? () => send(it.retry) : undefined} source=${officialSource(effective)} onFixKey=${() => onOpenSettings("modelflare", officialSource(effective) ? "official-add" : "account")} />
         </div>`);
       }
       // 回复下面直接挂在同一行里（在复制按钮之前）；挂在卡片、文件、出错提示后面时自成一行

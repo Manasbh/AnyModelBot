@@ -50,7 +50,7 @@
 
 AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS 和 Linux。一个机器人就是一个人设，带着自己的默认模型、工作区和记忆。你可以在应用里和它聊天，也可以在微信、飞书、Telegram、Slack、Discord 里找它。它能读写文件、执行命令、操作你的桌面，一旦要越出自己的工作区，就会先问你。
 
-对话、记忆、文件和 API Key 都留在你的设备上。模型来自 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)：一个账户，任意模型，按 token 计费。AnyModelBot 本身没有订阅。
+对话、记忆、文件和 API Key 都留在你的设备上。模型可以来自 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)（一个账户，任意模型，按 token 计费），也可以填你自己的官方 API Key，直连 OpenAI、Anthropic、Google 等厂商。AnyModelBot 本身没有订阅。
 
 和 xAI 的 Grok Bot、OpenAI 的 dots、Anthropic 的 Claude Duet 一样，它是一个常驻的个人 AI 智能体：在后台替你干活，需要你拍板时再来问你。不同的是，AnyModelBot 开源（MIT），跑在你自己的电脑或服务器上，GPT、Claude、Gemini、Grok 等任意模型都能用，按量付费，不绑定某一家的订阅（[详细对比](#-对比-grok-bot--openai-dots--claude-duet)）。
 
@@ -66,7 +66,7 @@ AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS
   <img src="docs/assets/modelflare/modelflare-banner-zh.webp" width="100%" alt="Modelflare 横幅：满血、稳定不掺水，低成本享受全球 SOTA 模型；GPT 特惠分组 0.015 倍、Claude 特惠分组 0.03 倍；OpenAI 分组缓存命中率保障 65% · 75% · 85%，未达标补偿差额">
 </a>
 
-AnyModelBot 的模型全部来自 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**：满血、稳定不掺水，低成本享受全球 SOTA 模型。Modelflare 由美国公司 Havenbyte LLC 运营，已有 20 万+ 注册开发者。一个 API Key 就能调用 13 家供应商的 70+ 个文本、图片和视频模型，GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 都在里面，兼容 OpenAI、Anthropic、Gemini 等常用接口协议。请求会在多个供应商之间路由并自动回退，每一次请求都记录用量和费用，价格表公开，按 token 计费。
+最省事的用法是 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**：一个账户就够，不用分别申请各家的 Key（想直连厂商，见[任意模型](#-任意模型通过-modelflare-或官方-api)）。满血、稳定不掺水，低成本享受全球 SOTA 模型。Modelflare 由美国公司 Havenbyte LLC 运营，已有 20 万+ 注册开发者。一个 API Key 就能调用 13 家供应商的 70+ 个文本、图片和视频模型，GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 都在里面，兼容 OpenAI、Anthropic、Gemini 等常用接口协议。请求会在多个供应商之间路由并自动回退，每一次请求都记录用量和费用，价格表公开，按 token 计费。
 
 **缓存补偿**是一大亮点：OpenAI 的价格优先、稳定、高级三个分组，分别保证每天 65%、75%、85% 的缓存命中率；符合条件的请求没达到目标，Modelflare 会补偿差额。
 
@@ -236,9 +236,10 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
   <img src="docs/assets/features/media-generation.gif" alt="机器人生图前先问用哪个模型，用户确认后，成图作为文件交付到聊天里，并在看图窗口中打开" width="100%">
 </p>
 
-## 🌐 任意模型，通过 Modelflare
+## 🌐 任意模型，通过 Modelflare 或官方 API
 
-- **登录一次**，你的 Modelflare 模型就会自动出现。更想用 Key？直接粘贴也行。
+- **登录一次**，你的 Modelflare 模型就会自动出现。
+- **或者用自己的官方 API Key。** 支持 OpenAI、Anthropic、Google Gemini、xAI、DeepSeek、Kimi、GLM、Qwen、MiniMax 和 Mistral。Key 只存在你的设备上，模型请求直接发给厂商，不经过 Modelflare，费用由厂商收取。生图和生视频目前只能通过 Modelflare 使用。
 - **一个选择器，覆盖所有模型。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等，每个都标出上下文长度、能力和参考价。
 - **按对话切换**，也可以给每个机器人设默认模型；记忆整理、上下文交接这类后台小任务，还能单独指定一个模型。
 - **三个 API 域名。** `modelflare.dev`、`origin.modelflare.dev` 和 `cf.modelflare.dev` 均可选择；可在设置中测速，AnyModelBot 不会自动切换。
@@ -284,7 +285,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 </p>
 
 > [!NOTE]
-> 功能是否可用取决于你选择的模型、操作系统和授予的权限。电脑操作需要桌面会话，macOS 上的电脑操作为 Beta。模型请求会经过 Modelflare 转发给你选定的供应商，详见[工作原理与隐私](#-工作原理与隐私)。
+> 功能是否可用取决于你选择的模型、操作系统和授予的权限。电脑操作需要桌面会话，macOS 上的电脑操作为 Beta。模型请求会发给你选定的供应商（用官方 API Key 时直连，否则经过 Modelflare），详见[工作原理与隐私](#-工作原理与隐私)。
 
 # 🆚 对比 Grok Bot / OpenAI dots / Claude Duet
 
@@ -294,7 +295,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 | :--- | :--- | :--- | :--- | :--- |
 | 开源 | ✅ MIT | — | — | — |
 | 智能体跑在哪 | 你自己的电脑或服务器 | xAI 的云端电脑 | OpenAI 的云端电脑 | Anthropic 的云端 |
-| 能用的模型 | GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 70+ 个（经 Modelflare） | 以 xAI 的 Grok 模型为主 | OpenAI 的模型 | Claude（Opus 5.5） |
+| 能用的模型 | GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 70+ 个（经 Modelflare 或官方 API） | 以 xAI 的 Grok 模型为主 | OpenAI 的模型 | Claude（Opus 5.5） |
 | 费用 | 应用免费，模型按 token 计费 | 订阅 | ChatGPT Pro / Business Premium 订阅 | Claude Pro / Max 订阅 |
 | 在哪找它 | 桌面应用（Windows、macOS、Linux）、Docker、微信、飞书、Telegram、Slack、Discord | 桌面应用、iPhone | ChatGPT、Slack、Teams | iOS、Android、claude.ai |
 | 现在能用吗 | 直接下载 | 测试版 | 部分地区开放 | 研究预览，美国候补名单 |
@@ -313,7 +314,7 @@ AnyModelBot 同样能在后台干活：交代的任务可以在后台跑完，�
 
 | 留在你的设备上 | 会离开你的设备 |
 | :--- | :--- |
-| 对话与会话（本地 SQLite 数据库） | 模型回答所需的提示词、文件内容和工具结果，经 Modelflare 发给你选定的供应商 |
+| 对话与会话（本地 SQLite 数据库） | 模型回答所需的提示词、文件内容和工具结果，发给你选定的供应商（用官方 API Key 时直连，否则经过 Modelflare） |
 | 记忆（Markdown 文件） | 你让机器人用电脑操作看屏幕时的屏幕截图 |
 | 每个机器人工作区里的文件 | 你通过聊天渠道收发的消息，会经过对应的平台 |
 | 你的 API Key 和登录令牌 | 你登录 Modelflare 的过程，发生在 modelflare.dev |

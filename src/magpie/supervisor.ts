@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { lineLogger, logger, registerSecret } from "../log.js";
 import { t } from "../i18n/index.js";
 import { BOT_PROVIDER_PREFIX, MODELFLARE_PROVIDER, botProviderId, keyTail, modelflareApiBases } from "../modelflare.js";
+import { OFFICIAL_PREFIX, officialBases, officialLabel, officialPicks, officialProviderId, type OfficialProvider } from "../official-providers.js";
 
 const log = logger("magpie");
 
@@ -412,7 +413,80 @@ export class MagpieSupervisor {
     this.state = "stopped";
   }
 
-  // ---------- Modelflare（唯一的服务商；界面里不出现"服务商"概念） ----------
+  // ---------- 官方 API（用户自己的 Key，直连模型厂商，src/official-providers.ts） ----------
+  /**
+   * 问厂商这把 Key 能列出哪些模型，什么都不保存。经网关问，不自己发请求：代理设置、各家的鉴权写法
+   * （Anthropic 的 x-api-key 等）都在网关里。失败时 error 是网关转述的厂商原话。
+   */
+  async listOfficialModels(p: OfficialProvider, apiKey: string): Promise<{ ok: true; models: string[] } | { ok: false; error: string }> {
+    if (this.state !== "running") throw new Error(t("magpie.not_running"));
+    const res = await fetch(`${this.webOrigin}/api/provider/list`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: `${this.cookieName}=${this.webKey}`, origin: this.webOrigin },
+      body: JSON.stringify({ preset: p.id, key: apiKey, ...officialBases(p) }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const body = (await res.json().catch(() => ({}))) as { models?: Array<{ id?: unknown }>; error?: unknown };
+    if (!res.ok) return { ok: false, error: String(body.error ?? `HTTP ${res.status}`) };
+    return { ok: true, models: (body.models ?? []).map((m) => String(m.id ?? "")).filter(Boolean) };
+  }
+
+  /** 写入一家官方 API（重复连接 = 换 Key）。Key 只经本机接口的请求体传给网关，不进进程参数 */
+  async connectOfficial(p: OfficialProvider, apiKey: string, picks: string[]): Promise<void> {
+    const key = apiKey.trim();
+    if (!key) throw new Error(t("magpie.missing_key"));
+    registerSecret(key);
+    const id = officialProviderId(p.id);
+    const fields = { key, ...officialBases(p), ...(picks.length ? { models: picks } : {}) };
+    if (this.hasProvider(id)) return this.saveProvider(id, fields);
+    if (this.state !== "running") throw new Error(t("magpie.not_running"));
+    const res = await fetch(`${this.webOrigin}/api/provider/save`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: `${this.cookieName}=${this.webKey}`, origin: this.webOrigin },
+      body: JSON.stringify({ new: true, id, name: officialLabel(p), preset: p.id, ...fields }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) throw new Error(t("magpie.save_failed", { status: res.status, body: (await res.text()).split(key).join("***").slice(0, 200) }));
+    if (!this.hasProvider(id)) throw new Error(t("magpie.verify_failed"));
+  }
+
+  async removeOfficial(p: OfficialProvider): Promise<void> {
+    const id = officialProviderId(p.id);
+    if (this.hasProvider(id)) await this.deleteProvider(id);
+  }
+
+  /** 接好的官方 API（provider id） */
+  officialProviderIds(): string[] {
+    return this.listProviders()
+      .map((x) => x.id)
+      .filter((id) => id.startsWith(OFFICIAL_PREFIX) && !!this.providerKey(id));
+  }
+
+  /** 让启用的模型跟上厂商现在列出的（新上架的加入，下架的移出）；读不到列表时不动 */
+  async syncOfficialPicks(p: OfficialProvider): Promise<void> {
+    const id = officialProviderId(p.id);
+    const key = this.providerKey(id);
+    if (!key) return;
+    const r = await this.listOfficialModels(p, key);
+    if (r.ok) await this.setModelPicks(id, officialPicks(r.models));
+  }
+
+  /** 这家官方 API 启用的模型（provider id 不带前缀） */
+  officialInfo(p: OfficialProvider): { connected: boolean; keyTail: string; models: number } {
+    const id = officialProviderId(p.id);
+    const key = this.providerKey(id);
+    return { connected: !!key, keyTail: key ? keyTail(key) : "", models: key ? this.modelPicks(id).length : 0 };
+  }
+
+  /** 网关现在提供的模型，带它知道的资料（上下文、价格、能力）。只读 127.0.0.1 上的网关，不联网 */
+  async gatewayModels(): Promise<Array<Record<string, unknown>>> {
+    const res = await fetch(`${this.baseUrl}/models`, { headers: { authorization: `Bearer ${this.gatewayKey}` }, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`GET /models -> HTTP ${res.status}`);
+    const body = (await res.json()) as { data?: Array<Record<string, unknown>> };
+    return body.data ?? [];
+  }
+
+  // ---------- Modelflare（账户登录的那条路；界面里不出现"服务商"概念） ----------
   /**
    * 连接 Modelflare：没有就以占位 key 创建固定 id 的 provider，再经 /api/provider/save 写入地址与真实 key
    * （key 不出现在进程参数里）。重复连接 = 覆盖。baseUrl 必须是白名单里的地址。
@@ -554,8 +628,8 @@ export class MagpieSupervisor {
 
   /**
    * 网关背后的上游端点（故障排查"直连端点"对比用）：地址、真实 key、provider id（缺省为共用连接；
-   * 开了预算的机器人用自己的 mfb-<botId>）。只在本进程内使用，不外传。
-   * 网关里的模型名带 provider 前缀（modelflare/<上游模型名>），直连时要去掉。
+   * 开了预算的机器人用自己的 mfb-<botId>，官方 API 是 official-<厂商>）。只在本进程内使用，不外传。
+   * 网关里的模型名带 provider 前缀（modelflare/<上游模型名>），直连时要去掉。没有 Chat 地址的（Anthropic）没法这样比，baseUrl 是空的。
    */
   upstreamEndpoint(providerId?: string): { id: string; baseUrl: string; apiKey: string } | undefined {
     const id = providerId && this.hasProvider(providerId) ? providerId : this.modelflareId();

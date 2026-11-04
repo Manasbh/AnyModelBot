@@ -50,7 +50,7 @@
 
 AnyModelBot은 Windows, macOS, Linux에서 실행하는 로컬 우선 AI 에이전트 앱입니다. 봇마다 역할, 기본 모델, 작업 공간, 기억을 따로 갖습니다. 앱에서 대화하거나 WeChat, Feishu, Telegram, Slack, Discord에서 불러 보세요. 파일 읽기와 쓰기, 명령 실행, 데스크톱 조작을 맡길 수 있으며 작업 공간을 벗어날 때는 승인을 요청합니다.
 
-대화, 기억, 파일, API 키는 내 기기에 저장됩니다. 모델은 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)를 통해 제공됩니다. 하나의 계정으로 원하는 모델을 사용하고 토큰 단위로 결제합니다. AnyModelBot 자체에는 구독료가 없습니다.
+대화, 기억, 파일, API 키는 내 기기에 저장됩니다. 모델은 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)(하나의 계정으로 원하는 모델을 사용하고 토큰 단위로 결제)를 통해 쓰거나, 내 공식 API 키로 OpenAI, Anthropic, Google 등에 직접 연결해 쓸 수 있습니다. AnyModelBot 자체에는 구독료가 없습니다.
 
 xAI의 Grok Bot, OpenAI의 dots, Anthropic의 Claude Duet처럼 백그라운드에서 일하고 사용자의 결정이 필요할 때 찾아오는 상시 작동 개인 AI 에이전트입니다. AnyModelBot은 MIT 오픈 소스이며 내 컴퓨터나 서버에서 실행하고, GPT·Claude·Gemini·Grok 등 다양한 모델을 사용하며, 특정 업체의 구독 없이 사용량에 따라 결제한다는 점이 다릅니다([전체 비교](#-anymodelbot과-grok-bot-openai-dots-claude-duet-비교)).
 
@@ -66,7 +66,7 @@ xAI의 Grok Bot, OpenAI의 dots, Anthropic의 Claude Duet처럼 백그라운드�
   <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare: 안정적이고 저렴한 LLM·이미지·동영상 AI 게이트웨이. GPT 할인 그룹 0.015배, Claude 할인 그룹 0.03배. OpenAI 그룹 캐시 적중률 65%·75%·85% 보장 및 미달분 보상">
 </a>
 
-AnyModelBot의 모든 모델은 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**에서 제공됩니다. 성능을 낮추지 않은 안정적인 모델과 세계적인 최신 모델을 더 낮은 비용으로 이용할 수 있습니다. Modelflare는 미국 법인 Havenbyte LLC가 운영하며 등록 개발자가 20만 명 이상입니다. 하나의 API 키로 GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등 13개 제공업체의 텍스트·이미지·동영상 모델 70개 이상을 OpenAI, Anthropic, Gemini 등의 일반적인 API 형식으로 이용합니다. 요청은 여러 제공업체로 라우팅되며 실패 시 자동으로 대체 경로를 사용합니다. 모든 요청의 사용량과 비용이 기록되고 가격표는 공개되며 토큰 단위로 과금합니다.
+가장 간편한 방법은 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**입니다. 계정 하나면 충분하고 제공업체마다 키를 따로 발급받을 필요가 없습니다(제공업체에 직접 연결하려면 [원하는 모델](#-modelflare-또는-공식-api로-원하는-모델을-사용합니다) 참고). 성능을 낮추지 않은 안정적인 모델과 세계적인 최신 모델을 더 낮은 비용으로 이용할 수 있습니다. Modelflare는 미국 법인 Havenbyte LLC가 운영하며 등록 개발자가 20만 명 이상입니다. 하나의 API 키로 GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등 13개 제공업체의 텍스트·이미지·동영상 모델 70개 이상을 OpenAI, Anthropic, Gemini 등의 일반적인 API 형식으로 이용합니다. 요청은 여러 제공업체로 라우팅되며 실패 시 자동으로 대체 경로를 사용합니다. 모든 요청의 사용량과 비용이 기록되고 가격표는 공개되며 토큰 단위로 과금합니다.
 
 주요 혜택은 **캐시 보상**입니다. OpenAI의 가격 우선, 안정형, 프리미엄 그룹은 각각 일일 캐시 적중률 65%, 75%, 85%를 보장합니다. 조건에 맞는 요청의 적중률이 기준에 미달하면 차액을 크레딧으로 보상합니다.
 
@@ -236,9 +236,10 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
   <img src="docs/assets/features/media-generation.gif" alt="봇이 이미지 생성 모델을 확인하고 사용자가 승인하면 완성된 이미지를 파일로 전달해 뷰어에서 표시" width="100%">
 </p>
 
-## 🌐 Modelflare로 원하는 모델을 사용합니다
+## 🌐 Modelflare 또는 공식 API로 원하는 모델을 사용합니다
 
-- **한 번 로그인**하면 Modelflare 모델이 자동으로 표시됩니다. 키를 선호하면 붙여 넣으세요.
+- **한 번 로그인**하면 Modelflare 모델이 자동으로 표시됩니다.
+- **내 공식 API 키도 쓸 수 있습니다.** OpenAI, Anthropic, Google Gemini, xAI, DeepSeek, Kimi, GLM, Qwen, MiniMax, Mistral을 지원합니다. 키는 내 기기에만 저장되고, 모델 요청은 Modelflare를 거치지 않고 제공업체로 바로 전송되며, 요금은 제공업체가 청구합니다. 이미지·동영상 생성은 현재 Modelflare로만 사용할 수 있습니다.
 - **하나의 선택기.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등을 컨텍스트 길이, 기능 태그, 참고 가격과 함께 확인합니다.
 - **대화별 모델 변경 또는 봇별 기본값 설정.** 기억 정리와 컨텍스트 인계 같은 백그라운드 작업에는 별도 모델을 사용할 수 있습니다.
 - **세 API 도메인.** `modelflare.dev`, `origin.modelflare.dev`, `cf.modelflare.dev` 중 선택하고 설정에서 응답 시간을 비교하세요. AnyModelBot은 자동으로 전환하지 않습니다.
@@ -284,7 +285,7 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 </p>
 
 > [!NOTE]
-> 기능은 선택한 모델, 운영체제, 부여한 권한에 따라 달라집니다. 컴퓨터 사용에는 데스크톱 세션이 필요하며 macOS에서는 베타입니다. 모델 요청은 Modelflare를 거쳐 선택한 제공업체로 전달됩니다. [작동 방식과 개인정보](#-작동-방식과-개인정보)를 확인하세요.
+> 기능은 선택한 모델, 운영체제, 부여한 권한에 따라 달라집니다. 컴퓨터 사용에는 데스크톱 세션이 필요하며 macOS에서는 베타입니다. 모델 요청은 선택한 제공업체로 전달됩니다(공식 API 키는 직접, 그 외에는 Modelflare 경유). [작동 방식과 개인정보](#-작동-방식과-개인정보)를 확인하세요.
 
 # 🆚 AnyModelBot과 Grok Bot, OpenAI dots, Claude Duet 비교
 
@@ -294,7 +295,7 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 | :--- | :--- | :--- | :--- | :--- |
 | 오픈 소스 | ✅ MIT | — | — | — |
 | 에이전트 실행 위치 | 내 컴퓨터 또는 서버 | xAI 클라우드 컴퓨터 | OpenAI 클라우드 컴퓨터 | Anthropic 클라우드 |
-| 모델 | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등 70개 이상(Modelflare 경유) | 주로 xAI Grok 모델 | OpenAI 모델 | Claude(Opus 5.5) |
+| 모델 | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등 70개 이상(Modelflare 또는 공식 API 경유) | 주로 xAI Grok 모델 | OpenAI 모델 | Claude(Opus 5.5) |
 | 비용 | 앱 무료, 모델은 토큰 단위 과금 | 구독 | ChatGPT Pro / Business Premium 구독 | Claude Pro / Max 구독 |
 | 이용 경로 | 데스크톱 앱(Windows, macOS, Linux), Docker, WeChat, Feishu, Telegram, Slack, Discord | 데스크톱 앱, iPhone | ChatGPT, Slack, Teams | iOS, Android, claude.ai |
 | 제공 상태 | 지금 다운로드 가능 | 베타 | 일부 시장 | 연구 미리 보기, 미국 대기 명단 |
@@ -313,7 +314,7 @@ AnyModelBot도 백그라운드에서 일합니다. 맡긴 작업을 마친 뒤 �
 
 | 기기에 남는 정보 | 기기 외부로 전송되는 정보 |
 | :--- | :--- |
-| 대화와 세션(로컬 SQLite 데이터베이스) | 모델 답변에 필요한 프롬프트, 파일, 도구 결과. Modelflare를 거쳐 선택한 제공업체로 전달 |
+| 대화와 세션(로컬 SQLite 데이터베이스) | 모델 답변에 필요한 프롬프트, 파일, 도구 결과. 선택한 제공업체로 전달(공식 API 키는 직접, 그 외에는 Modelflare 경유) |
 | 기억(Markdown 파일) | 컴퓨터 사용으로 화면을 보도록 요청할 때의 스크린샷 |
 | 봇별 작업 공간 파일 | 각 플랫폼을 거치는 채팅 채널 메시지 |
 | API 키와 로그인 토큰 | modelflare.dev에서 진행하는 Modelflare 로그인 |

@@ -5,6 +5,7 @@ export default {
   needToken: "Нужен токен доступа: откройте /?token=<token>",
   externalNoConnection:
     "В режиме внешнего API подключение Modelflare не управляется",
+  officialBadKey: "Ключ не может быть пустым или содержать пробелы",
   externalNoAccount: "В режиме внешнего API аккаунт Modelflare не управляется",
   lowBalanceRange: "Порог уведомления должен быть от $0 до $1,000",
   badZoom: "Неподдерживаемый масштаб",

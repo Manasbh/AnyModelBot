@@ -10,6 +10,7 @@ import { isModelPath, type ProxyEvent } from "./agent/bridge.js";
 import { shapeRejection } from "./agent/api-fallback.js";
 import { logFilePath, logger, readLogTail, redactText, redactValue } from "./log.js";
 import { bareModel } from "./modelflare.js";
+import { officialModelName, officialOf } from "./official-providers.js";
 import { pwshProbe, pwshReportLine } from "./agent/pwsh.js";
 import { t, type MessageKey, t as tr } from "./i18n/index.js";
 import { explainLocalProxyError, localProxyFailureHint } from "./network-error.js";
@@ -135,9 +136,14 @@ export async function testModel(app: App, opts: { botId?: string; model?: string
         : { ...r, error: mp.lastError ? t("diag.gateway_state_error", { error: r.error ?? "", state: mp.state, lastError: redactText(mp.lastError) }) : t("diag.gateway_state", { error: r.error ?? "", state: mp.state }) },
     );
     const up = mp.upstreamEndpoint(model.includes("/") ? model.split("/")[0] : undefined);
-    direct = up
-      ? probeChat("direct", up.baseUrl, up.apiKey, bareModel(model), { ...probeOpts, headers: app.requestHeaders() })
-      : Promise.resolve({ route: "direct", url: "", ok: false, skipped: t("diag.skip_not_connected") });
+    const official = !!officialOf(model);
+    direct = !up
+      ? Promise.resolve({ route: "direct", url: "", ok: false, skipped: t("diag.skip_not_connected") })
+      : !up.baseUrl // Anthropic 的官方 API 没有 Chat 地址，这个探测发不了
+        ? Promise.resolve({ route: "direct", url: "", ok: false, skipped: t("diag.skip_no_chat") })
+        : official
+          ? probeChat("direct", up.baseUrl, up.apiKey, officialModelName(model), probeOpts)
+          : probeChat("direct", up.baseUrl, up.apiKey, bareModel(model), { ...probeOpts, headers: app.requestHeaders() });
   } else {
     const base = app.config.magpie.externalBaseUrl;
     gateway = Promise.resolve({ route: "gateway", url: "", ok: false, skipped: t("diag.skip_external") });

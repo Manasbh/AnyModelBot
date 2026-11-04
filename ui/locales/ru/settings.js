@@ -427,7 +427,7 @@ export default {
     webSearch: {
       name: "Поиск в интернете",
       sub: "По умолчанию поиск бесплатный. Добавленный вами ключ используется в первую очередь",
-      keys: "поиск веб интернет tavily exa bocha zhipu searxng",
+      keys: "поиск веб интернет tavily exa bocha zhipu keenable searxng",
       auto: "Авто",
       bocha: "Bocha",
       zhipu: "Zhipu",

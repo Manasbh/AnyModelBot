@@ -389,14 +389,14 @@ describe("带 Key 的接口", () => {
     expect(r.parse({ search_result: [{ title: "Z", link: "https://z/", content: "zc", publish_date: "2025-06-07" }] })).toEqual([{ url: "https://z/", title: "Z", snippet: "zc", publishedAt: "2025-06-07" }]);
   });
 
-  it("Keenable：x-api-key + x-keenable-title，query + max_results（≤20）；results[].title / url / description|snippet", () => {
+  it("Keenable：x-api-key + x-keenable-title，query + max_results（≤20）；results[].title / url / snippet / published_at", () => {
     const r = keyedRequest(cfg("keenable"), "q", 30)!;
     expect(r.url).toBe("https://api.keenable.ai/v1/search");
     expect(headers(r)["x-api-key"]).toBe("k-123456");
     expect(headers(r)["x-keenable-title"]).toBe("AnyModelBot");
     expect(body(r)).toEqual({ query: "q", max_results: 20 });
-    expect(r.parse({ results: [{ title: "K", url: "https://k/", description: "d", snippet: "s" }, { title: "L", url: "https://l/", snippet: "s2" }, { title: "bad", url: "ftp://x" }] })).toEqual([
-      { url: "https://k/", title: "K", snippet: "d" },
+    expect(r.parse({ results: [{ title: "K", url: "https://k/", description: "", snippet: "s", published_at: "2026-01-15T10:30:00Z" }, { title: "L", url: "https://l/", snippet: "s2" }, { title: "bad", url: "ftp://x" }] })).toEqual([
+      { url: "https://k/", title: "K", snippet: "s", publishedAt: "2026-01-15T10:30:00Z" },
       { url: "https://l/", title: "L", snippet: "s2" },
     ]);
   });

@@ -588,7 +588,7 @@ export function keyedRequest(s: WebSearchSettings, query: string, count: number)
       return {
         url: "https://api.keenable.ai/v1/search",
         init: json({ "x-api-key": key, "x-keenable-title": "AnyModelBot" }, { query, max_results: Math.min(count, 20) }),
-        parse: (j) => list(j?.results).filter((r) => httpUrl(r?.url)).map((r) => source(r.url, str(r.title), str(r.description) || str(r.snippet))),
+        parse: (j) => list(j?.results).filter((r) => httpUrl(r?.url)).map((r) => source(r.url, str(r.title), str(r.snippet), str(r.published_at))),
       };
   }
 }

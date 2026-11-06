@@ -245,6 +245,14 @@ App 里写着目录的公钥和地址（`src/botkit/config.ts`），地址是 `h
 
 本地联调可以不改代码：设环境变量 `AMB_CATALOG_URL` 和 `AMB_CATALOG_PUBKEY`。
 
+### 签名密钥与恢复
+
+发布机器的签名密钥保存在 `.runtime/catalog/signing.json`，包含 Ed25519 公私钥，目录权限为 `0700`、文件为 `0600`。`.runtime/` 和本机 `catalog.lock.json` 已加入 Git 忽略；发布进程读取 `privateKey` 后传给 `AMB_CATALOG_PRIVATE_KEY`，不要打印或写入命令历史。
+
+age 用于加密私钥备份，不代替目录签名。当前沿用 Modelflare 的 age 收件人和备份存储：加密对象位于已配置备份目标的 `anymodelbot/catalog-signing/` 前缀下。本机 `.runtime/catalog/backup-receipt.json` 记录对象地址、大小和 SHA-256；上传后核对远端对象大小。
+
+恢复时，从该前缀下载对应的 `.json.age`，用离线保管的 age 私钥解密，再将签名文件以 `0600` 权限放回上述路径。使用前从私钥推导公钥，与 `src/botkit/config.ts` 的 `CATALOG_PUBLIC_KEY` 比较；不一致时不能直接发布。0.1.23 因原私钥丢失而更换了目录公钥，旧版用户需要升级后才能加载新目录。
+
 ## 让 Claude 做 Bot
 
 `.claude/skills/amb-bot-dev/` 是 Bot 开发技能：把这份文档的约束写成 Claude 照着做的步骤。跟 Claude 说要做什么，它从模板起目录，写到 `check` 通过为止。以后想要批量生成，流水线也只是多一个作者，产物一样过约束检查，架构不用改。

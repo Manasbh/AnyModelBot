@@ -244,6 +244,14 @@ The app ships with the catalog's public key and address (`src/botkit/config.ts`)
 - **Turning the catalog off:** Set `AMB_CATALOG=off`. The app stays off the network for this, and the catalog is empty. Tests run this way.
 
 To test locally without changing code, set `AMB_CATALOG_URL` and `AMB_CATALOG_PUBKEY`.
+### Signing-key recovery
+
+The publishing host keeps its Ed25519 key pair in `.runtime/catalog/signing.json`, with directory mode `0700` and file mode `0600`. `.runtime/` and the host-local `catalog.lock.json` are Git-ignored. The publishing process reads `privateKey` into `AMB_CATALOG_PRIVATE_KEY`; never print it or put its value in shell history.
+
+age encrypts the key backup; it does not replace catalog signatures. The current setup uses Modelflare's existing age recipients and backup storage, under the configured backup destination's `anymodelbot/catalog-signing/` prefix. `.runtime/catalog/backup-receipt.json` records object locations, sizes and SHA-256 hashes. Uploads are checked against remote object sizes.
+
+To recover, download the matching `.json.age`, decrypt it using the age identity kept offline, and restore the signing file with mode `0600`. Derive its public key and compare it with `CATALOG_PUBLIC_KEY` in `src/botkit/config.ts` before publishing. Version 0.1.23 replaces the catalog public key because the original private key was lost; older clients need to update before loading the new catalog.
+
 ## Building bots with Claude
 
 `.claude/skills/amb-bot-dev/` is the bot dev skill, which turns these rules into steps for Claude. Tell Claude what to build; it scaffolds from the template and works until `check` passes. A future batch pipeline would just be one more author, and its output would pass the same checks.

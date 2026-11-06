@@ -122,6 +122,7 @@ mount(App);
 | `pickFile({ accept, multiple })` | Let the user pick files into `app/inbox/`; returns `[{ name, size, path }]` |
 | `readFile(path)` | Read other text files under `app/` (up to 2 MB) |
 | `readImage(path)` | Read an image under `app/` (png, jpg, gif, webp, svg, up to 16 MB). Returns `{ url }` for an `<img>`. Needs an instance; images for sample data live under `ui/` and use relative paths |
+| `readMedia(path)`, `releaseMedia(url)` | Since 0.1.23, preview audio/video under `app/` (up to 200 MB per file, four simultaneous previews). Returns `{ url, size }` for `<video>` / `<audio>`. Release the URL when switching files or unmounting. The parent passes the media data; Blob URLs are created inside the sandbox |
 | `openFile(path, { reveal })` | Open a file under `app/`. Call it from a user click. The desktop app opens it with the system app or shows it in its folder (anything that would run on opening is only shown in its folder). On the web it downloads |
 | `desktop` | This is the desktop app, so files can open with the system app |
 | `openUrl(url)` | Open an external page once the user confirms the address; http(s) only |
@@ -142,6 +143,7 @@ Add components to `ui/botkit/kit.js` as real bots need them, rather than working
 | --- | --- |
 | `init` | Language, theme, text size, motion, text and basic bot info |
 | `readFile`, `readImage` | Read-only access to `app/` in the workspace, with no way out |
+| `readMedia`, `releaseMedia` | Read size-limited audio/video and manage preview resources. HTML and scripts are not supported |
 | `openFile` | Open or download a file under `app/`. Runs only if the parent page confirms the user just clicked |
 | `send`, `stop` | Send a message, stop |
 | `subscribe` | Receive `turn`, `file` and `env` events |

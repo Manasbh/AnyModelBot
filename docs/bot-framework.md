@@ -122,6 +122,7 @@ mount(App);
 | `pickFile({ accept, multiple })` | 让用户选文件，放进 `app/inbox/`，返回 `[{ name, size, path }]` |
 | `readFile(path)` | 读 `app/` 下的其他文本文件（≤ 2 MB） |
 | `readImage(path)` | 读 `app/` 下的图片（png、jpg、gif、webp、svg，≤ 16 MB），返回 `{ url }`，放进 `<img>`；需要实例，示例数据里的图放在 `ui/` 下用相对路径 |
+| `readMedia(path)`、`releaseMedia(url)` | 0.1.23 起可预览 `app/` 下的音视频（单个 ≤ 200 MB，同时最多 4 个）。返回 `{ url, size }`，用于 `<video>` / `<audio>`；切换素材或卸载组件时释放 URL。数据经父页面传入，Blob URL 在沙箱内创建 |
 | `openFile(path, { reveal })` | 打开 `app/` 下的文件。要在用户点击时调用。桌面版用系统程序打开或在文件夹中显示（打开就会运行的只在文件夹中显示），网页里下载 |
 | `desktop` | 是桌面版，能用系统程序打开文件 |
 | `openUrl(url)` | 打开外部网页：用户确认地址后才打开，只放行 http(s) |
@@ -142,6 +143,7 @@ mount(App);
 | --- | --- |
 | `init` | 下发语言、主题、字号、动效偏好、文案和 Bot 基本信息 |
 | `readFile`、`readImage` | 只读工作区 `app/` 下的文件，走不出去 |
+| `readMedia`、`releaseMedia` | 读取受限类型和大小的音视频，管理预览资源；不能读取 HTML 或脚本 |
 | `openFile` | 打开或下载 `app/` 下的文件。父页面确认用户刚点过才执行 |
 | `send`、`stop` | 发消息、停止 |
 | `subscribe` | 接收 `turn`、`file`、`env` 事件 |

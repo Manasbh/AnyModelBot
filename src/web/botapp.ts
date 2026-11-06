@@ -294,6 +294,12 @@ export async function botAppApi(req: http.IncomingMessage, res: http.ServerRespo
         d.send(res, 200, { files: d.installer.listApp(botId) });
         return true;
       }
+      if (sub === "media" && m === "GET") {
+        const file = d.installer.mediaFile(bot, url.searchParams.get("path"));
+        if (!file) throw new CatalogError("file_not_found", 404);
+        sendFile(req, res, file, file.mime);
+        return true;
+      }
       if (sub === "download" && m === "GET") {
         const file = d.installer.appFile(bot, url.searchParams.get("path"));
         if (!file) throw new CatalogError("file_not_found", 404);

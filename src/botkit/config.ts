@@ -4,7 +4,7 @@
  * 开发时用环境变量 AMB_CATALOG_URL、AMB_CATALOG_PUBKEY 覆盖。
  */
 export const CATALOG_URL = "https://anymodel.bot/catalog/index.json";
-export const CATALOG_PUBLIC_KEY = "MCowBQYDK2VwAyEA429PfF334Ndq3cbp/Jt5eAeFaBoQOQ6GJ1l7ywgSWzM=";
+export const CATALOG_PUBLIC_KEY = "MCowBQYDK2VwAyEAIWnm1eaGbKq044+gMkJ44g1vCeBAE6ZknayyT0ozEZ8=";
 
 export function catalogConfig(env: NodeJS.ProcessEnv = process.env): { url: string; publicKey: string } {
   if (env.AMB_CATALOG === "off") return { url: "", publicKey: "" };

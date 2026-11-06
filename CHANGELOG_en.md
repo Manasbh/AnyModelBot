@@ -4,6 +4,14 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.23 - 2026-11-06
+
+### New
+
+- Added the Film Studio catalog bot for short videos, episodic dramas, asset libraries, storyboards, canvases, narration, subtitles and local rendering. Creative rules and the composition engine are ported from PRINTFILM (MIT).
+- Catalog bots can preview audio/video and keep media takes. Durable generation IDs let interrupted work retrieve the original task without automatic resubmission.
+- Restored bot downloads in Discover. Update to 0.1.23 to use the renewed catalog signing key.
+
 ## 0.1.22 - 2026-11-04
 
 ### New

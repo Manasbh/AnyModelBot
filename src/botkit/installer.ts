@@ -21,6 +21,7 @@ export const instanceId = (catalogId: string) => `cat-${catalogId}`;
 const STATE_FILE = "app/state.json";
 /** 界面能用 readImage 读的类型。SVG 也可以：只放进沙箱页的 <img>，里面的脚本不会运行 */
 const IMAGE_MIME: Record<string, string> = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml" };
+const MEDIA_MIME: Record<string, string> = { ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".ogg": "audio/ogg", ".flac": "audio/flac", ".aac": "audio/aac" };
 
 export class CatalogError extends Error {
   constructor(readonly code: string, readonly status = 400) {
@@ -246,6 +247,13 @@ export class BotInstaller {
     if (!f) return undefined;
     const st = fs.statSync(f);
     return st.isFile() && st.nlink === 1 ? { path: f, size: st.size, mtimeMs: st.mtimeMs, mode: st.mode } : undefined;
+  }
+
+  /** 预览只开放音视频；文件边界与下载一致，不能借 Blob 传递 HTML/脚本。 */
+  mediaFile(bot: Bot, rel: unknown): (ResolvedFile & { mime: string }) | undefined {
+    const file = this.appFile(bot, rel);
+    const mime = file && MEDIA_MIME[path.extname(file.path).toLowerCase()];
+    return file && mime && file.size <= LIMITS.mediaBytes ? { ...file, mime } : undefined;
   }
 
   /** 列出 app/ 下的文件（评测用它检查产物）。不跟随符号链接 */

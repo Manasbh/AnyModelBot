@@ -206,7 +206,10 @@ If you don't want to write a persona, use a ready-made bot from Discover. Each h
 
 - **Company Research:** Local company diligence with parallel research, curation, and sourced reports
 - **PPT Master:** Turn documents or topics into editable PPTX decks, or edit decks you have
+- **Film Studio:** Short videos and dramas: scripts, assets, storyboards, voices and finished films
 - **US Stock Research:** Research US-listed companies from SEC filings, with every number traceable
+
+Film Studio requires AnyModelBot 0.1.23 or later, Python 3.10+ and FFmpeg (including ffprobe) on your device. AI images and videos use Modelflare and are billed by usage; projects and media stay on your device.
 
 See the [bots page on our website](https://anymodel.bot/en/bots) for details.
 

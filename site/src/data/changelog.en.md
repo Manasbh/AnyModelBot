@@ -4,6 +4,14 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.24 - 2026-11-07
+
+### New
+
+- **Import skills from ZIP:** In Bot settings → Skills, import a ZIP containing `SKILL.md`, preview its name and description, then add it. View, enable, disable or delete skills, and confirm replacement when importing the same name again. Scripts, references and assets are preserved.
+- **Search chat history:** Search messages stored on this device from the sidebar, filter by bot, conversation, channel or date, and jump to the original message. `Ctrl/Cmd+Shift+F` opens global search; `Ctrl/Cmd+F` searches the current chat, including history that has not loaded yet. Search makes no model calls.
+- Skills are managed separately for each bot and changes apply when the bot is idle. Replacement preserves the enabled state, deletion keeps workspace output, and imported packages cannot overwrite built-in or catalog bot skills.
+
 ## 0.1.23 - 2026-11-06
 
 ### New

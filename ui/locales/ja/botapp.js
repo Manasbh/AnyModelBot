@@ -44,6 +44,7 @@ export default {
     catalog_failed: "問題が発生しました。もう一度お試しください。",
     file_not_found: "ファイルが見つかりません。",
     inbox_too_large: "ファイルが大きすぎます。",
+    skill_conflict: "更新版のスキルがインポート済みのスキルと同名です。先にインポート済みのスキルを削除するか名前を変更してください。",
     reserved_skill: "スキル名が不正なため、この Bot はインストールできません。",
     dev_invalid: "このフォルダーは有効な Bot パッケージではありません。",
     dev_loopback_only: "ローカルフォルダーはこのマシンで実行しているときだけ読み込めます。",

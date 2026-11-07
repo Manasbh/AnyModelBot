@@ -9,6 +9,7 @@ import type { Bot, Store } from "../store/db.js";
 import { normalizeSettings, type BotSettings } from "../agent/settings.js";
 import { logger } from "../log.js";
 import { appSkill } from "./app-skill.js";
+import { UserSkills } from "../skills/service.js";
 import { safeRelPath } from "./bundle.js";
 import type { BotCatalog, CatalogEntry } from "./catalog.js";
 import { LIMITS, localized, RESERVED_SKILLS, samplePath, type BotAppRef } from "./format.js";
@@ -74,10 +75,12 @@ export class BotInstaller {
     const names = fs.existsSync(src) ? fs.readdirSync(src, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) : [];
     const installed: string[] = [];
     const staged: Array<[string, string]> = [];
+    const userSkills = this.o.store.getBot(botId) ? new UserSkills(this.o.dataDir, this.o.store).list(botId) : [];
     try {
       for (const name of names) {
         // media、computer-use 由宿主自己写；包里不能覆盖
         if ((RESERVED_SKILLS as readonly string[]).includes(name)) throw new CatalogError("reserved_skill");
+        if (userSkills.some((s) => s.name === name)) throw new CatalogError("skill_conflict");
         const tmp = path.join(dest, `.${name}.${process.pid}.tmp`);
         fs.cpSync(path.join(src, name), tmp, { recursive: true, verbatimSymlinks: true });
         staged.push([tmp, path.join(dest, name)]);

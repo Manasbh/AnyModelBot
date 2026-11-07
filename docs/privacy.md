@@ -21,6 +21,8 @@
 | 数据 | 存放位置（数据目录内） | 会离开设备吗 | 去向 |
 | :--- | :--- | :--- | :--- |
 | 对话与会话 | `anymodel.db`（SQLite） | 回答需要的那部分会 | 作为模型请求的上下文，经 Modelflare 发给你选定的供应商 |
+| 导入的技能 | `skills/<机器人 ID>/`；启用项复制到 `dsh/<机器人 ID>/skills/` | 名称和说明、使用时读取的正文与资料会 | 作为上下文发给所选模型；导入仅上传到你使用的 AnyModelBot 实例，不访问 GitHub |
+| 聊天搜索索引 | `anymodel.db` 的 `message_search` 及其全文索引 | 不会 | 在实例内搜索已保存的消息，不调用模型 |
 | 记忆 | `memory/`（Markdown：`bots/`、`groups/`、`team/`） | 被用到时会 | 作为上下文进入模型请求；写入前会过滤看起来像密钥的内容 |
 | 机器人工作区文件 | `workspaces/<机器人>/`（含收到的文件 `inbox/`、生成的图片和视频 `media/`） | 机器人读取并发给模型时会 | 同上 |
 | Modelflare 登录凭据 | `modelflare-account.json`（权限 600；桌面版用系统钥匙串加密） | 只在刷新令牌时发给 modelflare.dev | Modelflare |

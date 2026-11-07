@@ -21,6 +21,8 @@
 | 데이터 | 저장 위치(데이터 폴더 내부) | 기기 외부 전송 여부 | 전송 대상 |
 | :--- | :--- | :--- | :--- |
 | 대화와 세션 | `anymodel.db`(SQLite) | 답변에 필요한 부분 | 모델 컨텍스트로 Modelflare를 거쳐 선택한 제공업체에 전달 |
+| 가져온 스킬 | `skills/<봇 ID>/`, 활성화 사본은 `dsh/<봇 ID>/skills/` | 이름, 설명, 사용 중 읽은 본문과 자료는 전송 | 선택한 모델의 문맥. 가져오기는 사용 중인 AnyModelBot 인스턴스로만 전송하며 GitHub에 접속하지 않습니다 |
+| 대화 검색 색인 | `anymodel.db`의 `message_search` 및 전문 검색 색인 | 아니요 | 인스턴스 안에 저장된 메시지를 검색하며 모델을 호출하지 않습니다 |
 | 기억 | `memory/`(Markdown: `bots/`, `groups/`, `team/`) | 사용 시 | 모델 요청의 컨텍스트에 포함. 비밀 정보로 보이는 내용은 기록 전에 제외 |
 | 봇 작업 공간 파일 | `workspaces/<bot>/`(받은 파일 `inbox/`, 생성한 이미지·동영상 `media/` 포함) | 봇이 읽어 모델에 보낼 때 | 위와 동일 |
 | Modelflare 로그인 정보 | `modelflare-account.json`(권한 600, 데스크톱 앱은 시스템 키체인으로 암호화) | 토큰 갱신 시 modelflare.dev로만 | Modelflare |

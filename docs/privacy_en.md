@@ -21,6 +21,8 @@ This document explains what AnyModelBot stores where, what leaves your device, a
 | Data | Where it lives (inside the data directory) | Does it leave the device? | Where it goes |
 | :--- | :--- | :--- | :--- |
 | Conversations and sessions | `anymodel.db` (SQLite) | The part a reply needs | Sent as model context through Modelflare to the provider you chose |
+| Imported skills | `skills/<bot ID>/`; enabled copies in `dsh/<bot ID>/skills/` | Names, descriptions and content loaded during use do | Context for the selected model; import uploads only to your AnyModelBot instance and does not contact GitHub |
+| Chat search index | `message_search` and its full-text index in `anymodel.db` | No | Searches saved messages inside the instance without model calls |
 | Memory | `memory/` (Markdown: `bots/`, `groups/`, `team/`) | When it is used | Included as context in model requests; anything that looks like a secret is filtered before it is written |
 | Bot workspace files | `workspaces/<bot>/` (including received files in `inbox/` and generated images and video in `media/`) | When a bot reads them and sends them to a model | Same as above |
 | Modelflare sign-in credential | `modelflare-account.json` (mode 600; encrypted with the system keychain in the desktop app) | Only to modelflare.dev when refreshing tokens | Modelflare |

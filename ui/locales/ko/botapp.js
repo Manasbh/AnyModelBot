@@ -44,6 +44,7 @@ export default {
     catalog_failed: "문제가 발생했습니다. 다시 시도하세요.",
     file_not_found: "파일을 찾을 수 없습니다.",
     inbox_too_large: "파일이 너무 큽니다.",
+    skill_conflict: "업데이트의 스킬 이름이 가져온 스킬과 같습니다. 가져온 스킬을 먼저 삭제하거나 이름을 변경하세요.",
     reserved_skill: "스킬 이름이 올바르지 않아 이 봇을 설치할 수 없습니다.",
     dev_invalid: "이 폴더는 올바른 봇 패키지가 아닙니다.",
     dev_loopback_only: "로컬 폴더는 이 컴퓨터에서 실행할 때만 불러올 수 있습니다.",

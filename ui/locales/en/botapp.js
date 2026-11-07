@@ -44,6 +44,7 @@ export default {
     catalog_failed: "Something went wrong. Please try again.",
     file_not_found: "This file wasn't found.",
     inbox_too_large: "This file is too large.",
+    skill_conflict: "A skill in this update conflicts with an imported skill. Remove or rename the imported skill first.",
     reserved_skill: "This bot has an invalid skill name and can't be installed.",
     dev_invalid: "This folder isn't a valid bot package.",
     dev_loopback_only: "Local folders can only be loaded when running on this machine.",

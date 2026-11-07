@@ -17,6 +17,9 @@ import { prune, unsupportedKeywords, validate } from "../src/botkit/schema.js";
 import { generateCatalogKeys, signCatalog, verifyCatalog } from "../src/botkit/sign.js";
 import { botPrompt } from "../src/agent/prompts/system.js";
 import { Store } from "../src/store/db.js";
+import { UserSkills } from "../src/skills/service.js";
+import { readSkillZip } from "../src/skills/archive.js";
+import { skillZip, skillMd } from "./skill-fixture.js";
 import { botAppCsp, serveBotAppStatic } from "../src/web/botapp.js";
 // @ts-expect-error 前端模块是无类型的原生 ES 模块
 import { safeExternalUrl } from "../ui/lib/bot-bridge.js";
@@ -522,6 +525,21 @@ describe("目录", () => {
       expect(stopped).toContain(id);
       inst.markCustomized(id);
       expect(await inst.update(id)).toBe("customized");
+    });
+    it("目录升级不能覆盖用户导入的同名技能，即使尚未部署到运行目录", async () => {
+      await inst.install("fixture-bot", "zh-CN");
+      const user = new UserSkills(data, store);
+      const pkg = await readSkillZip(skillZip([{ path: "SKILL.md", text: skillMd("custom-skill", "user instructions") }]));
+      user.install(id, pkg, null);
+      const dir = path.join(repo, "bots", "fixture-bot");
+      write(dir, "bot.json", fs.readFileSync(path.join(dir, "bot.json"), "utf8").replace('"version": "1.0.0"', '"version": "1.1.0"'));
+      write(dir, "skills/custom-skill/SKILL.md", "catalog instructions");
+      pack(2000);
+      await c.sync();
+      await expect(inst.update(id)).rejects.toMatchObject({ code: "skill_conflict" });
+      expect(user.detail(id, "custom-skill").instructions).toContain("user instructions");
+      expect(store.getBot(id)!.app!.version).toBe("1.0.0");
+      expect(fs.existsSync(skills("own", "SKILL.md"))).toBe(true);
     });
     it("下架：普通下架只记下来；安全原因停掉进程、删掉技能，数据不动", async () => {
       await inst.install("fixture-bot", "zh-CN");

@@ -117,7 +117,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     for (const k of list) await fetchOne(k);
   } catch (e) {
-    console.error(String(e?.message ?? e));
+    const message = [String(e?.message ?? e), e?.cause?.message].filter(Boolean).join(": ");
+    console.error(message);
+    if (process.env.GITHUB_ACTIONS) console.error(`::error::${message.replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A")}`);
     process.exit(1);
   }
 }

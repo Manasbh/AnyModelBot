@@ -116,13 +116,12 @@ jobs:
           cache-dependency-path: vendor/magpie/go.sum
 
       - run: npm ci --no-audit --no-fund
+      - run: node scripts/fetch-cua-driver.mjs --target win32/x64
       - run: npm run build
       - run: node scripts/prepare-dsh.mjs
       # The installers ship this packed layout (resources/dsh/dsh.asar + native node_modules), checked below.
       - run: node scripts/bundle-dsh.mjs
       - run: node scripts/build-magpie.mjs --target windows/amd64
-      - run: node scripts/fetch-cua-driver.mjs --target win32/x64
-
       # Electron 44 downloads its binary on the first require("electron"), not at npm install time.
       - name: Fetch the Electron binary
         run: |

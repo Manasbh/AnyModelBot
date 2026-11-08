@@ -72,7 +72,9 @@ npm run test:dsh-bundle  # build/dsh の実ランタイムを Electron でテス
 - コンソールは 127.0.0.1 のみで待ち受け、毎回ランダムなトークンを作り、他のローカルプログラムによる管理 API の直接利用を防ぎます。
 - 終了はチャネルを先に止め、その後 magpie を止めます。強制終了で残った magpie は次の起動時に処理します（Linux/macOS）。
 
-リリースでは `CHANGELOG.md` と `CHANGELOG_en.md` に当該版の項目を書きます。対象はユーザーが気付くアプリの変更であり、サイトや内部実装ではありません。英語サイトでは WeChat・Feishu に言及する行を除外します。`package.json` の `version` を更新、コミットし、`v<version>` タグをプッシュします。変更履歴がないとワークフローは最初に失敗し、あれば GitHub Release のノートとサイトに反映します。`.github/workflows/release.yml` は OS・アーキテクチャ別の 6 ランナーでビルドし、インストーラーと `SHA256SUMS` を公開します。署名・公証用のシークレットは同ファイル冒頭のコメントを参照してください。同じタグで `.github/workflows/docker.yml` も動き、x64+arm64 イメージを `ghcr.io/modelflare-ai/anymodel-bot` に `<version>`、`latest` タグで公開します。
+リリースでは `CHANGELOG.md`、`CHANGELOG_en.md`、`CHANGELOG_ja.md`、`CHANGELOG_ko.md`、`CHANGELOG_ru.md` に当該版の項目を書きます。対象はユーザーが気付くアプリの変更であり、サイトや内部実装ではありません。英語サイトでは WeChat・Feishu に言及する行を除外します。`package.json` の `version` を更新、コミットし、`v<version>` タグをプッシュします。変更履歴がないとワークフローは最初に失敗し、あれば GitHub Release のノートとサイトに反映します。`.github/workflows/release.yml` は OS・アーキテクチャ別の 6 ランナーでビルドし、インストーラーと `SHA256SUMS` を公開します。署名・公証用のシークレットは同ファイル冒頭のコメントを参照してください。同じタグで `.github/workflows/docker.yml` も動き、x64+arm64 イメージを `ghcr.io/modelflare-ai/anymodel-bot` に `<version>`、`latest` タグで公開します。
+
+リリースごとに、公式サイト、関連ドキュメント、全 5 言語の README を更新します。`npm --prefix site run sync` でサイトの内容を同期し、GitHub Release と Docker イメージの公開後、[サイトのデプロイ手順](../site/README.md)に従って本番サイトを更新します。`/download`、`/changelog`、`/bots` のバージョン、ダウンロードリンク、説明が一致していることを確認し、本番サイトの更新まで完了して初めてリリース完了とします。
 
 ## Docker
 

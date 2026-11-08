@@ -33,7 +33,7 @@ export default {
   "macNote": "Computer use on macOS is in beta: its direct mode still needs testing on more real machines. The rest of the app is the same as on Windows and Linux.",
   "linuxHint": "chmod +x anymodel-bot-*.AppImage && ./anymodel-bot-*.AppImage",
   "winHint": "If Windows warns you, choose More info, then Run anyway.",
-  "macHint": "If macOS blocks it, go to System Settings > Privacy & Security and choose Open Anyway.",
+  "macHint": "Developer ID signed and notarized by Apple. Drag the app to Applications, launch it, and choose Open if asked to confirm the download.",
   "firstRun": "First launch",
   "yourSystem": "Your system",
   "verifyTitle": "Verify your download",

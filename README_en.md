@@ -104,7 +104,7 @@ Pick your platform. Every release page lists all installers and a `SHA256SUMS` f
   <img src="docs/assets/download/install-windows.gif" alt="Installing AnyModelBot on Windows: run the installer, open the app, and land on the Modelflare sign-in screen" width="100%">
 </p>
 
-**First launch.** If your system warns about an app downloaded from the internet, choose *More info → Run anyway* on Windows, or *System Settings → Privacy & Security → Open Anyway* on macOS. On Linux, mark the AppImage as executable (`chmod +x`) and run it. Closing the window hides AnyModelBot to the tray; quit from the tray menu or from Settings.
+**First launch.** If Windows shows a security warning, choose *More info → Run anyway*. The macOS app is Developer ID signed and notarized by Apple: drag it to Applications, launch it, and choose Open if prompted to confirm an internet download. On Linux, mark the AppImage as executable (`chmod +x`) and run it. Closing the window hides AnyModelBot to the tray; quit from the tray menu or from Settings.
 
 **Verify a download.**
 
@@ -205,6 +205,8 @@ A bot is more than a chat window: it has a persona, a default model, its own wor
 ## 🧩 Ready-made bots
 
 If you don't want to write a persona, use a ready-made bot from Discover. Each has its own view. Opening one shows a sample, and it's only installed when you send your first message.
+
+Official bots include their UIs, samples, personas and skills in the installer. First preview and installation need no bot package downloads. Updates ship with app releases and preserve existing project data. Model calls and online research still need a network connection.
 
 - **Company Research:** Local company diligence with parallel research, curation, and sourced reports
 - **PPT Master:** Turn documents or topics into editable PPTX decks, or edit decks you have

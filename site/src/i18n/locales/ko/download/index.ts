@@ -33,7 +33,7 @@ export default {
   "macNote": "macOS의 컴퓨터 사용 기능은 베타입니다. 직접 실행 모드는 더 많은 실제 기기에서 테스트가 필요합니다. 나머지 기능은 Windows 및 Linux와 동일합니다.",
   "linuxHint": "chmod +x anymodel-bot-*.AppImage && ./anymodel-bot-*.AppImage",
   "winHint": "Windows 경고가 나타나면 ‘추가 정보’를 누른 뒤 ‘실행’을 선택하세요.",
-  "macHint": "macOS에서 차단하면 시스템 설정 > 개인정보 보호 및 보안에서 ‘확인 없이 열기’를 선택하세요.",
+  "macHint": "Developer ID 서명과 Apple 공증을 완료했습니다. 응용 프로그램 폴더로 옮겨 실행하고 다운로드 확인이 나타나면 ‘열기’를 선택하세요.",
   "firstRun": "첫 실행",
   "yourSystem": "현재 시스템",
   "verifyTitle": "다운로드 검증",

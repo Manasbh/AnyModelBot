@@ -72,7 +72,9 @@ npm run test:dsh-bundle  # 패키징된 build/dsh의 실제 DSH 통합 테스트
 - 콘솔은 127.0.0.1에서만 수신 대기하고 시작마다 임의 접근 토큰을 생성하여 다른 로컬 프로그램의 관리 API 직접 호출을 막습니다.
 - 종료 시 채널을 먼저 중지하고 magpie를 종료합니다. 이전 실행이 강제 종료되어 magpie가 남았다면 다음 실행에서 정리합니다(Linux/macOS).
 
-릴리스: `CHANGELOG.md`와 `CHANGELOG_en.md`에 해당 버전의 변경 사항을 작성합니다(웹사이트나 내부 구현보다 사용자가 느끼는 변경 중심, 영문 사이트는 WeChat·Feishu가 언급된 줄 제외). `package.json`의 `version`을 올리고 커밋한 뒤 `v<version>` 태그를 푸시합니다. 변경 내역이 없으면 릴리스 워크플로가 처음에 실패합니다. 있으면 GitHub Release 노트와 사이트 변경 내역에 반영됩니다. `.github/workflows/release.yml`이 6개 OS/아키텍처 러너에서 빌드하고 설치 파일과 `SHA256SUMS`를 GitHub Release에 게시합니다. 서명·공증에 필요한 저장소 비밀 값은 해당 파일 상단 주석을 확인하세요. 같은 태그가 `.github/workflows/docker.yml`도 실행하여 x64+arm64 이미지를 `ghcr.io/modelflare-ai/anymodel-bot`에 `<version>`, `latest` 태그로 게시합니다.
+릴리스: `CHANGELOG.md`, `CHANGELOG_en.md`, `CHANGELOG_ja.md`, `CHANGELOG_ko.md`, `CHANGELOG_ru.md`에 해당 버전의 변경 사항을 작성합니다(웹사이트나 내부 구현보다 사용자가 느끼는 변경 중심, 영문 사이트는 WeChat·Feishu가 언급된 줄 제외). `package.json`의 `version`을 올리고 커밋한 뒤 `v<version>` 태그를 푸시합니다. 변경 내역이 없으면 릴리스 워크플로가 처음에 실패합니다. 있으면 GitHub Release 노트와 사이트 변경 내역에 반영됩니다. `.github/workflows/release.yml`이 6개 OS/아키텍처 러너에서 빌드하고 설치 파일과 `SHA256SUMS`를 GitHub Release에 게시합니다. 서명·공증에 필요한 저장소 비밀 값은 해당 파일 상단 주석을 확인하세요. 같은 태그가 `.github/workflows/docker.yml`도 실행하여 x64+arm64 이미지를 `ghcr.io/modelflare-ai/anymodel-bot`에 `<version>`, `latest` 태그로 게시합니다.
+
+버전을 배포할 때마다 공식 사이트, 관련 문서와 5개 언어의 README를 함께 업데이트합니다. `npm --prefix site run sync`로 사이트 내용을 동기화하고 GitHub Release와 Docker 이미지 게시 후 [사이트 배포 안내](../site/README.md)에 따라 운영 사이트를 갱신합니다. `/download`, `/changelog`, `/bots`의 버전, 다운로드 링크와 설명이 일치하는지 확인하며 운영 사이트까지 반영되어야 배포가 완료됩니다.
 
 ## Docker
 

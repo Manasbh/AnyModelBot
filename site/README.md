@@ -221,6 +221,16 @@ docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
 - 下载数据不用手填：每次构建读 `GITHUB_URL` 的最新 Release，生成版本、发布日期、各平台下载地址（直达 GitHub）、SHA-256（取 Release 里的 `SHA256SUMS`）和大小；官网服务器不提供安装包下载。读取失败时这次不构建、继续用上一版；最新 Release 缺哪个平台，生产构建就会失败并提示。
 - 部署值没填齐时可以先用 `SITE_BUILD=draft` 跑起来（页面上会留着 `{…}` 占位符）。
 
+应用每次发布后都要同步并部署官网，不能只等每日定时构建。沿用现有的 `site/deploy/.env`，在仓库根目录执行：
+
+```bash
+npm --prefix site run sync
+docker compose -f site/deploy/compose.yml --env-file site/deploy/.env build builder
+docker compose -f site/deploy/compose.yml --env-file site/deploy/.env up -d --no-deps builder
+```
+
+等待构建器日志出现「已上线」，再确认线上 `/download`、`/changelog` 和 `/bots` 已显示对应版本、下载链接和功能说明。`web` 继续提供旧页面，直到新构建成功后原子切换。
+
 ## 部署值
 
 | 值 | 来源 |

@@ -33,7 +33,7 @@ export default {
   "macNote": "macOS 上的电脑操作目前为 Beta：直连模式还要在更多真机上验证。其余功能和 Windows、Linux 版一样。",
   "linuxHint": "chmod +x anymodel-bot-*.AppImage && ./anymodel-bot-*.AppImage",
   "winHint": "系统提示风险时，点「更多信息 → 仍要运行」。",
-  "macHint": "系统拦截时，到「系统设置 → 隐私与安全性」点「仍要打开」。",
+  "macHint": "已完成 Developer ID 签名和苹果公证。将应用拖入「应用程序」后打开，首次出现下载确认时点「打开」。",
   "firstRun": "首次运行",
   "yourSystem": "你的系统",
   "verifyTitle": "校验下载",

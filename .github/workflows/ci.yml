@@ -75,7 +75,7 @@ jobs:
           fi
           files=$(git diff --name-only "$BASE" HEAD)
           echo "$files"
-          if echo "$files" | grep -qE '^(src/agent/|src/magpie/|electron/|dsh-runtime/|scripts/(prepare|bundle|verify)-dsh(-bundle)?\.mjs$|scripts/e2e-agent\.mjs$|scripts/ci/|\.github/workflows/ci\.yml$)'; then
+          if echo "$files" | grep -qE '^(src/agent/|src/magpie/|electron/|dsh-runtime/|scripts/(prepare|bundle|verify)-dsh(-bundle)?\.mjs$|scripts/fetch-cua-driver\.mjs$|scripts/e2e-agent\.mjs$|scripts/ci/|\.github/workflows/ci\.yml$)'; then
             echo "agent=true" >> "$GITHUB_OUTPUT"
           else
             echo "agent=false" >> "$GITHUB_OUTPUT"

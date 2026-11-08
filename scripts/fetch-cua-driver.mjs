@@ -9,7 +9,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
+import { openPromise } from "yauzl";
 
 export const CUA_VERSION = "0.37.0";
 const BASE = `https://github.com/trycua/cua/releases/download/cua-driver-rs-v${CUA_VERSION}/`;
@@ -51,12 +53,20 @@ async function download(asset) {
   return dest;
 }
 
-function extract(archive, into) {
+export async function extractDriver(archive, into) {
   if (archive.endsWith(".zip")) {
+    // Git Bash 的 tar 可能是 GNU tar，不能解 ZIP；不用依赖 runner 上的 unzip/bsdtar。
+    // 只写固定白名单的文件名，不让归档里的路径或其他组件进入产物。
+    const zip = await openPromise(archive, { lazyEntries: true });
     try {
-      execFileSync("unzip", ["-q", "-o", archive, "-d", into], { stdio: "inherit" });
-    } catch {
-      execFileSync("tar", ["-xf", archive, "-C", into], { stdio: "inherit" }); // Windows 自带 bsdtar 也能解 zip
+      for await (const entry of zip.eachEntry()) {
+        const name = path.posix.basename(entry.fileName);
+        const dest = path.join(into, name);
+        if (entry.fileName.endsWith("/") || !KEEP.includes(name) || fs.existsSync(dest)) continue;
+        await pipeline(await zip.openReadStreamPromise(entry), fs.createWriteStream(dest));
+      }
+    } finally {
+      zip.close();
     }
   } else execFileSync("tar", ["-xzf", archive, "-C", into], { stdio: "inherit" });
 }
@@ -77,7 +87,7 @@ export async function fetchOne(key) {
   if (sha256(archive) !== asset.sha256) throw new Error(`SHA256 不匹配 ${asset.file}`);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cua-x-"));
   try {
-    extract(archive, tmp);
+    await extractDriver(archive, tmp);
     const found = findFiles(tmp, KEEP);
     const bin = found.get(key.startsWith("win32") ? "cua-driver.exe" : "cua-driver");
     if (!bin) throw new Error(`${asset.file} 里没有 cua-driver 可执行文件`);

@@ -40,7 +40,7 @@ export default {
   errors: {
     catalog_not_found: "この Bot は見つかりません。",
     catalog_removed: "この Bot は公開を終了しました。",
-    catalog_download_failed: "ダウンロードに失敗しました。ネットワークを確認してもう一度お試しください。",
+    catalog_download_failed: "Bot のファイルを読み込めませんでした。もう一度お試しください。",
     catalog_failed: "問題が発生しました。もう一度お試しください。",
     file_not_found: "ファイルが見つかりません。",
     inbox_too_large: "ファイルが大きすぎます。",

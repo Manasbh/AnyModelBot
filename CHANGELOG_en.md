@@ -4,6 +4,17 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.25 - 2026-11-08
+
+### New
+
+- **Official bots ship with the app:** Company Research, PPT Master, Film Studio and US Stock Research include their UIs, samples, personas and skills in the installer. First preview and installation no longer download bot packages; updates ship with app releases. Model calls and online research still need a network connection.
+
+### Improvements and fixes
+
+- Fixed catalog bot content being clipped to a short strip at the top, leaving a large blank area with no scrolling. Content now fills the available space, and the input box no longer covers it.
+- App upgrades preserve existing bot projects and data, and switch to the updated UI only after it is ready, avoiding a blank view.
+
 ## 0.1.24 - 2026-11-07
 
 ### New

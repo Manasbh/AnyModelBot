@@ -1,7 +1,7 @@
 {
   "name": "anymodel-bot",
   "productName": "anymodel bot",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "private": true,
   "description": "anymodel bot：任意模型的个人 AI 助手（飞书 + 微信 iLink），内置 magpie 模型网关",
   "license": "MIT",
@@ -13,9 +13,13 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "build:magpie": "node scripts/build-magpie.mjs",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && npm run build:catalog",
+    "build:catalog": "tsx scripts/build-catalog.ts",
+    "prestart": "npm run build:catalog",
     "start": "tsx src/main.ts",
+    "predev": "npm run build:catalog",
     "dev": "tsx watch src/main.ts",
+    "preinit": "npm run build:catalog",
     "init": "tsx src/cli/init.ts",
     "weixin:login": "tsx src/cli/weixin-login.ts",
     "bot": "tsx src/cli/amb-bot.ts",

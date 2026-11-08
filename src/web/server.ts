@@ -222,7 +222,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
   let token = cfg.ui.token;
   // 用上目录 Bot 之后，命令行方式在非 Linux 的回环模式下也要令牌：技能脚本是外部代码，而进程来源检查只在 Linux 生效（agent/peer-guard.ts）。
   // 目录没启用时没有外部代码，行为不变
-  const usesCatalog = app.catalog.remoteEnabled || app.store.listBots().some((b) => b.origin === "catalog");
+  const usesCatalog = app.catalog.enabled || app.store.listBots().some((b) => b.origin === "catalog");
   const loopbackNeedsToken = isLoopback(host) && !app.desktop && process.platform !== "linux" && usesCatalog;
   if ((!isLoopback(host) || loopbackNeedsToken) && !token) {
     const f = path.join(cfg.dataDir, "ui-token");

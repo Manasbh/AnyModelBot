@@ -40,7 +40,7 @@ export default {
   errors: {
     catalog_not_found: "This bot wasn't found.",
     catalog_removed: "This bot was removed from the catalog.",
-    catalog_download_failed: "Download failed. Check your network and try again.",
+    catalog_download_failed: "Couldn't load this bot's files. Please try again.",
     catalog_failed: "Something went wrong. Please try again.",
     file_not_found: "This file wasn't found.",
     inbox_too_large: "This file is too large.",

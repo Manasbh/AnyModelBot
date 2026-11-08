@@ -135,7 +135,10 @@ export class BotInstaller {
   info(bot: Bot): { ref: BotAppRef; entry: CatalogEntry | undefined; base: string; updateAvailable: boolean } {
     const ref = bot.app!;
     const entry = this.o.catalog.get(ref.catalogId);
-    return { ref, entry, base: entry ? uiBase(entry) : ref.ui ? `/amb/botapp/b/${ref.ui}/` : "", updateAvailable: !!entry && !entry.removed && !ref.customized && (!!entry.dev || entry.version !== ref.version) };
+    // 实例先显示已安装的界面；更新成功后才切换，避免新包尚未解压就请求它。
+    const base = entry?.dev ? uiBase(entry) : ref.ui ? `/amb/botapp/b/${ref.ui}/` : "";
+    const changed = !!entry && (!!entry.dev || entry.version !== ref.version || entry.ui.sha256 !== ref.ui || entry.runtime.sha256 !== ref.runtime);
+    return { ref, entry, base, updateAvailable: !!entry && !entry.removed && !ref.customized && changed };
   }
 
   /**
@@ -149,7 +152,7 @@ export class BotInstaller {
     if (ref.customized) return "customized";
     const entry = this.o.catalog.get(ref.catalogId);
     if (!entry || entry.removed) return "removed";
-    if (!entry.dev && entry.version === ref.version) return "current";
+    if (!entry.dev && entry.version === ref.version && entry.ui.sha256 === ref.ui && entry.runtime.sha256 === ref.runtime) return "current";
     if (this.o.busy(botId)) return "busy";
     const uiDir = await this.o.catalog.ensureUi(entry);
     const runtimeDir = await this.o.catalog.ensureRuntime(entry);

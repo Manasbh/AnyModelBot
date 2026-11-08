@@ -40,7 +40,7 @@ export default {
   errors: {
     catalog_not_found: "Этот бот не найден.",
     catalog_removed: "Этот бот удалён из каталога.",
-    catalog_download_failed: "Не удалось скачать. Проверьте сеть и повторите попытку.",
+    catalog_download_failed: "Не удалось загрузить файлы бота. Повторите попытку.",
     catalog_failed: "Что-то пошло не так. Повторите попытку.",
     file_not_found: "Файл не найден.",
     inbox_too_large: "Файл слишком большой.",

@@ -26,10 +26,10 @@ npm run bot -- check bots/<id>     # 静态检查，模板里的 TODO 填完才�
 作者（人 / Claude + 开发技能 / 以后的流水线）
         │
         ▼
-Bot 包：bots/<id>/ ──► 约束检查 ──► 人看一眼 ──► 打包签名 ──► 目录地址
+Bot 包：bots/<id>/ ──► 约束检查 ──► 人看一眼 ──► dist/catalog ──► App 安装包
                                                               │
                                                               ▼
-App：目录同步 · 运行时（沙箱 iframe、桥接、状态文件）· 界面套件 · Bot 进程
+App：本地目录 · 运行时（沙箱 iframe、桥接、状态文件）· 界面套件 · Bot 进程
 ```
 
 | 部分 | 位置 | 做什么 |
@@ -37,7 +37,7 @@ App：目录同步 · 运行时（沙箱 iframe、桥接、状态文件）· 界
 | 包格式 | `src/botkit/format.ts`、`schema.ts` | `bot.json` 的结构、权限、上限，数据约定用的 JSON Schema 子集 |
 | 约束检查 | `src/botkit/check.ts`、`render.ts`、`evals.ts` | 静态规则、渲染、真实模型评测 |
 | 打包发布 | `src/botkit/bundle.ts`、`pack.ts`、`sign.ts` | 内容寻址的包、签名的目录、下架 |
-| 目录同步 | `src/botkit/catalog.ts`、`config.ts` | 拉取、验签、缓存、按需下载 |
+| 目录加载 | `src/botkit/catalog.ts`、`config.ts` | 默认读内置目录、校验并解压本地包；显式配置才使用远程目录 |
 | 实例 | `src/botkit/installer.ts`、`app-skill.ts` | 第一次使用时安装，升级、下架、移除 |
 | 服务端 | `src/web/botapp.ts` | 界面的静态路由和 CSP，目录和实例的接口 |
 | 界面套件 | `ui/botkit/` | Bot 的界面唯一能引用的东西 |
@@ -177,10 +177,10 @@ Schema 支持的关键字：`type`、`properties`、`required`、`additionalProp
 
 | 动作 | 发生什么 |
 | --- | --- |
-| 打开 | 只下载界面包，显示示例数据，顶部标明「示例」。不创建实例、不装技能、不起进程、不调模型 |
-| 第一次发消息（打字或点可点的话） | 下载运行包，校验 sha256；创建实例 `cat-<id>`，示例数据写成初始状态，自动留在「我的」 |
+| 打开 | 从安装包解出界面，显示示例数据，顶部标明「示例」。不联网下载、不创建实例、不装技能、不起进程、不调模型 |
+| 第一次发消息（打字或点可点的话） | 从安装包解出运行包，校验 sha256；创建实例 `cat-<id>`，示例数据写成初始状态，自动留在「我的」 |
 | 之后 | 和普通 Bot 一样，也能在聊天渠道里用（`/bot` 能切到）。不进其他 Bot 的同伴名单 |
-| 目录发布新版本 | 下次打开时替换技能和界面。用户改过人设的不再跟随；正在工作的等下次 |
+| App 升级带来新的 Bot 包 | 下次打开时替换技能和界面，保留项目数据。用户改过人设的不再跟随；正在工作的等下次 |
 | 空闲 10 分钟 | 代理进程退出，下一条消息再拉起 |
 | 移除 | 问一句是否保留数据。不保留就清掉工作区和技能；保留的话再次使用接着用 |
 
@@ -214,6 +214,12 @@ npm run bot -- check bots/<id> --full   # 可选：再跑渲染和真实模型�
 
 ## 发布和下架
 
+官方 Bot 随 App 一起发布。`npm run build` 自动运行 `build:catalog`，检查 `bots/` 下的全部 Bot，把界面、五种语言的示例数据、人设、技能和可用缩略图打到 `dist/catalog/`。Electron 的 `dist/**` 打包规则和 Docker 镜像都会包含这些资源，不需要目录签名私钥。首次预览和安装只从内置包读取，按 sha256 校验后解压到数据目录；旧的线上目录缓存不会覆盖内置目录。
+
+`npm start`、`npm run dev` 和 `npm run init` 会先生成内置目录；直接运行 `tsx src/main.ts` 前，先执行 `npm run build:catalog`。官方 Bot 的上新、升级和下架跟随 App 版本发布。GitHub Release 工作流会用打包后的可执行文件验证所有内置 Bot 能在禁止网络请求的条件下加载和安装。
+
+以下签名目录流程保留给显式配置远程目录的部署：
+
 目录仓库的结构：
 
 ```text
@@ -229,19 +235,19 @@ npm run bot -- who-uses <技能> --root .
 ```
 
 - `pack` 把每个 Bot 过一遍静态检查，有一个不过就什么都不写。产物是 `index.json`、`index.json.sig`、`bundles/`、`thumbs/`，放到目录地址下就算发布。
-- 客户端启动时和之后每 6 小时拉一次（带 ETag），验签失败不更新；缓存也要验签。界面和技能按 sha256 校验。
+- 显式使用远程目录的客户端启动时和之后每 6 小时拉一次（带 ETag），验签失败不更新；缓存也要验签。界面和技能按 sha256 校验。
 - 下架后重新 `pack` 并发布，24 小时内客户端生效。普通下架只提示用户；`--security` 会立刻停掉进程、删掉技能，用户的数据不动。
 - `.github/workflows/bot-catalog.yml` 在 `bots/**` 或 `catalog.json` 推到 master 时检查并打包，产物作为 CI artifact；怎么放到线上由发布环境决定。仓库还没配置 `AMB_CATALOG_PRIVATE_KEY` 时只检查，不打包。
 
-### 线上目录
+### 可选的线上目录
 
-App 里写着目录的公钥和地址（`src/botkit/config.ts`），地址是 `https://anymodel.bot/catalog/index.json`。
+默认使用 `dist/catalog/`，不连接 `anymodel.bot/catalog/`。只有显式设置 `AMB_CATALOG_URL` 才改用远程目录；`AMB_CATALOG_PUBKEY` 指定其公钥，未指定时沿用旧官方目录的公钥。
 
 - **私钥**只放在发布机器上（`AMB_CATALOG_PRIVATE_KEY`），不要提交。丢了就要换公钥并发版，所以要另外备份。
-- **发布**：在发布机器上拉最新的 master，运行 `pack`，把产物放到目录地址下。上架和更新 Bot 都不用发版，除非 Bot 要用新版 App 才有的能力。
+- **远程发布**：在发布机器上拉最新的 master，运行 `pack`，把产物放到目录地址下；只影响显式连接该远程目录的客户端。
 - **`catalog.lock.json`** 留在发布机器上，每次 `pack` 前放回仓库根目录。
 - **官网**：`/bots` 页面的内容来自 `site/src/data/catalog-bots.json`。上架或改了 Bot 的文案后，在 `site/` 运行 `npm run sync` 并提交，再部署官网。
-- **关闭目录**：设环境变量 `AMB_CATALOG=off`，App 不联网，目录是空的。测试就是这样跑的。
+- **关闭目录**：设环境变量 `AMB_CATALOG=off`，内置和远程目录都会关闭。测试默认这样跑，内置目录有独立的离线测试。
 
 本地联调可以不改代码：设环境变量 `AMB_CATALOG_URL` 和 `AMB_CATALOG_PUBKEY`。
 

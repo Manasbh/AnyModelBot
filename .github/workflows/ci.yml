@@ -46,6 +46,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: node scripts/verify-builtin-catalog.mjs --app-root .
       # README 自检（scripts/check-readme.mjs）：素材是否存在与体积、中英结构一致、链接与锚点、禁用词、alt
       - run: npm run docs:check
       - run: npm run i18n:status

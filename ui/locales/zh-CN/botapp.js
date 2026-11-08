@@ -40,7 +40,7 @@ export default {
   errors: {
     catalog_not_found: "找不到这个 Bot。",
     catalog_removed: "这个 Bot 已下架。",
-    catalog_download_failed: "下载失败，请检查网络后重试。",
+    catalog_download_failed: "Bot 文件加载失败，请重试。",
     catalog_failed: "出了点问题，请重试。",
     file_not_found: "找不到这个文件。",
     inbox_too_large: "文件太大了。",

@@ -40,7 +40,7 @@ export default {
   errors: {
     catalog_not_found: "이 봇을 찾을 수 없습니다.",
     catalog_removed: "이 봇은 카탈로그에서 내려갔습니다.",
-    catalog_download_failed: "다운로드에 실패했습니다. 네트워크를 확인하고 다시 시도하세요.",
+    catalog_download_failed: "봇 파일을 불러오지 못했습니다. 다시 시도하세요.",
     catalog_failed: "문제가 발생했습니다. 다시 시도하세요.",
     file_not_found: "파일을 찾을 수 없습니다.",
     inbox_too_large: "파일이 너무 큽니다.",

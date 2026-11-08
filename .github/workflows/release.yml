@@ -279,6 +279,9 @@ jobs:
           fi
           ls -la "$INSTALLER"
 
+      - name: Check bundled official bots offline
+        run: node scripts/verify-builtin-catalog.mjs "${{ matrix.app }}"
+
       # The packaged executable in Node mode (as the app runs DSH): SDK client and DSH from dsh.asar, native
       # modules from resources/dsh/node_modules, and one agent turn through a mock model.
       - name: Check the packaged DSH runtime

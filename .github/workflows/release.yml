@@ -256,6 +256,14 @@ jobs:
       - name: Fetch cua-driver
         run: node scripts/fetch-cua-driver.mjs --target "${{ matrix.os }}/${{ matrix.arch }}"
 
+      # GitHub's Intel runners intermittently drop Apple's HTTP/3 connections.
+      # https://github.com/actions/runner-images/issues/14924
+      - name: Use TCP for Apple services on the Intel runner
+        if: matrix.name == 'mac-x64'
+        run: |
+          printf '%s\n' 'block return out quick proto udp from any to any port 443' | sudo pfctl -f -
+          sudo pfctl -E
+
       - name: Package ${{ matrix.file }}
         env:
           # Secrets are handed only to the OS that uses them; empty ones are unset below.

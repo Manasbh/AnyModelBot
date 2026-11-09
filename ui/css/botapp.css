@@ -112,6 +112,34 @@
 .side-group { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--side-row-px) var(--space-1); }
 .side-group .text { color: var(--fg-2); }
 .thread-new-dot { width: var(--space-2); height: var(--space-2); border-radius: var(--r-full); background: var(--signal); flex: none; }
+/* 侧栏分组（screens/sidebar.js、lib/sections.js）：标题点一下折叠；悬停时右边出现"更多"，盖住折叠箭头（和行上的"更多"盖住时间一样）。
+   标题和行都能拖：落点是一条 2px 的线（--accent），画在两行 / 两个分组之间的空隙里；拖进分组的空处（放到末尾）时标题亮一层底；拖着的那一项变淡 */
+.side-sec { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--side-row-gap); }
+.side-sec-head { position: relative; min-width: 0; }
+.side-sec-head > .side-group { width: 100%; }
+.side-sec-head > .side-group .text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 里面的名字也带 .text（取颜色），别让它在整行的悬停底上再叠一层文字按钮的底 */
+.side-sec-head > .side-group > .text:hover { background: none; }
+.side-sec-head > .side-group .ic { transition: opacity var(--t-fast); }
+.side-sec-more {
+  --ib-size: var(--ctl-sm); --ib-fg: var(--muted);
+  position: absolute; top: var(--space-1-5); right: var(--space-1-5);
+  opacity: 0; transition: opacity var(--t-fast), background var(--t-fast), color var(--t-fast);
+}
+.side-sec-head:hover > .side-sec-more, .side-sec-more:focus-visible, .side-sec-more[aria-expanded="true"] { opacity: 1; }
+.side-sec-head:is(:hover, :has(> .side-sec-more:focus-visible), :has(> .side-sec-more[aria-expanded="true"])) > .side-group .ic { opacity: 0; }
+.side-sec-head.editing { padding: var(--space-2) 0 var(--space-1); }
+.side-sec-head .field { --field-h: var(--ctl-md); }
+.side-sec-drop { padding: var(--space-2) var(--side-row-px); font-size: var(--fs-sm); color: var(--muted); }
+.side-list .drag-src { opacity: var(--o-disabled); }
+.side-list :is(.thread-item.drop-before, .side-sec.drop-before)::before,
+.side-list :is(.thread-item.drop-after, .side-sec.drop-after)::after {
+  content: ""; position: absolute; left: var(--side-row-px); right: var(--side-row-px); height: 2px;
+  border-radius: var(--r-full); background: var(--accent); pointer-events: none;
+}
+.side-list .drop-before::before { top: calc(var(--side-row-gap) / -2 - 1px); }
+.side-list .drop-after::after { bottom: calc(var(--side-row-gap) / -2 - 1px); }
+.side-sec.drop-into > .side-sec-head > .side-group { background: var(--pill); }
 
 @media (max-width: 720px) {
   .botapp.with-side { grid-template-columns: minmax(0, 1fr); }

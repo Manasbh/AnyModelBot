@@ -58,5 +58,22 @@ export default {
   },
   "needs": {
     "other": "対応待ち {count}件"
+  },
+  "section": {
+    "name": "セクション名",
+    "untitled": "新しいセクション",
+    "new": "新しいセクション",
+    "moreFor": "「{name}」セクションのその他の操作",
+    "actionsFor": "「{name}」セクションの操作",
+    "up": "上へ移動",
+    "down": "下へ移動",
+    "delete": "セクションを削除",
+    "deleteTitle": "「{name}」セクションを削除しますか？",
+    "deleteMove": "中のボットとグループチャットは「{name}」に移動します。削除はされません。",
+    "deleteInbox": "今後、新着の Bot は「見つける」にだけ表示されます。",
+    "moveTo": "セクションへ移動",
+    "moveItem": "セクションへ移動…",
+    "moveFor": "「{name}」を移動",
+    "dropHere": "ここにドロップ"
   }
 };

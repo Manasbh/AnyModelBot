@@ -5,11 +5,12 @@
 // 其余设置走服务端 /settings。
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { html, Icon, IconButton, Seg, Switch, Sheet, CopyButton, Skeleton, MenuButton } from "../components/ui.js";
-import { AccountButton, Balance } from "./sidebar.js";
+import { AccountButton, Balance, UpdateNotice } from "./sidebar.js";
 import { PickModel, effortOptions, setEffort, shortModel, showsStrategy, strategyOptions, useEffort } from "../components/model-picker.js";
 import { DomainConnection } from "../components/domain-connection.js";
 import { NotificationsSheet, UsageSheet } from "./account.js";
 import { api } from "../lib/api.js";
+import { UpdateActions, updateDescription } from "../components/app-update.js";
 import { MF_CONSOLE, MF_DOCS_LINK, MF_TOPUP, usd } from "../lib/links.js";
 import { useStore, confirmSheet, failed, saved, toast } from "../lib/store.js";
 import { guide, resetGuide, visibleSteps } from "../lib/guide.js";
@@ -181,7 +182,7 @@ function NoticesSheet({ onClose }) {
 }
 
 /** 设置时的侧栏：返回应用 | 查找设置 | 分页 | 账户 */
-export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, account }) {
+export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, account, update, onUpdateChanged }) {
   const searching = !!query.trim();
   return html`<aside class="side" aria-label=${t("settings.side.label")}>
     <div class="side-top start">
@@ -199,11 +200,12 @@ export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, acc
           onClick=${() => { onQuery(""); onTab(id); }}><${Icon} name=${icon} size="md" /><span>${tabLabel(label)}</span></button>`;
       })}
     </nav>
+    <${UpdateNotice} update=${update} onChanged=${onUpdateChanged} />
     <div class="side-foot"><${AccountButton} username=${username} account=${account} settingsOn onSettings=${() => onTab("general")} onModelflare=${() => { onQuery(""); onTab("modelflare"); }} /></div>
   </aside>`;
 }
 
-export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, mf, onMfChanged, onSettings, models, modelsError, reloadModels, status, update, bots, onOpenBotSettings, account: acct, onAccount }) {
+export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, mf, onMfChanged, onSettings, models, modelsError, reloadModels, status, update, onUpdateChanged, bots, onOpenBotSettings, account: acct, onAccount }) {
   const [s, setS] = useState(null);
   const g = useStore(guide);
   const effort = useEffort();
@@ -255,6 +257,7 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
       const next = await api("/settings", { method: "PUT", body: patch });
       setS(next);
       onSettings?.(next);
+      if (patch.autoDownloadUpdates !== undefined) onUpdateChanged?.();
       saved();
     } catch (e) {
       setS(prev);
@@ -373,6 +376,10 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
         ctl: html`<${Seg} label=${t("settings.rows.close.name")} value=${s.closeToTray} onChange=${(v) => put({ closeToTray: v }, { closeToTray: v })} options=${[[true, t("settings.rows.close.tray")], [false, t("settings.rows.close.quit")]]} />` },
       desktop && s.autostart.supported && { tab: "general", group: "desktop", id: "autostart", name: t("settings.rows.autostart.name"), sub: t("settings.rows.autostart.sub"), keys: t("settings.rows.autostart.keys"),
         ctl: html`<${Switch} label=${t("settings.rows.autostart.name")} value=${s.autostart.on} onChange=${(v) => put({ autostart: v }, { autostart: { ...s.autostart, on: v } })} />` },
+      desktop && { tab: "general", group: "desktop", id: "auto-download-updates", name: t("updates.autoDownload"),
+        sub: t(s.autoUpdateSupported ? "updates.autoDownloadHint" : "updates.manualOnly"), keys: t("settings.rows.version.keys"),
+        ctl: html`<${Switch} label=${t("updates.autoDownload")} value=${s.autoDownloadUpdates !== false} disabled=${!s.autoUpdateSupported}
+          onChange=${(v) => put({ autoDownloadUpdates: v }, { autoDownloadUpdates: v })} />` },
       desktop && { tab: "general", group: "desktop", id: "browser", name: t("settings.rows.browser.name"), sub: t("settings.rows.browser.sub"), keys: t("settings.rows.browser.keys"),
         ctl: html`<button type="button" class="text" onClick=${() => api("/desktop/open-in-browser", { method: "POST", body: {} }).catch(failed)}>${t("common.open")}</button>` },
 
@@ -492,10 +499,9 @@ export function SettingsScreen({ tab, query: q, onQuery: setQ, onTab, focusRow, 
           ${desktop && html`<button type="button" class="text" onClick=${() => api("/desktop/open-data-dir", { method: "POST", body: {} }).catch(failed)}>${t("common.open")}</button>`}` },
 
       { tab: "about", id: "version", name: t("settings.rows.version.name"), keys: t("settings.rows.version.keys"),
-        sub: update && update.latest ? (update.available ? t("settings.rows.version.available", { version: update.latest }) : t("settings.rows.version.latest")) : "",
+        sub: updateDescription(update),
         ctl: html`<span class="val">${status ? status.version : ""}</span>
-          ${update && update.available && html`<a class="text" href=${update.downloadUrl} target="_blank" rel="noopener noreferrer">${t("settings.rows.version.download")}</a>
-            <a class="text" href=${update.releaseUrl} target="_blank" rel="noopener noreferrer">${t("settings.rows.version.notes")}</a>`}` },
+          <${UpdateActions} update=${update} onChanged=${onUpdateChanged} />` },
       { tab: "about", id: "licenses", name: t("settings.rows.licenses.name"), sub: t("settings.rows.licenses.sub"), keys: t("settings.rows.licenses.keys"),
         ctl: html`<button type="button" class="text" onClick=${() => setNotices(true)}>${t("common.view")}</button>` },
       { tab: "about", id: "diagnostics", name: t("settings.rows.diagnostics.name"),

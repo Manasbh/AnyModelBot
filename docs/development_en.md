@@ -76,6 +76,8 @@ Releases: write this version's entry in `CHANGELOG.md`, `CHANGELOG_en.md`, `CHAN
 
 Every release must update the website, relevant documentation and README files in all five languages. Run `npm --prefix site run sync` to synchronize site content. After publishing the GitHub Release and Docker image, follow the [website deployment instructions](../site/README.md) and confirm that the live `/download`, `/changelog` and `/bots` pages show the matching version, download links and descriptions. The release is complete only after the live website is updated too.
 
+In-app updates start with 0.1.29 and use `electron-updater` only in packaged macOS, Windows and Linux AppImage apps. `ui.autoDownloadUpdates` defaults to `true` and is controlled in Settings → General. Downloads only trigger a notification; normal quits do not install updates. Explicit installation checks active chats and background tasks before restarting. Users on 0.1.28 or earlier must manually install an updater-enabled version once. GitHub builds macOS DMGs plus update ZIPs and publishes architecture-specific `latest-${arch}` metadata and blockmaps. Releases become public only after all files upload. CLI, Docker and unpackaged development runs still update manually.
+
 ## Docker
 
 Users run the published image: `docker run -d --name amb -p 3600:3600 -v amb-data:/data ghcr.io/modelflare-ai/anymodel-bot`. To build it from source yourself:

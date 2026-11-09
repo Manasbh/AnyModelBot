@@ -51,7 +51,7 @@ import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./agent/media.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
 import { ConnectionService } from "./agent/connections.js";
-import { UpdateChecker } from "./update-check.js";
+import { UpdateChecker, type DesktopUpdates } from "./update-check.js";
 import { COMPACT_ENDPOINT, serverCompactionEnabled, type CompactEndpoint } from "./agent/server-compaction.js";
 import type { BotSettings } from "./agent/settings.js";
 import { UserSkills } from "./skills/service.js";
@@ -66,6 +66,7 @@ const log = logger("app");
 
 /** 桌面外壳（Electron 主进程）提供的能力；CLI / Docker 下为空 */
 export interface DesktopHooks {
+  updates?: DesktopUpdates;
   autostart(): { supported: boolean; on: boolean };
   setAutostart(on: boolean): void;
   applyZoom(zoom: number): void;
@@ -713,7 +714,7 @@ export class App {
       void pwshProbe.check();
     }
     void this.prewarmAgent();
-    if (this.desktop) this.updates.start();
+    if (this.desktop) (this.desktop.updates ?? this.updates).start();
     this.catalog.on("changed", () => void this.botInstaller.applyTakedowns().catch((e) => log.warn("catalog takedown failed", { err: String(e) })));
     this.catalog.start();
     // 用过的目录 Bot 空闲够久就退出进程，下一条消息再拉起
@@ -767,6 +768,7 @@ export class App {
     this.attention.stop();
     this.offPwsh?.();
     this.updates.stop();
+    this.desktop?.updates?.stop();
     if (this.accountTimer) clearInterval(this.accountTimer);
     if (this.picksTimer) clearInterval(this.picksTimer);
     this.account?.cancelLogin();
@@ -780,6 +782,11 @@ export class App {
     this.store.close();
     this.lock?.release();
     this.lock = undefined;
+  }
+
+  /** 更新只能在前台对话和后台任务都空闲时重启。 */
+  busyForUpdate(): boolean {
+    return this.runtime.busyBots().length > 0 || !!this.web?.busy() || this.store.listRuns({ states: ["running", "settling"], limit: 1 }).length > 0;
   }
 
   get username(): string {

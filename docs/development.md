@@ -76,6 +76,8 @@ npm run test:dsh-bundle  # 用 Electron 跑真实 DSH 集成测试，加载打�
 
 每次发版必须同步官网、相关文档和五种语言的 README。先运行 `npm --prefix site run sync` 同步官网内容；GitHub Release 和 Docker 发布后，按[官网部署说明](../site/README.md)更新线上官网，确认 `/download`、`/changelog` 和 `/bots` 的版本、下载链接与说明一致。只有线上官网也同步完成，才算本次发布完成。
 
+应用内更新从 0.1.29 开始提供，使用 `electron-updater`，只在已打包的 macOS、Windows 和 Linux AppImage 中启用。`ui.autoDownloadUpdates` 默认 `true`，在「设置 → 常规」修改；下载完成只通知，不会在普通退出时安装，点击重启前会检查活动对话和后台任务。0.1.28 及以前的用户需手动安装一次包含更新器的版本。GitHub 构建为 macOS 同时生成 DMG 和更新用 ZIP，并发布按架构区分的 `latest-${arch}` 更新清单及 blockmap；所有文件上传完成后才公开 Release。CLI、Docker 和未打包的开发运行仍手动更新。
+
 ## Docker
 
 用户直接用已发布的镜像：`docker run -d --name amb -p 3600:3600 -v amb-data:/data ghcr.io/modelflare-ai/anymodel-bot`。下面是从源码自己构建：

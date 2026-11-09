@@ -16,6 +16,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "../src/config.js";
 import { App } from "../src/app.js";
+import { DesktopUpdateService } from "../src/desktop-updates.js";
+import { UpdateActionError } from "../src/update-check.js";
 import { findAppRoot } from "../src/magpie/supervisor.js";
 import { initFileLog, logFilePath, logger, registerSecret, setConsoleLog } from "../src/log.js";
 import { normalizeLang, onLangChange, setLangPref, setSystemLang, LANGS, t } from "../src/i18n/index.js";
@@ -30,6 +32,19 @@ let tray: Tray | undefined;
 let entryUrl = "";
 let quitting = false;
 let stopped = false;
+let stopping: Promise<void> | undefined;
+
+function stopCore(): Promise<void> {
+  if (stopped || !core) return Promise.resolve();
+  return stopping ??= core.stop().finally(() => { stopped = true; });
+}
+
+function showUpdates(): void {
+  showWindow();
+  const go = () => void win?.webContents.executeJavaScript('location.hash = "#/settings/about"').catch(() => {});
+  if (win?.webContents.isLoading()) win.webContents.once("did-finish-load", go);
+  else go();
+}
 
 // 图标由 scripts/build-app-icons.py 生成。Windows 窗口和托盘都用多尺寸 ico，系统按当前缩放挑对应的帧；
 // 其他系统窗口用 icon.png（macOS 忽略，Dock 用包里的 icns），托盘用 18px 的 tray.png，高分屏自动换 tray@2x.png
@@ -217,7 +232,42 @@ async function boot(): Promise<void> {
   if (!config.ui.token) config.ui.token = crypto.randomBytes(24).toString("base64url");
   registerSecret(config.ui.token);
   core = new App(config);
+  let updates: DesktopUpdateService | undefined;
+  const supportsUpdates = app.isPackaged && !SMOKE && ["x64", "arm64"].includes(process.arch)
+    && (["darwin", "win32"].includes(process.platform) || (process.platform === "linux" && !!process.env.APPIMAGE));
+  if (supportsUpdates) {
+    const { default: electronUpdater } = await import("electron-updater");
+    const nativeUpdater = electronUpdater.autoUpdater;
+    nativeUpdater.logger = { info: (m) => log.info(String(m)), warn: (m) => log.warn(String(m)), error: (m) => log.error(String(m)) };
+    // 公共 GitHub 更新源不需要安装实例标识；不发送更新器默认生成的 staging ID。
+    nativeUpdater.requestHeaders = { "User-Agent": `anymodel-bot/${app.getVersion()}`, "x-user-staging-id": "" };
+    updates = new DesktopUpdateService(nativeUpdater, {
+      current: app.getVersion(), platform: process.platform, arch: process.arch,
+      autoDownload: config.ui.autoDownloadUpdates,
+      newToken: () => new electronUpdater.CancellationToken(),
+      isBusy: () => !stopped && !!core?.busyForUpdate(),
+      prepareInstall: async () => {
+        if (core?.busyForUpdate()) throw new UpdateActionError("busy");
+        quitting = true;
+        await stopCore();
+      },
+      onReady: (version) => {
+        core?.notice("info", t("desktop.updateReady", { version }));
+        if (Notification.isSupported()) {
+          const notice = new Notification({ title: PRODUCT, body: t("desktop.updateReady", { version }), icon: windowIconPath() });
+          notice.on("click", showUpdates);
+          notice.show();
+        }
+      },
+      onInstallError: () => {
+        dialog.showErrorBox(PRODUCT, t("desktop.updateInstallFailed"));
+        app.relaunch();
+        app.exit(1);
+      },
+    });
+  }
   core.desktop = {
+    updates,
     autostart: () => ({ supported: canAutostart, on: canAutostart && app.getLoginItemSettings().openAtLogin }),
     setAutostart,
     applyZoom: (z) => {
@@ -322,8 +372,7 @@ if (!app.requestSingleInstanceLock()) {
     if (stopped || !core) return;
     e.preventDefault();
     const force = setTimeout(() => app.exit(1), 10_000);
-    core
-      .stop()
+    stopCore()
       .catch((err) => log.error(`退出时出错：${(err as Error).message}`))
       .finally(() => {
         clearTimeout(force);

@@ -9,6 +9,7 @@ import { eventText, isMessenger, isPushChannel } from "../core/types.js";
 import type { PlatformError } from "../channels/messenger/transport.js";
 import { findAppRoot } from "../magpie/supervisor.js";
 import { botAppApi, serveBotAppStatic } from "./botapp.js";
+import { UpdateActionError } from "../update-check.js";
 import { skillsApi } from "./skills.js";
 import { logFilePath, logger, readLogTail, registerSecret } from "../log.js";
 import { diagnosticsReport, safeStatus, testAgent, testModel } from "../diagnostics.js";
@@ -46,6 +47,7 @@ export interface WebServer {
   url: string;
   port: number;
   token: string;
+  busy(): boolean;
   close(): Promise<void>;
 }
 
@@ -389,7 +391,23 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         notices: app.recentNotices,
       });
     }
-    if (p === "/update" && m === "GET") return send(res, 200, app.updates.status());
+    if (p === "/update" && m === "GET") return send(res, 200, (app.desktop?.updates ?? app.updates).status());
+    if (["/update/check", "/update/download", "/update/install"].includes(p) && m === "POST") {
+      try {
+        const updates = app.desktop?.updates;
+        if (!updates) throw new UpdateActionError("unsupported");
+        if (p.endsWith("/check")) await updates.check();
+        else if (p.endsWith("/download")) updates.download();
+        else {
+          if (app.busyForUpdate()) throw new UpdateActionError("busy");
+          updates.install();
+        }
+        return send(res, 200, updates.status());
+      } catch (error) {
+        if (!(error instanceof UpdateActionError)) throw error;
+        return send(res, error.code === "busy" ? 409 : 400, { error: error.code, code: error.code });
+      }
+    }
     if (p === "/models" && m === "GET") {
       try {
         return send(res, 200, { models: await app.runtime.listModels(true) });
@@ -508,6 +526,12 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
           cfg.ui.closeToTray = !!b.closeToTray;
           saveConfigFile(cfg.dataDir, (f) => (f.ui = { ...(f.ui ?? {}), closeToTray: cfg.ui.closeToTray }));
         }
+        if (b.autoDownloadUpdates !== undefined) {
+          if (typeof b.autoDownloadUpdates !== "boolean") throw new HttpError(400, "autoDownloadUpdates must be boolean");
+          cfg.ui.autoDownloadUpdates = b.autoDownloadUpdates;
+          saveConfigFile(cfg.dataDir, (f) => (f.ui = { ...(f.ui ?? {}), autoDownloadUpdates: cfg.ui.autoDownloadUpdates }));
+          app.desktop?.updates?.setAutoDownload(cfg.ui.autoDownloadUpdates);
+        }
         if (b.zoom !== undefined) {
           const z = Number(b.zoom);
           if (!ZOOMS.includes(z)) throw new HttpError(400, t("web.badZoom"));
@@ -544,6 +568,8 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         imageModel: cfg.media.imageModel,
         videoModel: cfg.media.videoModel,
         closeToTray: cfg.ui.closeToTray,
+        autoDownloadUpdates: cfg.ui.autoDownloadUpdates,
+        autoUpdateSupported: !!app.desktop?.updates,
         zoom: cfg.ui.zoom,
         lang: cfg.ui.lang,
         autostart: app.desktop ? app.desktop.autostart() : { supported: false, on: false },
@@ -1462,6 +1488,7 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
     url,
     port: boundPort,
     token,
+    busy: () => live.bots().length > 0 || groups.hasActive(),
     close: () =>
       new Promise<void>((r) => {
         groups.stopAll();

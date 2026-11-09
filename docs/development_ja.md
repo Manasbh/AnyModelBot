@@ -76,6 +76,8 @@ npm run test:dsh-bundle  # build/dsh の実ランタイムを Electron でテス
 
 リリースごとに、公式サイト、関連ドキュメント、全 5 言語の README を更新します。`npm --prefix site run sync` でサイトの内容を同期し、GitHub Release と Docker イメージの公開後、[サイトのデプロイ手順](../site/README.md)に従って本番サイトを更新します。`/download`、`/changelog`、`/bots` のバージョン、ダウンロードリンク、説明が一致していることを確認し、本番サイトの更新まで完了して初めてリリース完了とします。
 
+アプリ内更新は 0.1.29 から、パッケージ済みの macOS、Windows、Linux AppImage で `electron-updater` を使います。`ui.autoDownloadUpdates` は標準で `true` で、「設定 → 一般」で変更できます。ダウンロード後は通知のみで、通常の終了では更新しません。再起動前に実行中のチャットとバックグラウンドタスクを確認します。0.1.28 以前のユーザーは一度手動インストールが必要です。GitHub は macOS の DMG と更新用 ZIP、アーキテクチャ別の `latest-${arch}` メタデータと blockmap を生成し、すべてのファイルのアップロード後に Release を公開します。CLI、Docker、未パッケージの開発実行は手動更新です。
+
 ## Docker
 
 利用者向けコマンドは `docker run -d --name amb -p 3600:3600 -v amb-data:/data ghcr.io/modelflare-ai/anymodel-bot` です。ソースからビルドする場合：

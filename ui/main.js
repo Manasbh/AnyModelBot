@@ -142,9 +142,9 @@ function App() {
   const [route, setRoute] = useState(parseHash);
   const [mf, mfErr, reloadMf] = useLoader(() => api("/modelflare"));
   const [status, , reloadStatus] = useLoader(() => api("/status"));
-  // 新版本提示：服务端在后台查 GitHub，这里只读结果（启动约 20 秒后才有第一次结果，所以隔一分钟看一次）
+  // 更新检查和下载在桌面主进程进行；这里只读状态，下载时更频繁地刷新进度。
   const [update, , reloadUpdate] = useLoader(() => api("/update"));
-  useInterval(reloadUpdate, 60_000);
+  useInterval(reloadUpdate, update?.supported ? (update.phase === "downloading" ? 1000 : 5000) : 60_000);
   const [settings, , reloadSettings, setSettings] = useLoader(() => api("/settings"));
   // 语言偏好以服务端配置为准（可能在另一个窗口 / 浏览器里改过）；本机缓存只管首帧
   useEffect(() => {
@@ -481,9 +481,9 @@ function App() {
   return html`<div class=${`app${panelBot ? " with-panel" : ""}${searchOpen ? " searching" : ""}${fromSearch && route.messageId ? " search-reading" : ""}`} ref=${appRef}>
     ${view === "settings"
       ? html`<${SettingsSide} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} onBack=${() => openChat()}
-          username=${status && status.username} account=${managed ? account : null} />`
+          username=${status && status.username} account=${managed ? account : null} update=${update} onUpdateChanged=${reloadUpdate} />`
       : html`<${Sidebar} bots=${bots} botsError=${botsErr} reloadBots=${reloadBots} selectedId=${bot && bot.id} view=${view === "chat" && bots && !bots.length ? "new" : view}
-          previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null} update=${update}
+          previews=${previews} pending=${pending} working=${working} needs=${needs} username=${status && status.username} account=${managed ? account : null} update=${update} onUpdateChanged=${reloadUpdate}
           onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
           groups=${groups} groupsLoaded=${!!groupsData} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup}
           catalog=${catalog} catalogId=${route.catalogId} onDiscover=${openDiscover} onOpenCatalog=${openCatalog}
@@ -508,7 +508,7 @@ function App() {
         onCreated=${onCreated} onCancel=${bots && bots.length ? () => openChat() : null} />`}
       ${view === "settings" && html`<${SettingsScreen} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} focusRow=${route.row}
         mf=${mf} onMfChanged=${reloadMf} onSettings=${setSettings} models=${models} modelsError=${modelsError} reloadModels=${reloadModels}
-        status=${status} update=${update} bots=${bots} onOpenBotSettings=${openBotSettings} account=${managed ? account : null} onAccount=${setAccount} />`}
+        status=${status} update=${update} onUpdateChanged=${reloadUpdate} bots=${bots} onOpenBotSettings=${openBotSettings} account=${managed ? account : null} onAccount=${setAccount} />`}
       ${view === "needs" && html`<${NeedsYouScreen} multiBot=${!!bots && bots.length > 1} onChanged=${pollWorking} onOpenChat=${openChat} onRelogin=${relogin} onOpenBotSettings=${openBotSettings} />`}
       ${view === "bot-settings" && routedBot && html`<${BotSettingsScreen} key=${routedBot.id} bot=${routedBot} section=${route.section}
         models=${models} modelsError=${modelsError} reloadModels=${reloadModels} defaultModel=${settings && settings.defaultModel}

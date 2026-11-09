@@ -4,6 +4,14 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.29 - 2026-11-09
+
+### New
+
+- **Automatic update downloads, enabled by default:** Installed desktop apps download new versions in the background, then offer Restart and update in the sidebar and Settings → About. Turn automatic downloads off in Settings → General to download manually.
+- Installation requires your click and waits until you have no active chats or background tasks. Normal quits do not install updates automatically.
+- Users on 0.1.28 or earlier must manually install this version once before using in-app updates. Supported on macOS, Windows and Linux AppImage; Docker and source deployments still update manually.
+
 ## 0.1.28 - 2026-11-08
 
 ### New

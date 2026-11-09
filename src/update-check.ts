@@ -1,6 +1,6 @@
 /**
- * 新版本提示（桌面版）：定时问 GitHub 最新发布的版本号，比当前版本新就告诉界面（侧栏一行提示，设置 › 关于）。
- * 只提示，不下载、不安装：自动更新没有启用（release.yml），新版本由用户自己下载安装。
+ * 手动更新的回退：没有原生更新器的桌面运行方式只查询版本、提供安装包链接。
+ * 已安装的 macOS / Windows / AppImage 使用 desktop-updates.ts 管理下载和重启安装。
  * 请求里只有当前版本号（User-Agent），不带账户和对话内容。Docker 和命令行不查，它们不靠安装包升级。
  */
 import { logger } from "./log.js";
@@ -49,6 +49,29 @@ export interface UpdateStatus {
   downloadUrl: string;
   /** 这个版本的发布页（更新内容） */
   releaseUrl: string;
+  supported?: boolean;
+  autoDownload?: boolean;
+  phase?: "idle" | "checking" | "available" | "downloading" | "ready" | "installing" | "error";
+  percent?: number;
+  transferred?: number;
+  total?: number;
+  error?: "check_failed" | "download_failed" | "install_failed" | "busy";
+  busy?: boolean;
+}
+
+export class UpdateActionError extends Error {
+  constructor(readonly code: "unsupported" | "not_ready" | "busy") { super(code); }
+}
+
+/** 只有已安装的桌面应用提供；CLI / Docker 保留版本查询接口，不下载应用更新。 */
+export interface DesktopUpdates {
+  status(): UpdateStatus;
+  start(): void;
+  stop(): void;
+  check(): Promise<void>;
+  download(automatic?: boolean): void;
+  install(): void;
+  setAutoDownload(on: boolean): void;
 }
 
 export class UpdateChecker {

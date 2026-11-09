@@ -76,6 +76,8 @@ npm run test:dsh-bundle  # 패키징된 build/dsh의 실제 DSH 통합 테스트
 
 버전을 배포할 때마다 공식 사이트, 관련 문서와 5개 언어의 README를 함께 업데이트합니다. `npm --prefix site run sync`로 사이트 내용을 동기화하고 GitHub Release와 Docker 이미지 게시 후 [사이트 배포 안내](../site/README.md)에 따라 운영 사이트를 갱신합니다. `/download`, `/changelog`, `/bots`의 버전, 다운로드 링크와 설명이 일치하는지 확인하며 운영 사이트까지 반영되어야 배포가 완료됩니다.
 
+앱 내 업데이트는 0.1.29부터 패키징된 macOS, Windows, Linux AppImage에서 `electron-updater`로 제공합니다. `ui.autoDownloadUpdates`의 기본값은 `true`이며 설정 → 일반에서 변경합니다. 다운로드 후 알림만 표시하고 일반 종료 시에는 설치하지 않습니다. 재시작 전에 실행 중인 대화와 백그라운드 작업을 확인합니다. 0.1.28 이전 사용자는 업데이트 기능이 포함된 버전을 한 번 직접 설치해야 합니다. GitHub 빌드는 macOS DMG와 업데이트용 ZIP, 아키텍처별 `latest-${arch}` 메타데이터와 blockmap을 만들고 모든 파일 업로드 후 Release를 공개합니다. CLI, Docker와 패키징하지 않은 개발 실행은 수동 업데이트를 유지합니다.
+
 ## Docker
 
 사용자는 게시된 이미지로 실행합니다: `docker run -d --name amb -p 3600:3600 -v amb-data:/data ghcr.io/modelflare-ai/anymodel-bot`. 소스에서 직접 빌드하려면:

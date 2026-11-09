@@ -283,7 +283,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 - **It answers to you.** By default a bot replies only to its owner (the WeChat account that scanned the QR code; on Feishu, Telegram, Slack and Discord, the first person to message it after you connect it, which is you) and the people you allow. Anyone else gets a one-line notice and no model is called; you let them in from the info panel, or by replying `yes <code>` in chat.
 - **Replies are not lost.** A reply is saved locally before it is sent; network errors are retried, sending resumes after a restart, and when WeChat's 24-hour window has closed the reply waits and arrives with your next message.
 - **Telemetry kept off.** Telemetry in the bundled computer-use driver is switched off, and the built-in gateway runs with auto-update disabled.
-- **You decide when to update.** The desktop app asks GitHub for the latest version number every 6 hours. The request carries only your current version. When a new version is out, the sidebar tells you, and you download and install it yourself.
+- **In-app updates.** From 0.1.29, installed desktop apps enable Settings → General → Automatically download updates by default. New versions download in the background and offer Restart and update when ready. Installation requires your click and no running tasks; turn the setting off for manual downloads. Users on 0.1.28 or earlier must manually install 0.1.29 or later once. Docker and source deployments still update manually.
 - **Light, dark or follow the system.** Six bot characters, and their eyes follow your pointer.
 - **Tray and autostart.** Close the window to hide to the tray; autostart is available on macOS and Windows.
 

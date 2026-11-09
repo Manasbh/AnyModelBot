@@ -9,6 +9,7 @@ import { html, Icon, IconButton, Menu, Popover, Skeleton } from "../components/u
 import { BotAvatar } from "../components/avatar.js";
 import { GuidePill } from "../components/guide.js";
 import { api } from "../lib/api.js";
+import { updateDescription, updateError } from "../components/app-update.js";
 import { confirmSheet, failed, toast, useStore } from "../lib/store.js";
 import { deleteBot } from "../lib/bots.js";
 import { useListPresence } from "../design/motion.js";
@@ -68,18 +69,32 @@ function LowBalance({ account }) {
   </a>`;
 }
 
-/** 有新版本：点这一行在浏览器里下载这台机器对应的安装包；叉掉后这个版本不再提示，设置 › 关于 里还能找到 */
-function UpdateNotice({ update }) {
+/** 更新提示：支持的桌面版直接下载/重启；手动分发继续打开安装包链接。 */
+export function UpdateNotice({ update, onChanged }) {
   const { updateDismissed } = useStore(prefs);
-  if (!update || !update.available || updateDismissed === update.latest) return null;
-  const text = t("sidebar.update", { version: update.latest });
+  const [pending, setPending] = useState(false);
+  const ready = update?.phase === "ready";
+  const key = ready ? `${update.latest}:ready` : update?.latest;
+  if (!update || !update.available || updateDismissed === key) return null;
+  const working = ["checking", "downloading", "installing"].includes(update.phase);
+  const text = update.supported ? updateDescription(update) : t("sidebar.update", { version: update.latest });
+  const act = async () => {
+    if (pending || working) return;
+    setPending(true);
+    try { await api(`/update/${ready ? "install" : "download"}`, { method: "POST", body: {} }); }
+    catch (error) { toast(updateError(error), "err"); }
+    finally { setPending(false); onChanged?.(); }
+  };
   return html`<div class="side-note" role="status">
-    <a class="side-note-main" href=${update.downloadUrl} target="_blank" rel="noopener noreferrer" title=${text}><span class="dot new"></span><span class="v">${text}</span></a>
-    <${IconButton} icon="close" size="xs" iconSize="xs" label=${t("sidebar.updateDismiss")} onClick=${() => setPrefs({ updateDismissed: update.latest })} />
+    ${update.supported
+      ? html`<button type="button" class="side-note-main" disabled=${pending || working || (ready && update.busy)} onClick=${act} title=${ready && update.busy ? t("updates.busy") : text}>
+          <span class="dot new"></span><span class="v">${ready ? t("updates.restart") : text}</span></button>`
+      : html`<a class="side-note-main" href=${update.downloadUrl} target="_blank" rel="noopener noreferrer" title=${text}><span class="dot new"></span><span class="v">${text}</span></a>`}
+    <${IconButton} icon="close" size="xs" iconSize="xs" label=${t("sidebar.updateDismiss")} onClick=${() => setPrefs({ updateDismissed: key })} />
   </div>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupsLoaded = true, groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog, searchQuery = "", searchOpen = false, onSearchQuery, onOpenSearch, onCloseSearch }) {
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onUpdateChanged, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupsLoaded = true, groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog, searchQuery = "", searchOpen = false, onSearchQuery, onOpenSearch, onCloseSearch }) {
   const lang = useLang();
   const seen = useStore(catalogSeen);
   const fold = useStore(catalogFold);
@@ -215,7 +230,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
         </span>
       </button>`)}`}
     </nav>
-    <${UpdateNotice} update=${update} />
+    <${UpdateNotice} update=${update} onChanged=${onUpdateChanged} />
     <${LowBalance} account=${account} />
     ${bots && bots.length > 0 && html`<${GuidePill} onGo=${onGuide} />`}
     <div class="side-foot"><${AccountButton} username=${username} account=${account} onSettings=${() => onOpenSettings()} onModelflare=${() => onOpenSettings("modelflare")} /></div>

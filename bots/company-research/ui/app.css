@@ -61,3 +61,9 @@
   .cr-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
   .cr-wide { grid-column: auto; }
 }
+
+/* 出错信息：一句话 + 折叠的原文，长 JSON 在窄栏里换行、限高滚动 */
+.cr-error { display: block; }
+.cr-error-details { margin-top: var(--space-1-5); font-size: var(--fs-xs); min-width: 0; }
+.cr-error-details > summary { cursor: pointer; color: var(--muted); }
+.cr-error-details pre { margin: var(--space-1) 0; max-height: 10em; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--code); }

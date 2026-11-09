@@ -20,6 +20,9 @@ export default {
     openUrlConfirm: "Open",
     removed: "This bot was removed from the catalog. Your data is still here.",
     removedSecurity: "This bot was removed for security reasons and its skills are disabled. Your data is still here.",
+    starters: "Try one of these",
+    more: "Show more",
+    less: "Show less",
   },
   info: { what: "What it does", skills: "Skills used", perms: "Permissions", settings: "Bot settings" },
   perm: {

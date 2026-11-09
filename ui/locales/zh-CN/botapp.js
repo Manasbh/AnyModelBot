@@ -20,6 +20,9 @@ export default {
     openUrlConfirm: "打开",
     removed: "这个 Bot 已下架，你的数据还在。",
     removedSecurity: "这个 Bot 因安全原因已下架，它的技能已经停用，你的数据还在。",
+    starters: "可以这样开始",
+    more: "展开",
+    less: "收起",
   },
   info: { what: "能做什么", skills: "用到的技能", perms: "需要的权限", settings: "机器人设置" },
   perm: {

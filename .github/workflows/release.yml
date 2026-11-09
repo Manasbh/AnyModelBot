@@ -26,10 +26,14 @@
 #   into resources/dsh: one dsh.asar (all JavaScript, ~10k files) plus a node_modules/ with only the
 #   native packages (~55 files), which keeps the Windows installer fast (few files to extract and scan).
 #
-# Code signing / notarization: optional repository secrets. Without them the build still succeeds:
-#   macOS is ad-hoc signed (Apple Silicon refuses to launch unsigned code) but not notarized, so
-#   Gatekeeper asks users to allow it in System Settings > Privacy & Security; Windows is unsigned,
-#   so SmartScreen warns.
+# Code signing / notarization: repository secrets. A tag (release) build of a macOS installer fails
+#   unless it is signed with a Developer ID *and* notarized: after packaging, the app and the app inside
+#   the shipped DMG must pass `codesign --verify`, `xcrun stapler validate` and
+#   `spctl --assess` with "source=Notarized Developer ID" (electron-builder only logs a warning and
+#   carries on when it cannot build notarization options, so the build exit code alone proves nothing).
+#   Manual test runs may still go without the secrets: macOS is then ad-hoc signed (Apple Silicon
+#   refuses to launch unsigned code) but not notarized, so Gatekeeper asks users to allow it in
+#   System Settings > Privacy & Security; Windows is unsigned, so SmartScreen warns.
 #     CSC_LINK                     macOS: Developer ID Application certificate, base64 of the .p12
 #     CSC_KEY_PASSWORD             macOS: password of that .p12
 #     APPLE_ID                     notarization: Apple ID e-mail                 \ used only together
@@ -40,6 +44,10 @@
 #   (e.g. `base64 -i cert.p12 | gh secret set CSC_LINK`). On macOS everything inside the .app is
 #   signed with the hardened runtime, including the bundled magpie, cua-driver and dsh native modules.
 #   Certificates kept in an HSM / cloud signing service need a custom win.sign setup instead.
+#
+# Debug packages (developer tools enabled, file names with "-debug-"): only from a manual run with
+#   debug_build=true, never on a tag, and every build checks that the packaged package.json carries the
+#   flavour it was built as (scripts/check-build-flavor.mjs), so a debug package cannot be released.
 #
 # electron-updater uses architecture-specific channels (latest-x64 / latest-arm64).
 # Build installers, macOS update ZIPs, metadata and blockmaps with --publish never;
@@ -61,6 +69,10 @@ on:
         description: "Installers to build: all, or a comma-separated list (mac-arm64,mac-x64,win-x64,win-arm64,linux-x64,linux-arm64)"
         type: string
         default: all
+      debug_build:
+        description: "Build developer packages (developer tools enabled, '-debug-' in file names). Never allowed on a tag."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -100,7 +112,16 @@ jobs:
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+          DEBUG_BUILD: ${{ inputs.debug_build && 'true' || 'false' }}
         run: |
+          if [ "$REF_TYPE" = tag ] && [ "$DEBUG_BUILD" = true ]; then
+            echo "::error::Debug packages cannot be built on a tag: a tag run publishes a GitHub Release"
+            exit 1
+          fi
+          if node -e 'process.exit(require("./package.json").ambDebugBuild === undefined ? 0 : 1)'; then :; else
+            echo "::error::package.json must not set ambDebugBuild; debug packages set it only through debug_build"
+            exit 1
+          fi
           version=$(node -p 'require("./package.json").version')
           if [ "$REF_TYPE" = tag ] && [ "$REF_NAME" != "v$version" ]; then
             echo "::error::Tag $REF_NAME does not match package.json version $version (expected tag v$version)"
@@ -154,8 +175,9 @@ jobs:
         shell: bash
     env:
       EXPECTED_PLATFORM: ${{ matrix.os }}-${{ matrix.arch }}
-      # artifactName in package.json: anymodel-bot-${version}-${os}-${arch}.${ext}
-      INSTALLER: release/anymodel-bot-${{ needs.meta.outputs.version }}-${{ matrix.file }}
+      DEBUG_BUILD: ${{ inputs.debug_build && github.ref_type != 'tag' && '1' || '' }}
+      # artifactName in package.json: anymodel-bot-${version}-${os}-${arch}.${ext} (debug: anymodel-bot-${version}-debug-${os}-${arch}.${ext})
+      INSTALLER: release/anymodel-bot-${{ needs.meta.outputs.version }}-${{ inputs.debug_build && github.ref_type != 'tag' && 'debug-' || '' }}${{ matrix.file }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -285,6 +307,18 @@ jobs:
           for v in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID WIN_CSC_LINK WIN_CSC_KEY_PASSWORD ELECTRON_BUILDER_COMPRESSION_LEVEL; do
             [ -n "${!v}" ] || unset "$v"
           done
+          if [ -n "$DEBUG_BUILD" ]; then
+            args+=(-c.extraMetadata.ambDebugBuild=true '-c.artifactName=anymodel-bot-${version}-debug-${os}-${arch}.${ext}')
+          fi
+          # A release must not reach users without a Developer ID signature and notarization.
+          if [ "${{ github.ref_type }}" = tag ] && [ "${{ matrix.os }}" = darwin ]; then
+            for v in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+              if [ -z "${!v:-}" ]; then
+                echo "::error::$v is not set: a release ${{ matrix.file }} must be signed and notarized"
+                exit 1
+              fi
+            done
+          fi
           if [ "${{ matrix.os }}" = darwin ] && [ -z "${CSC_LINK:-}" ]; then
             echo "::warning::CSC_LINK is not set: ${{ matrix.file }} is ad-hoc signed and not notarized"
             # Notarizing an ad-hoc signed app can only fail.
@@ -319,6 +353,43 @@ jobs:
             echo "::error::Missing update metadata: $metadata"
             exit 1
           fi
+
+      # The installer users download: Developer ID signature, stapled notarization ticket and a Gatekeeper
+      # verdict of "Notarized Developer ID", for the packaged app and for the app inside the DMG.
+      # Required on tags; on manual runs it is checked whenever the app carries a Developer ID signature.
+      - name: Verify macOS signature and notarization
+        if: matrix.os == 'darwin'
+        env:
+          APP_EXE: ${{ matrix.app }}
+          REQUIRE_NOTARIZED: ${{ github.ref_type == 'tag' && '1' || '' }}
+        run: |
+          app="${APP_EXE%/Contents/MacOS/*}"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          if ! codesign -dv --verbose=4 "$app" 2>&1 | grep -q '^Authority=Developer ID Application'; then
+            if [ -n "$REQUIRE_NOTARIZED" ]; then
+              echo "::error::$app is not signed with a Developer ID Application certificate"
+              exit 1
+            fi
+            echo "::warning::$app has no Developer ID signature (test build): Gatekeeper will block it"
+            exit 0
+          fi
+          assess() {
+            xcrun stapler validate "$1"
+            out=$(spctl --assess --type execute --verbose=4 "$1" 2>&1) || { echo "$out"; echo "::error::Gatekeeper rejects $1"; return 1; }
+            echo "$out"
+            grep -q 'source=Notarized Developer ID' <<<"$out" || { echo "::error::$1 is signed but not notarized"; return 1; }
+          }
+          assess "$app"
+          mnt=$(mktemp -d)
+          hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$INSTALLER" > /dev/null
+          trap 'hdiutil detach "$mnt" -quiet || true' EXIT
+          inside=$(find "$mnt" -maxdepth 1 -name '*.app' -print -quit)
+          [ -n "$inside" ] || { echo "::error::No .app inside $INSTALLER"; exit 1; }
+          assess "$inside"
+
+      # Release builds must have developer tools off; debug builds must say so (electron/main.ts reads it).
+      - name: Check the build flavour
+        run: node scripts/check-build-flavor.mjs "${{ matrix.app }}" "${{ env.DEBUG_BUILD && 'debug' || 'release' }}"
 
       - name: Check bundled official bots offline
         run: node scripts/verify-builtin-catalog.mjs "${{ matrix.app }}"

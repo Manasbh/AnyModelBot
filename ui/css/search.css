@@ -5,12 +5,12 @@
   .search-head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--page-gutter); }
   .search-input { flex: 1; min-width: 0; font-size: var(--fs-lg); background: transparent; color: var(--fg); border: 0; outline: none; }
   .search-input:focus-visible { box-shadow: var(--ring); border-radius: var(--r-sm); }
-  .search-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0 var(--page-gutter) var(--space-3); border-bottom: 1px solid var(--line-2); }
+  .search-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0 var(--page-gutter) var(--space-3); }
   .search-filter { min-width: 0; max-width: 100%; }
   .search-filter-toggle { display: none; }
   .search-filter .field { max-width: 100%; min-width: 0; font-size: var(--fs-sm); }
   .search-results { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-3) var(--page-gutter) var(--space-8); }
-  .search-result { display: grid; width: 100%; gap: var(--space-2); padding: var(--space-4) var(--space-2); border-bottom: 1px solid var(--line-2); text-align: start; color: var(--fg); border-radius: var(--r-sm); }
+  .search-result { display: grid; width: 100%; gap: var(--space-2); padding: var(--space-3) var(--space-3); text-align: start; color: var(--fg); border-radius: var(--r-md); }
   .search-result:hover, .search-result:focus-visible { background: var(--well); }
   .search-result:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .search-result-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); font-size: var(--fs-sm); }
@@ -26,7 +26,7 @@
   .search-names { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
   .search-count { display: flex; align-items: center; gap: var(--space-2); margin-block: var(--space-3); }
   .search-more, .history-page { align-self: center; margin: var(--space-4) auto; }
-  .chat-tools { flex: none; margin-top: var(--head-h); padding: 0 var(--head-px); border-bottom: 1px solid var(--line-2); background: var(--surface); }
+  .chat-tools { flex: none; margin-top: var(--head-h); padding: 0 var(--head-px); background: var(--surface); }
   .has-chat-tools .chat-col { padding-top: var(--space-4); }
   .has-chat-tools .chat-scroll { scroll-padding-top: var(--space-4); }
   .conversation-find { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) 0; }

@@ -31,6 +31,7 @@
     "electron:dev": "npm run build && electron .",
     "dist": "npm run i18n:check && npm run build && node scripts/prepare-dsh.mjs && node scripts/bundle-dsh.mjs && node scripts/build-magpie.mjs --target current && node scripts/fetch-cua-driver.mjs --target current && electron-builder",
     "electron:smoke": "npm run build && node scripts/electron-smoke.mjs",
+    "dist:debug": "node scripts/dist-debug.mjs",
     "dist:linux": "npm run i18n:check && npm run build && node scripts/prepare-dsh.mjs --os linux --cpu x64 && node scripts/bundle-dsh.mjs --os linux --cpu x64 && node scripts/build-magpie.mjs --target linux/amd64,linux/arm64 && node scripts/fetch-cua-driver.mjs --target linux/x64,linux/arm64 && electron-builder --linux",
     "dist:mac": "npm run i18n:check && npm run build && node scripts/build-magpie.mjs --target darwin/amd64,darwin/arm64 && node scripts/fetch-cua-driver.mjs --target darwin/x64,darwin/arm64 && node scripts/prepare-dsh.mjs --os darwin --cpu arm64 && node scripts/bundle-dsh.mjs --os darwin --cpu arm64 && electron-builder --mac dmg zip --arm64 && node scripts/prepare-dsh.mjs --os darwin --cpu x64 && node scripts/bundle-dsh.mjs --os darwin --cpu x64 && electron-builder --mac dmg zip --x64",
     "dist:win": "npm run i18n:check && npm run build && node scripts/build-magpie.mjs --target windows/amd64,windows/arm64 && node scripts/fetch-cua-driver.mjs --target win32/x64,win32/arm64 && node scripts/prepare-dsh.mjs --os win32 --cpu x64 && node scripts/bundle-dsh.mjs --os win32 --cpu x64 && electron-builder --win nsis --x64 && node scripts/prepare-dsh.mjs --os win32 --cpu arm64 && node scripts/bundle-dsh.mjs --os win32 --cpu arm64 && electron-builder --win nsis --arm64",
@@ -72,6 +73,14 @@
     "appId": "dev.anymodel.bot",
     "productName": "anymodel bot",
     "artifactName": "anymodel-bot-${version}-${os}-${arch}.${ext}",
+    "protocols": [
+      {
+        "name": "AnyModelBot",
+        "schemes": [
+          "anymodelbot"
+        ]
+      }
+    ],
     "publish": {
       "provider": "github",
       "owner": "modelflare-ai",

@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import crypto from "node:crypto";
+import { firstUseModel } from "./account/first-model.js";
+import { CuPermissions, type CuPermissionHooks } from "./agent/cu-permissions.js";
 import { saveConfigFile, type AppConfig, type ReasoningEffort } from "./config.js";
 import { Store, type Bot, type ChannelAccount } from "./store/db.js";
 import { OpenAICompatClient, type ModelClient } from "./llm/client.js";
@@ -86,9 +89,20 @@ export interface DesktopHooks {
   fetch?: typeof fetch;
   /** 系统给这个地址用的代理（Electron resolveProxy：系统设置和 PAC），PAC 写法，如 "PROXY 127.0.0.1:7890" 或 "DIRECT" */
   resolveProxy?(url: string): Promise<string>;
+  /**
+   * 桌面版注册的应用链接（anymodelbot://login-complete）：浏览器里的登录成功页用它把用户带回应用。
+   * 只有桌面版有；命令行、Docker 没有，成功页就不去唤起本机可能装着的另一个客户端。
+   */
+  appLink?: string;
+  /** macOS 桌面版：电脑操作需要的系统权限（辅助功能、屏幕录制），见 agent/cu-permissions.ts */
+  cuPermissions?: CuPermissionHooks;
+  /** 退出并重新打开应用（系统要求重启后权限才生效时；聊天、任务和输入草稿都已保存） */
+  relaunch?(): void;
 }
 
 export interface ModelflareStatus {
+  setupRequired?: boolean;
+  keyChangeNotice?: string;
   /** managed：经内置网关连接模型；external：使用环境变量指定的端点（开发/测试），界面不做连接管理 */
   mode: "managed" | "external";
   /** 连上了 Modelflare */
@@ -196,6 +210,8 @@ export class App {
   web: WebServer | undefined;
   private catalogSweep: NodeJS.Timeout | undefined;
   desktop: DesktopHooks | undefined;
+  /** macOS 桌面版：电脑操作的系统权限（钩子由 Electron 主进程提供；其他运行方式一律放行） */
+  readonly cuPermissions = new CuPermissions(() => this.desktop?.cuPermissions);
   /** Modelflare 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
   account!: AccountManager;
   /** 故障排查页最近一次"测试模型 / 测试代理"的结果（复制诊断信息时带上） */
@@ -276,6 +292,7 @@ export class App {
       contextWindow: async (model) => (await this.infoOf(model))?.context,
       // 桌面版：代理执行的命令用系统代理（环境里没设代理时）；命令行、Docker 只认环境变量
       systemProxy: async (url) => this.desktop?.resolveProxy?.(url),
+      cuPermissions: this.cuPermissions,
       // 代理的对话接口按 Modelflare 目录选（Responses / Anthropic Messages / Chat）；外部端点只当它会 Chat
       apiInfo: async (model) => {
         if (!this.magpie) return undefined;
@@ -494,11 +511,20 @@ export class App {
       issuer: modelflareIssuer(),
       vault: AccountVault.at(this.config.dataDir, this.desktop?.secretBox),
       store: this.store,
+      appLink: () => this.desktop?.appLink,
+      logo: () => {
+        try {
+          return fs.readFileSync(path.join(findAppRoot(), "assets", "icon.png"));
+        } catch {
+          return undefined;
+        }
+      },
       alerts: () => ({ lowBalanceUsd: this.config.modelflare.lowBalanceUsd, push: this.config.modelflare.lowBalancePush }),
       hooks: {
         connectKey: async (key) => {
           const r = await this.connectModelflare(key, this.config.modelflare.line);
           if (!r.ok) throw new Error(r.message);
+          this.store.deleteKV("connection.setup");
         },
         disconnect: () => this.disconnectModelflare(),
         setBotKey: async (botId, key) => {
@@ -521,8 +547,9 @@ export class App {
           const r = await verifyModelflareKey(modelflareBaseUrl(line), key, { line });
           return !r.ok && r.code === "invalid_key";
         },
-        alert: (text, push) => {
-          this.notice("warn", text);
+        alert: (text, push, kind) => {
+          // 低余额已在侧栏账户区常驻显示：应用内不重复提醒同一状态；其他账户提醒（授权被撤销、Key 重签）照常
+          if (kind !== "low_balance") this.notice("warn", text);
           if (push) void this.pushToOwner(text);
         },
       },
@@ -806,7 +833,8 @@ export class App {
     const line = this.config.modelflare.line;
     if (!this.magpie) return { mode: "external", connected: true, official: false, keyTail: "", line, baseUrl: this.config.magpie.externalBaseUrl, gateway: "external" };
     const info = this.magpie.modelflareInfo();
-    return { mode: "managed", connected: info.connected, official: this.magpie.officialProviderIds().length > 0, keyTail: info.keyTail, line, baseUrl: info.baseUrl || modelflareBaseUrl(line), gateway: this.magpie.state };
+    return { mode: "managed", connected: info.connected, official: this.magpie.officialProviderIds().length > 0, keyTail: info.keyTail, line, baseUrl: info.baseUrl || modelflareBaseUrl(line), gateway: this.magpie.state,
+      setupRequired: this.store.getKV("connection.setup") === "1", keyChangeNotice: this.store.getKV("connection.notice") || "" };
   }
 
   // ---------- 官方 API（用户自己的 Key，src/official-providers.ts） ----------
@@ -823,9 +851,13 @@ export class App {
     if (!listed.ok) return { ok: false, ...officialFailure(p, listed.error, key) };
     const picks = officialPicks(listed.models);
     await this.magpie.connectOfficial(p, key, picks);
+    // 保存成功后才记：换了 Key / 服务时在主界面顶部提示一次（界面只拿到一个随机提示 ID，拿不到 Key 或摘要）
+    this.noteConnection(`official:${p.id}`, id, key);
+    this.store.deleteKV("connection.setup");
     this.modelInfoCache = undefined;
     log.info("official API connected", { provider: p.id, models: picks.length });
     await this.runtime.listModels(true).catch(() => []);
+    await this.chooseFirstModel();
     void this.prewarmAgent();
     return { ok: true, models: picks };
   }
@@ -872,12 +904,70 @@ export class App {
     const r = await verifyModelflareKey(baseUrl, apiKey.trim(), { line });
     if (!r.ok) return r;
     await this.magpie.connectModelflare(apiKey, baseUrl, this.allowedModelflareUrls(), this.requestHeaders(), r.chatModels);
+    // Modelflare 账户算一种服务：重新登录、换账号签发的新设备 Key 都是同一个模型目录，不算换了服务
+    this.noteConnection("modelflare", "modelflare", "account");
     this.modelInfoCache = undefined;
     this.setModelflareLineConfig(line);
     await this.runtime.listModels(true).catch(() => []);
+    await this.chooseFirstModel();
     // 刚连上：现在才有模型可用，把代理进程也提前拉起来（首次启动可能要几分钟）
     void this.prewarmAgent();
     return r;
+  }
+
+  /**
+   * 首次使用的默认模型（规则见 account/first-model.ts）：只在全局默认还空着、而且以前没自动选过时选一次。
+   * 已有的全局、机器人、会话里的选择都不动；之后用户清空或改掉默认，也不会再被自动改回来。
+   */
+  async chooseFirstModel(): Promise<string> {
+    if (this.config.llm.defaultModel) return this.config.llm.defaultModel;
+    if (this.store.getKV("llm.firstModelChosen")) return "";
+    const models = await this.runtime.listModels().catch(() => [] as string[]);
+    const info = await this.modelInfo().catch(() => ({}));
+    const pick = firstUseModel(models, info, this.account?.knownBalanceUsd());
+    log.info("first-use model", { model: pick.model || "(none)", candidates: pick.reviewed.length, passed: pick.reviewed.filter((r) => r.passed).length });
+    if (pick.model) {
+      this.setDefaultModel(pick.model);
+      this.store.setKV("llm.firstModelChosen", pick.model);
+    }
+    return pick.model;
+  }
+
+  /**
+   * 记下这次接入的模型来源，判断要不要提示"已切换 Key 配置"（第 19 项）。
+   * 只在"原来能用的来源被换掉"时提示：同一家换了 Key，或者以前接过的来源现在已经不在了（比如退出账户后改用自己的 Key）。
+   * 在原有来源之外再加一个（自己的 Key 用户又登录了 Modelflare）不提示；第一次接入不提示；同一配置关掉过的不再提示。
+   * 只存 HMAC（本机随机盐），不存 Key；界面只拿到随机提示 ID。
+   */
+  private noteConnection(source: string, scope: string, secret: string): void {
+    const salt = this.store.getKV("connection.salt") || crypto.randomBytes(32).toString("hex");
+    this.store.setKV("connection.salt", salt);
+    const fp = crypto.createHmac("sha256", salt).update(scope).update("\n").update(secret).digest("hex");
+    const previousFp = this.store.getKV(`connection.fingerprint.${scope}`);
+    const live = new Set<string>([...(this.magpie?.officialProviderIds() ?? []).map((id) => `official:${id}`), ...(this.magpie?.modelflareInfo().connected ? ["modelflare"] : [])]);
+    let had: string[] = [];
+    try {
+      had = JSON.parse(this.store.getKV("connection.sources") || "[]");
+    } catch {
+      had = [];
+    }
+    const replacedKey = !!previousFp && previousFp !== fp;
+    const lostSource = had.some((x) => x !== source && !live.has(x));
+    const dismissed = this.store.getKV("connection.notice.dismissed") === fp;
+    if ((replacedKey || lostSource) && !dismissed && this.store.listBots().length > 0) {
+      this.store.setKV("connection.notice", crypto.randomUUID());
+      this.store.setKV("connection.notice.fp", fp);
+    }
+    this.store.setKV(`connection.fingerprint.${scope}`, fp);
+    this.store.setKV("connection.sources", JSON.stringify([...live, source].filter((x, i, a) => a.indexOf(x) === i)));
+  }
+
+  /** 关掉"已切换 Key 配置"的提示：这个配置以后不再提示 */
+  dismissKeyChangeNotice(): void {
+    const fp = this.store.getKV("connection.notice.fp");
+    if (fp) this.store.setKV("connection.notice.dismissed", fp);
+    this.store.deleteKV("connection.notice");
+    this.store.deleteKV("connection.notice.fp");
   }
 
   async setModelflareLine(line: ModelflareLine): Promise<void> {

@@ -20,6 +20,9 @@ export default {
     openUrlConfirm: "開く",
     removed: "この Bot は公開を終了しました。データは残っています。",
     removedSecurity: "この Bot はセキュリティ上の理由で公開を終了し、スキルは無効になりました。データは残っています。",
+    starters: "こんなふうに始められます",
+    more: "もっと見る",
+    less: "閉じる",
   },
   info: { what: "できること", skills: "使用するスキル", perms: "必要な権限", settings: "Bot の設定" },
   perm: {

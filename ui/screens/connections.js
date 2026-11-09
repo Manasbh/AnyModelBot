@@ -99,6 +99,8 @@ export function useConnections(focusRow = "") {
     return () => (clearInterval(timer), clearTimeout(freshTimer.current));
   }, []);
   useEffect(() => {
+    const add = /^add-channel-(weixin|feishu|telegram|slack|discord)$/.exec(focusRow);
+    if (add) setSheet({ kind: "channel", channel: add[1] });
     const m = /^channel-([a-z]+)-(.+)$/.exec(focusRow);
     if (m) setSheet({ kind: "channel", channel: m[1], accountKey: m[2], fix: true });
   }, [focusRow]);

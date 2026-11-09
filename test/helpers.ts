@@ -337,6 +337,8 @@ export async function mockModelflare() {
     revokeAll: false,
     /** GET /api-keys 被请求的次数 */
     keyLists: 0,
+    /** 设了就在令牌响应里带 ID Token（sub = 它） */
+    subject: "" as string,
   };
   let base = "";
   let n = 0;
@@ -356,7 +358,9 @@ export async function mockModelflare() {
     const refresh = `rt-${n}`;
     s.access.add(access);
     s.refresh.add(refresh);
-    res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ access_token: access, refresh_token: refresh, token_type: "Bearer", expires_in: 900, scope: "account api_keys offline_access openid profile" }));
+    // scope 含 openid：带一个 ID Token（只用到载荷里的 sub）
+    const idToken = s.subject ? `${Buffer.from('{"alg":"none"}').toString("base64url")}.${Buffer.from(JSON.stringify({ sub: s.subject })).toString("base64url")}.` : undefined;
+    res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ access_token: access, refresh_token: refresh, token_type: "Bearer", expires_in: 900, scope: "account api_keys offline_access openid profile", ...(idToken ? { id_token: idToken } : {}) }));
   };
   const oauthError = (res: http.ServerResponse, code: string) => res.writeHead(400, { "content-type": "application/json" }).end(JSON.stringify({ error: code }));
   const srv = await listen(async (req, res) => {

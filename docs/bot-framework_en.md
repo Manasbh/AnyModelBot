@@ -56,7 +56,21 @@ bots/<id>/
   state.schema.json  The data contract between the UI and the bot
   sample.<lang>.json Sample data shown on open, in the user's language. zh-CN and en are required; other languages fall back to en
   evals/             tasks.json (eval tasks), injection.json (prompt injection cases)
+  cover/             Optional: Discover cover art, light.png and dark.png
 ```
+
+### Cover
+
+A Discover card opens with a cover image: `cover/light.png` and `cover/dark.png`, switched with the UI theme. Packing uses it first, falls back to the UI screenshot in `.check/`, and shows the avatar when neither exists.
+
+- Draw what the bot does (a scene, its props), not the bot's avatar on its own: the avatar already sits next to the card's name.
+- Official covers are one series: a matte clay and frosted glass still life on a warm grey backdrop, a little ink, and a single tiny signal yellow-green `#d7ff00` highlight; no text, logos or people. The dark version is the same picture re-lit on a charcoal backdrop. Draw at 1536×1024 with gpt-image (Codex image generation), then crop to 16:10 and reduce to a 256-color PNG:
+
+  ```bash
+  ffmpeg -i in.png -vf "crop=1536:960,scale=1200:750:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=full[p];[b][p]paletteuse=dither=sierra2_4a" -compression_level 9 cover/light.png
+  ```
+
+- It must be a PNG of at most 500 KB per file (the client rejects larger thumbnails from an online catalog, using the UI bundle limit). `amb-bot check` enforces this (`format.cover`).
 
 ### bot.json
 
@@ -66,7 +80,7 @@ bots/<id>/
 | `version`, `minAppVersion` | Bot version; users on an older app don't see the bot |
 | `name`, `summary` | Name (≤ 24 characters), one line (≤ 80 characters) |
 | `about` | 1–3 lines shown in the info panel |
-| `starters` | 2–3 clickable sentences; each must visibly change the view |
+| `starters` | 2–3 clickable sentences; each must visibly change the view. Until first use they show as a row of cards above the composer, up to four lines each, so keep them short (under about 90 characters in English) |
 | `avatar` | A base character (`blue`, `yellow`, `green`, `red`, `purple`, `orange`) or a field expert (`law`, `health`, `finance`, `code`, `design`, `writing`, `education`, `science`, `data`, `marketing`, `cooking`, `translate`). It only sets the look. Older apps don't know the experts, so set `minAppVersion` to the release that added them |
 | `permissions` | See below |
 | `skills` | Imported skills: `name`, `source`, `sha256` (from `amb-bot hash`), `author`, `license`, `url`. Your own skills aren't listed |
@@ -207,7 +221,7 @@ Failures name the exact rule. When a new kind of problem turns up, add a rule to
 
 Rendering, behavior and security only run under `--full`. `--full` is optional: packing and publishing don't depend on it. Running it needs two things:
 
-- Rendering uses Playwright, which isn't an app dependency: `npm i --no-save playwright && npx playwright install chromium`. Screenshots stay in `.check/` and, once committed, become Discover thumbnails when packing. Without them, Discover cards show the avatar.
+- Rendering uses Playwright, which isn't an app dependency: `npm i --no-save playwright && npx playwright install chromium`. Screenshots stay in `.check/` and, once committed, become Discover thumbnails when packing if the bot has no drawn cover (below). With neither, Discover cards show the avatar.
 - Evals connect to a running app: install Go 1.26.8+, run `npm run setup && npm start`, and sign in to Modelflare (`--app <url>`, by default the configured local port; set `AMB_UI_TOKEN` if it has a token). They really install the bot and call the model, then clean up.
 
 Eval tasks go in `evals/tasks.json`: `{ id, prompt, changed?, contains?, notContains?, file?, files? }`, at least 3. `file: { name, text }` puts a file in `app/inbox/`. `files` checks outputs against the files themselves: `{ match (a regex for the path), minBytes?, zipHas? (entries the zip must contain), absent? (no such file may exist) }`. Nobody can click approvals during evals: the first-use prompt for a declared permission passes, everything else is denied, and the bot's questions get "go ahead with your recommendation". Injection cases go in `evals/injection.json`: `{ id, prompt, file?: { name, text }, mustNotContain }`, at least 1.

@@ -32,7 +32,7 @@ export default {
     "ダウンロードを開始しました。ブラウザーのダウンロード一覧をご確認ください。",
   downloading: "ダウンロード中…",
   macNote:
-    "macOS のコンピューター操作はベータ版です。直接操作モードは、さらに多くの実機での検証が必要です。それ以外の機能は Windows / Linux 版と同じです。",
+    "macOS のコンピューター操作はベータ版です。直接操作モードは、さらに多くの実機での検証が必要です。「アクセシビリティ」と「画面収録」の権限は、ボットが初めて必要としたときに確認します。それ以外の機能は Windows / Linux 版と同じです。",
   linuxHint: "chmod +x anymodel-bot-*.AppImage && ./anymodel-bot-*.AppImage",
   winHint:
     "Windows の警告が表示されたら、「詳細情報」→「実行」を選択してください。",

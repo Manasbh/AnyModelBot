@@ -1,15 +1,21 @@
-// 专属界面容器：主区是 Bot 的界面（沙箱 iframe），底部一行输入框，最新回复显示在输入框上方；
+// 专属界面容器：主区是 Bot 的界面（沙箱 iframe），底部是和对话页同一列宽、同一个样式的输入框；
+// 输入框上方依次是最新一条回复（和对话里的回复同样排版）、等你确认的卡片、还没用过时的示例。
 // 完整对话和 Bot 信息在右边一列。还没有实例时界面显示示例数据：不创建实例、不装技能、不起进程，第一次发消息才创建。
-import { useEffect, useRef, useState } from "preact/hooks";
-import { html, Button, IconButton, Notice, Spinner } from "../components/ui.js";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { html, Button, Icon, IconButton, Notice, Spinner, autoGrow } from "../components/ui.js";
 import { BotAvatar } from "../components/avatar.js";
-import { ChatScreen, PromptCard } from "./chat.js";
+import { Markdown } from "../components/markdown.js";
+import { ChatScreen, PromptCard, errText, isError } from "./chat.js";
 import { api, streamChat, watchApp } from "../lib/api.js";
 import { attachBridge, currentEnv, pickFiles, safeExternalUrl, watchEnv } from "../lib/bot-bridge.js";
 import { markCatalogSeen, tr } from "../lib/catalog.js";
 import { guide, markSeen } from "../lib/guide.js";
-import { confirmSheet, toast } from "../lib/store.js";
+import { prefs } from "../lib/prefs.js";
+import { confirmSheet, toast, useStore } from "../lib/store.js";
 import { t, useLang } from "../lib/i18n.js";
+
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+const MOD_ENTER = isMac ? "⌘Enter" : "Ctrl+Enter";
 
 const errorText = (e) => {
   const key = `botapp.errors.${e?.data?.code || "catalog_failed"}`;
@@ -29,6 +35,39 @@ function BotInfo({ entry, lang, onSettings }) {
   </div>`;
 }
 
+/**
+ * 最新一条回复：头像 + 和对话里一样排版的正文（Markdown）。平时只露三行，放不下时可以展开（展开后限高滚动）；
+ * 有实例时可以直接打开完整对话。还没出字时是一行"思考中"；出错（⚠️ 开头）时和对话页一样是一条红色提示。
+ */
+function LatestReply({ bot, entry, text, busy, onOpenChat }) {
+  const body = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [long, setLong] = useState(false);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!open) setLong(!!el && el.scrollHeight > el.clientHeight + 1);
+  }, [text, open]);
+  // 新的一轮从收起开始
+  useEffect(() => {
+    if (busy) setOpen(false);
+  }, [busy]);
+  const face = busy ? (text ? "replying" : "thinking") : "idle";
+  return html`<div class=${`botapp-reply${long ? " long" : ""}${open ? " open" : ""}`}>
+    <${BotAvatar} bot=${bot} char=${bot ? undefined : entry?.avatar} size=${22} state=${face} />
+    ${text
+      ? html`<div class="botapp-reply-main">
+          ${isError(text)
+            ? html`<${Notice} tone="red">${errText(text)}<//>`
+            : html`<div class="botapp-reply-body msg" ref=${body}><${Markdown} text=${text} /></div>`}
+          ${(long || open || onOpenChat) && html`<div class="botapp-reply-bar">
+            ${(long || open) && html`<${Button} variant="ghost" size="sm" aria-expanded=${open} onClick=${() => setOpen((v) => !v)}>${t(open ? "botapp.app.less" : "botapp.app.more")}<//>`}
+            ${onOpenChat && html`<${Button} variant="ghost" size="sm" onClick=${onOpenChat}>${t("botapp.app.conversation")}<//>`}
+          </div>`}
+        </div>`
+      : html`<span class="botapp-reply-wait">${t("chat.work.thinking")}</span>`}
+  </div>`;
+}
+
 export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpenBotSettings, onOpenSettings, chatProps }) {
   const lang = useLang();
   const [entry, setEntry] = useState(null);
@@ -39,13 +78,14 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [reply, setReply] = useState("");
-  const [replyOpen, setReplyOpen] = useState(false);
   const [side, setSide] = useState(null); // "chat" | "info" | null
   const [prompts, setPrompts] = useState([]); // 这一轮里 Bot 在等用户确认的事（权限、提问）
   const [used, setUsed] = useState(!!bot);
   const [desktop, setDesktop] = useState(false);
   const frame = useRef(null);
+  const ta = useRef(null);
   const bridge = useRef(null);
+  const { sendKey } = useStore(prefs);
   const urlConfirming = useRef(false);
   // 桥接的回调要读到最新的状态
   const live = useRef(/** @type {any} */ ({}));
@@ -126,7 +166,6 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
     if (!msg || busy) return;
     setBusy(true);
     setReply("");
-    setReplyOpen(false);
     setUsed(true);
     bridge.current?.post("turn", { busy: true });
     try {
@@ -289,13 +328,27 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
   const starters = (entry && tr(entry.starters, lang)) || [];
   const name = bot?.name || tr(entry?.name, lang) || "";
   const removed = bot?.app?.removed;
-  const onKey = (e) => {
-    if (e.isComposing || e.keyCode === 229 || e.key !== "Enter" || e.shiftKey) return;
-    e.preventDefault();
+  const submit = () => {
     const v = draft;
+    if (!v.trim() || busy) return;
     setDraft("");
     void send(v);
+    requestAnimationFrame(() => autoGrow(ta.current));
   };
+  // 发送键和对话页一样跟着 设置 › 常规 › 发送消息：Enter 发送、Shift+Enter 换行；或 ⌘/Ctrl+Enter 发送、Enter 换行
+  const onKey = (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter" && !e.shiftKey && (sendKey !== "mod" || e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      submit();
+    } else if (e.key === "Escape" && busy) {
+      e.preventDefault();
+      void stop();
+    }
+  };
+  // 点发送 / 停止不抢输入框的焦点，接着就能打下一句
+  const keepFocus = (e) => e.preventDefault();
+  const sendHint = { key: sendKey === "mod" ? MOD_ENTER : "Enter" };
 
   return html`<div class=${`botapp${side ? " with-side" : ""}`} data-screen="bot-app">
     <div class="botapp-main">
@@ -315,18 +368,19 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
           : base && !uiFailed && html`<iframe ref=${frame} class="botapp-frame" title=${name} src=${`${base}index.html`} sandbox="allow-scripts allow-forms"></iframe>`}
         ${!base && !loadErr && !uiFailed && html`<div class="botapp-loading"><${Spinner} /></div>`}
       </div>
-      ${!(uiFailed && bot) && html`<div class="composer-dock botapp-dock">
-        ${reply && html`<button type="button" class=${`botapp-reply${replyOpen ? " open" : ""}`} aria-expanded=${replyOpen} onClick=${() => setReplyOpen((v) => !v)}>
-          <${BotAvatar} bot=${bot} char=${bot ? undefined : entry?.avatar} size=${22} /><span class="text">${reply}</span>
-        </button>`}
+      ${!(uiFailed && bot) && html`<div class="botapp-dock">
+        ${(reply || busy) && html`<${LatestReply} bot=${bot} entry=${entry} text=${reply} busy=${busy} onOpenChat=${bot ? () => setSide("chat") : null} />`}
         ${prompts.map((p) => html`<${PromptCard} key=${p.requestId} requestId=${p.requestId} fallback=${p.prompt} />`)}
-        ${!used && starters.length > 0 && html`<div class="chips botapp-starters">${starters.map((s) => html`<button type="button" class="chip" key=${s} disabled=${busy} onClick=${() => send(s)}>${s}</button>`)}</div>`}
+        ${!used && starters.length > 0 && html`<div class="botapp-starters" role="list" aria-label=${t("botapp.app.starters")}>
+          ${starters.map((s) => html`<button type="button" role="listitem" class="botapp-starter" key=${s} title=${s} disabled=${busy} onClick=${() => send(s)}><span class="botapp-starter-text">${s}</span></button>`)}
+        </div>`}
         <div class="composer">
-          <textarea rows="1" placeholder=${t("botapp.app.placeholder")} aria-label=${t("botapp.app.placeholder")} value=${draft} onInput=${(e) => setDraft(e.target.value)} onKeyDown=${onKey}></textarea>
+          <textarea ref=${ta} rows="1" placeholder=${t("botapp.app.placeholder")} aria-label=${t("botapp.app.placeholder")} value=${draft}
+            onInput=${(e) => { setDraft(e.target.value); autoGrow(e.target); }} onKeyDown=${onKey}></textarea>
           <div class="composer-bar"><span class="grow"></span>
             ${busy
-              ? html`<${IconButton} icon="stop" class="send" label=${t("botapp.app.stop")} onClick=${stop} />`
-              : html`<${IconButton} icon="up" class="send" label=${t("botapp.app.send")} disabled=${!draft.trim()} onClick=${() => { const v = draft; setDraft(""); void send(v); }} />`}
+              ? html`<button type="button" class="send stop" aria-label=${t("botapp.app.stop")} title=${t("chat.composer.stopTitle")} onMouseDown=${keepFocus} onClick=${stop}><${Icon} name="stop" size="md" /></button>`
+              : html`<button type="button" class="send" aria-label=${t("botapp.app.send")} title=${t("chat.composer.sendTitle", sendHint)} disabled=${!draft.trim()} onMouseDown=${keepFocus} onClick=${submit}><${Icon} name="up" size="md" strong /></button>`}
           </div>
         </div>
       </div>`}

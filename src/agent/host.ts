@@ -157,9 +157,11 @@ export interface TurnObserver {
  */
 export class TurnStopped extends Error {
   constructor(
-    readonly reason: "user" | "idle" | "timeout",
+    readonly reason: "user" | "idle" | "timeout" | "permission",
     readonly ms: number,
     readonly restarted = false,
+    /** permission：缺的系统权限（accessibility、screen） */
+    readonly missing: readonly string[] = [],
   ) {
     super(`agent turn stopped (${reason})`);
   }
@@ -228,6 +230,8 @@ export interface AgentHostOptions {
   idle?: () => boolean;
   /** 桌面版：系统给这个地址用的代理（PAC 写法，如 "PROXY 127.0.0.1:7890"）；环境里没设代理时每次拉起子进程问一次 */
   systemProxy?: (url: string) => Promise<string | undefined>;
+  /** macOS 桌面版：电脑操作工具调用前先查系统权限（amb-computer-use-gate 经 bridge 问 cu-permissions.ts） */
+  cuPermissionCheck?: () => boolean;
 }
 
 export type HostState = "stopped" | "starting" | "running" | "backoff" | "error";
@@ -878,6 +882,8 @@ export class AgentHost {
     return st.available ? st : undefined;
   }
   private cuReadTools = "";
+  /** 这次拉起的进程要不要查 macOS 权限：只有 Cua Driver（--direct，算本应用的授权）；Codex 桥用的是 Codex 自己的授权 */
+  private cuPermissionGate = false;
   /**
    * Computer Use：插入 mcp-client（Cua Driver 经 amb-cua-mcp.mjs，或 macOS 上的 Codex 桥；都用宿主自己的
    * node/Electron 运行），并写入对应的 SKILL.md。默认所有操作自动执行；只有设置为 ask-input 时才加载审批闸门。
@@ -886,6 +892,7 @@ export class AgentHost {
     const skillDir = path.join(this.home, "skills", "computer-use");
     const st = this.computerUseActive();
     this.cuReadTools = st ? st.readTools.join(",") : "";
+    this.cuPermissionGate = !!st && st.backend !== "codex" && !!this.o.cuPermissionCheck?.();
     if (!st) {
       fs.rmSync(skillDir, { recursive: true, force: true });
       return [];
@@ -904,7 +911,7 @@ export class AgentHost {
       log.warn("computer-use setup failed", { err: String(e) });
       return [];
     }
-    if (this.settings().computerUse.approval === "ask-input") {
+    if (this.settings().computerUse.approval === "ask-input" || this.cuPermissionGate) {
       lines.push("    - id: amb-computer-use-gate", `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-computer-use-gate.mjs"))}`);
     }
     return lines;
@@ -1000,6 +1007,7 @@ exec "$REAL" "$@"
       AMB_CONNECTIONS: this.connectionsEnv(),
       AMB_CU_APPROVAL: this.settings().computerUse.approval,
       AMB_CU_READ_TOOLS: this.cuReadTools,
+      AMB_CU_PERMISSION_CHECK: this.cuPermissionGate ? "1" : "0",
       AMB_MAGPIE_KEY: this.o.bridge.token,
       AMB_BRIDGE_URL: this.o.bridge.url,
       AMB_BRIDGE_TOKEN: this.o.bridge.token,
@@ -1950,11 +1958,11 @@ exec "$REAL" "$@"
     } catch (e) {
       log.warn("cancelling the session's turn failed", { bot: this.o.botId, message: (e as Error).message.slice(0, 200) });
     }
-    if (ok) return new TurnStopped(why.reason, why.ms, false);
+    if (ok) return new TurnStopped(why.reason, why.ms, false, why.missing);
     log.warn("agent turn did not stop in time; restarting dsh", { bot: this.o.botId, reason: why.reason, graceMs, otherTurns: this.active - 1 });
     await this.closeHarness();
     this.state = "stopped";
-    return new TurnStopped(why.reason, why.ms, true);
+    return new TurnStopped(why.reason, why.ms, true, why.missing);
   }
 
   /** 这个会话有回合在跑、还没在收尾或中止、指令通道在线：新消息可以并进这一轮 */

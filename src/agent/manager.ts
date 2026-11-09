@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { resolveComputerUse } from "./computer-use.js";
 import type { Store } from "../store/db.js";
 import { logger } from "../log.js";
+import type { CuPermissions } from "./cu-permissions.js";
 import { AgentBridge } from "./bridge.js";
 import path from "node:path";
 import { AgentHost, TurnStopped, callDetail, modelLimits, type ModelApiInfo, type TurnImage, type TurnInput, type TurnObserver, type TurnResult, type TurnUsage } from "./host.js";
@@ -69,6 +70,8 @@ export interface AgentManagerOptions {
   effort?: () => ReasoningEffort;
   /** 桌面版：系统给这个地址用的代理（PAC 写法）；代理进程的环境里没设代理时用它 */
   systemProxy?: (url: string) => Promise<string | undefined>;
+  /** macOS 桌面版：电脑操作的系统权限（缺项时拦下工具调用并结束这一轮），见 cu-permissions.ts */
+  cuPermissions?: CuPermissions;
   /**
    * 服务端压缩（见 server-compaction.ts）：listed = 价格目录是否列出该模型的压缩端点（只是提示，用前还要探测）；
    * endpoint = 该模型（网关里的名字）直连的压缩端点。缺省则不做。
@@ -101,6 +104,10 @@ export interface TurnProgress {
 
 /** 生成确认里"取消"那一项（问题建好后界面语言可能变了：两种语言的都认） */
 const CANCELS = TARGET_LANGS.map((l) => tl(l, "media.cancel"));
+
+/** 用户明确要求记住（各界面语言的说法）：这一轮的记忆整理提前做 */
+const EXPLICIT_REMEMBER = /^(请)?(记住|記住|帮我记住|remember|please remember|覚えて|覚えておいて|기억해|запомни)/i;
+const EXPLICIT_REVIEW_DELAY_MS = 1500;
 
 /** 预计花费超过它（美元）就先问用户 */
 export const MEDIA_ASK_USD = 0.5;
@@ -201,6 +208,7 @@ export class AgentManager {
       media: (b) => this.mediaOp(b),
       search: (b, signal) => this.searchOp(b, signal),
       connections: (b, signal) => this.connectionOp(b, signal),
+      cuPermission: async (b) => this.cuPermissionOp(b),
       // amb-control 插件按机器人取指令；不认识的机器人（已删除、已停止）让它别再来
       control: {
         poll: (b, signal) => this.hosts.get(String(b?.botId ?? ""))?.control.poll(b, signal) ?? Promise.resolve({ stop: true }),
@@ -263,6 +271,7 @@ export class AgentManager {
         onTaskEvent: (root, n) => this.tasks?.onEvent(botId, root, n),
         idle: () => this.idle(botId),
         systemProxy: this.o.systemProxy,
+        cuPermissionCheck: () => !!this.o.cuPermissions?.supported,
       });
       // 代理进程退出（中止宽限期内没停下、设置变化、崩溃、重启、停止）：进程里的压缩跟着没了，不再等它；跑着的后台任务记为中断、排恢复。
       // 空闲时换掉的（recycled）上面什么都没在跑：之后才开始的 run 已经在用新的进程，不能当成被打断
@@ -443,6 +452,31 @@ export class AgentManager {
     return ok;
   }
 
+  /**
+   * amb-computer-use-gate 插件：电脑操作工具调用前查系统权限。缺项时拦下这次调用，并结束这个机器人正在进行的回合，
+   * 回复里说清楚"因缺少权限未能继续"，界面显示授权卡片；模型不会在没有权限时反复重试。
+   */
+  private cuPermissionOp(b: any): { ok: boolean; missing?: string[] } {
+    const botId = String(b?.botId ?? "");
+    const tool = String(b?.tool ?? "");
+    const perms = this.o.cuPermissions;
+    if (!perms || !botId) return { ok: true };
+    const r = perms.gate(botId, tool);
+    if (r.ok) return { ok: true };
+    log.warn("computer use blocked: macOS permission missing", { bot: botId, tool, missing: r.missing });
+    // 只结束发起这次调用的那一轮：同一个机器人在别的会话里的回复不受影响。
+    // 会话的子代理没有直接映射时，只有一轮在进行才算它；后台任务和规则不在这里停（拒绝说明会让它收尾）
+    const sessionId = String(b?.sessionId ?? "");
+    let conv = sessionId ? this.o.store.conversationForSession(sessionId) : undefined;
+    if (!conv && sessionId && !this.taskOf(botId, sessionId) && !this.ruleOf(botId, sessionId)) {
+      const active = [...this.turnsInProgress].filter(([, t]) => t.botId === botId);
+      if (active.length === 1) conv = active[0][0];
+    }
+    const t = conv ? this.turnsInProgress.get(conv) : undefined;
+    if (conv && t && t.botId === botId && !t.abort.signal.aborted) this.halt(conv, t, new TurnStopped("permission", Date.now() - t.since, false, r.missing));
+    return { ok: false, missing: r.missing };
+  }
+
   /** /stop、信息面板的"中止"：返回有没有正在处理的回合 */
   stopTurn(conversationId: string): boolean {
     const t = this.turnsInProgress.get(conversationId);
@@ -452,7 +486,7 @@ export class AgentManager {
   }
 
   private halt(conv: string, t: TurnProgress, why: TurnStopped): void {
-    t.activity.end(tr(why.reason === "user" ? "agent.endUser" : why.reason === "idle" ? "agent.endIdle" : "agent.endTurnLimit"));
+    t.activity.end(tr(why.reason === "user" ? "agent.endUser" : why.reason === "idle" ? "agent.endIdle" : why.reason === "permission" ? "agent.endPermission" : "agent.endTurnLimit"));
     t.abort.abort(why);
     // 这一轮还在等的批准 / 回答随之作废（回合被中止，没人再等它们）
     for (const r of this.approvals.pendingChat(conv)) this.approvals.cancel(r.id, "stopped");
@@ -556,7 +590,7 @@ export class AgentManager {
   /** 回合结束：上下文管家判定 + 安排记忆整理。不抛错。 */
   private afterTurn(botId: string, conv: string, sessionId: string, model: string, usage: TurnUsage, d: { promise: Promise<boolean>; resolve: (v: boolean) => void }): void {
     const st = this.settings(botId);
-    if (st.memory.enabled && st.memory.review && this.o.complete) this.scheduleReview(botId, conv, model);
+    if (st.memory.enabled && st.memory.review && this.o.complete) this.scheduleReview(botId, conv, model, this.askedToRemember(conv) ? EXPLICIT_REVIEW_DELAY_MS : undefined);
     const lines = linesFor(usage.window, usage.maxTokens);
     if (!st.steward.enabled || !this.o.complete || !shouldJudge(usage.tokens, lines, this.judgedAt.get(sessionId))) {
       d.resolve(false);
@@ -631,9 +665,19 @@ export class AgentManager {
     }
   }
 
-  private scheduleReview(botId: string, conv: string, model: string): void {
+  /**
+   * 用户这一轮明确说了"记住……"（上手清单的第 11.3 项）：模型没有自己调用 remember 时，记忆要等回合后整理才写入，
+   * 平时整理要等 90 秒（防抖），清单就一直不推进，直到下一句话之后才显示完成（看起来像"忘掉以后才推进"）。
+   * 明确要求记住的这一轮提前整理；没有明确要求的照旧等。
+   */
+  private askedToRemember(conv: string): boolean {
+    const last = this.o.store.listMessages(conv, 6).filter((m) => m.role === "user").at(-1);
+    return !!last && EXPLICIT_REMEMBER.test(last.content.trim());
+  }
+
+  private scheduleReview(botId: string, conv: string, model: string, delayMs?: number): void {
     clearTimeout(this.reviewTimers.get(conv));
-    const delay = this.o.reviewDelayMs ?? (Number(process.env.AMB_MEMORY_REVIEW_DELAY_MS) || 90_000);
+    const delay = delayMs ?? this.o.reviewDelayMs ?? (Number(process.env.AMB_MEMORY_REVIEW_DELAY_MS) || 90_000);
     const t = setTimeout(() => {
       this.reviewTimers.delete(conv);
       void this.review(botId, conv, model).catch((e) => log.warn("memory review failed", { message: (e as Error).message.slice(0, 200) }));

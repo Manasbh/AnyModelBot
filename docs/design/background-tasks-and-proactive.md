@@ -433,13 +433,15 @@ These use `ui/design/README.md`:
 - no emoji;
 - **nothing is drawn when healthy.**
 
-**Sidebar.** A "需要你" row appears above the bots only when the count is above 0. Bot avatars already have `working` (后台任务) and `waiting` (等你批准) states.
+**Sidebar.** A "需要你" row appears in the fixed nav under the search box, below "发现", only when the count is above 0. It is a `.nav-item` like the settings nav (inbox icon on the search icon's line, label aligned with the search text, `.badge.count warn` on the bots' count line) and does not scroll with the bot list. Bot avatars already have `working` (后台任务) and `waiting` (等你批准) states.
 
 ```
 ┌ side ─────────────────────────────┐
 │ [新建]                     [任务]  │   ← 任务: icon button, opens the tasks view
 │ ⌕ 搜索                             │
-│ ● 需要你                        3  │   ← only when > 0 (amber dot, .badge.count warn)
+│ ◎ 发现                          •  │   ← fixed nav: only when the catalog has bots
+│ ▭ 需要你                        3  │   ← fixed nav: only when > 0 (.badge.count warn)
+│ 我的                               │   ← the scrolling list starts here
 │ (天天) 天天         2分钟            │   ← avatar state "waiting"
 │        GPU 价格调研等你回答       1  │
 │ (哒哒) 哒哒          正在工作…       │   ← avatar state "working", 1 task running

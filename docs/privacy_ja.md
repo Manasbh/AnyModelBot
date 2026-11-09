@@ -57,7 +57,7 @@
 
 - 内蔵 magpie ゲートウェイから Modelflare を経由し、選択した提供元にリクエストを送ります。
 - プロンプト、会話の文脈、使用する記憶、ファイル内容、ツール結果、コンピューター操作時のスクリーンショットなど、回答に必要な内容が含まれます。
-- 出所の識別用に `X-Modelflare-Skill: anymodel-bot/<version>` ヘッダーを付けます。アプリから開く Modelflare のリンクには `utm_source=anymodelbot` が含まれます。
+- 出所の識別用に `X-Modelflare-Skill: anymodel-bot/<version>` ヘッダーを付けます。アプリから開く Modelflare のリンクには `utm_source=anymodelbot` が含まれます。 アプリからチャージページを開くとき、URL の `#` の後ろにログイン時の ID トークンにあるアカウント識別子（`#amb_account=…`、秘密情報ではありません）を付け、Modelflare のページがブラウザーで同じアカウントにログインしているか確認します。`#` 以降はサーバー、CDN、解析スクリプトに送られません。「キー設定を切り替えました」の通知は、端末内でランダムなソルトを使ってキーの HMAC を計算し比較するだけで、キーやその要約を保存・送信しません。
 - Modelflare はリクエストログを保持します。項目と期間は [トラストセンター](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) を参照してください。モデル提供元のデータ取り扱いは各社の規約に従います。
 
 ## 自分の公式 API キーを使う場合

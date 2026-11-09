@@ -9,7 +9,7 @@
  *  - 托盘菜单和对话框跟着应用语言（src/i18n）：跟随系统时取系统首选语言，界面里换了语言托盘菜单立刻重建
  * CLI（npm start）与 Docker 走同一套 src/ 代码，本文件只做桌面外壳。
  */
-import { app, BrowserWindow, Menu, Notification, Tray, nativeImage, nativeTheme, net, powerMonitor, session, shell, dialog, safeStorage } from "electron";
+import { app, BrowserWindow, Menu, Notification, Tray, desktopCapturer, nativeImage, nativeTheme, net, powerMonitor, session, shell, dialog, safeStorage, systemPreferences } from "electron";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -85,7 +85,69 @@ function updateTitleBar(): void {
   if (isWin && win && !win.isDestroyed()) win.setTitleBarOverlay(titleBarOverlay());
 }
 
+/**
+ * 开发者工具只给研发：本地开发（未打包）和专用调试包（打包时 extraMetadata.ambDebugBuild=true，
+ * 见 package.json 的 dist:debug 和 release.yml 的检查）。官网和 GitHub Releases 的正式包关闭，和账号、付费无关。
+ * 这不是安全边界：高级用户仍可以自己调试，只是不再有误触就占掉半个窗口的快捷入口。
+ */
+let debugBuildCache: boolean | undefined;
+function isDebugBuild(): boolean {
+  if (debugBuildCache !== undefined) return debugBuildCache;
+  if (!app.isPackaged) return (debugBuildCache = true);
+  try {
+    debugBuildCache = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), "package.json"), "utf8")).ambDebugBuild === true;
+  } catch {
+    debugBuildCache = false;
+  }
+  return debugBuildCache;
+}
+
+/** 浏览器里的登录成功页用它把用户带回应用（electron-builder 的 protocols 写进 Info.plist / 注册表） */
+const APP_SCHEME = "anymodelbot";
+let pendingLink = "";
+function handleAppLink(link: string): void {
+  let u: URL;
+  try {
+    u = new URL(link);
+  } catch {
+    return;
+  }
+  if (u.protocol !== `${APP_SCHEME}:`) return;
+  if (!core?.account) {
+    pendingLink = link; // 还在启动：启动完再处理
+    return;
+  }
+  showWindow();
+  // 只认这次登录成功页带的一次性 nonce：别的网页唤起这个链接只会把窗口叫到前台
+  if (u.hostname === "login-complete") {
+    const r = u.searchParams.get("r");
+    if (r) core.account.markLoginReturned(r);
+  }
+}
+
+/** macOS：电脑操作要的辅助功能、屏幕录制（只在机器人真正要用、用户点了以后才请求，见 src/agent/cu-permissions.ts） */
+function macPermissions(): NonNullable<import("../src/app.js").DesktopHooks["cuPermissions"]> | undefined {
+  if (process.platform !== "darwin") return undefined;
+  const media = (v: string) => (["granted", "denied", "not-determined", "restricted"].includes(v) ? v : "unknown") as "granted" | "denied" | "not-determined" | "restricted" | "unknown";
+  return {
+    status: () => ({
+      accessibility: systemPreferences.isTrustedAccessibilityClient(false) ? "granted" : "denied",
+      screen: media(systemPreferences.getMediaAccessStatus("screen")),
+    }),
+    request: async (kind) => {
+      // 系统原生的请求：辅助功能弹系统的授权提示；屏幕录制在第一次取屏幕时由系统提示
+      if (kind === "accessibility") systemPreferences.isTrustedAccessibilityClient(true);
+      else await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: { width: 1, height: 1 } }).catch(() => []);
+    },
+    openSettings: (kind) => {
+      const pane = kind === "accessibility" ? "Privacy_Accessibility" : "Privacy_ScreenCapture";
+      void shell.openExternal(`x-apple.systempreferences:com.apple.preference.security?${pane}`);
+    },
+  };
+}
+
 function createWindow(): void {
+  const debugBuild = isDebugBuild();
   win = new BrowserWindow({
     width: 1200,
     height: 820,
@@ -100,9 +162,15 @@ function createWindow(): void {
     // Windows：无标题栏 + 窗口按钮叠层（见上面的 titleBarOverlay）；Linux 用系统标题栏
     ...(process.platform === "darwin" ? { titleBarStyle: "hiddenInset" as const, trafficLightPosition: { x: 16, y: 23 } } : {}),
     ...(isWin ? { titleBarStyle: "hidden" as const, titleBarOverlay: titleBarOverlay() } : {}),
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, devTools: debugBuild },
   });
   const origin = new URL(entryUrl).origin;
+  // 正式包：devTools 已经关掉，这里再挡掉打开开发者工具的组合键（⌥⌘I / ⌥⌘J / Ctrl+Alt+I、F12），
+  // 不碰界面自己的快捷键（⌘⇧I 开关信息面板等）
+  if (!debugBuild) win.webContents.on("before-input-event", (event, input) => {
+    const k = input.key.toLowerCase();
+    if (k === "f12" || ((input.meta || input.control) && input.alt && ["i", "j", "c", "insert"].includes(k))) event.preventDefault();
+  });
   // 只允许停留在本机管理界面；外部链接交给系统浏览器
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/i.test(url)) void shell.openExternal(url);
@@ -294,6 +362,12 @@ async function boot(): Promise<void> {
     fetch: ((input: string | URL | Request, init?: RequestInit) => net.fetch(input instanceof URL ? input.href : input, init)) as typeof fetch,
     // 代理执行的命令用的系统代理：Chromium 按系统设置和 PAC 解析（代理进程每次拉起时问）
     resolveProxy: (url) => session.defaultSession.resolveProxy(url),
+    appLink: `${APP_SCHEME}://login-complete`,
+    cuPermissions: macPermissions(),
+    relaunch: () => {
+      app.relaunch();
+      app.quit();
+    },
   };
   await core.start();
   if (!core.web) throw new Error(t("desktop.uiNotStarted"));
@@ -308,6 +382,10 @@ async function boot(): Promise<void> {
   if (!SMOKE) core.attention.onChange(onAttention);
   const atLogin = process.argv.includes("--hidden") || (process.platform === "darwin" && app.getLoginItemSettings().wasOpenedAtLogin);
   if (!atLogin || SMOKE) createWindow();
+  // 启动前就收到的应用链接（Windows / Linux 从命令行带进来，macOS 的 open-url 在 ready 之前就可能到）
+  const early = pendingLink || process.argv.find((a) => a.startsWith(`${APP_SCHEME}://`));
+  pendingLink = "";
+  if (early) handleAppLink(early);
   if (SMOKE) await smoke(SMOKE);
 }
 
@@ -361,7 +439,20 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   // Windows 的系统通知（设置 › 常规 › 回复完成时通知）要求进程的 AppUserModelID 和安装器建的快捷方式一致（= build.appId）
   if (process.platform === "win32") app.setAppUserModelId("dev.anymodel.bot");
-  app.on("second-instance", () => showWindow());
+  // 应用链接：macOS 走 open-url（要在 ready 之前挂上）；Windows / Linux 是第二个实例带着链接启动
+  app.on("open-url", (e, url) => {
+    e.preventDefault();
+    handleAppLink(url);
+  });
+  if (!SMOKE) {
+    if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient(APP_SCHEME, process.execPath, [path.resolve(process.argv[1])]);
+    else app.setAsDefaultProtocolClient(APP_SCHEME);
+  }
+  app.on("second-instance", (_e, argv) => {
+    showWindow();
+    const link = argv.find((a) => a.startsWith(`${APP_SCHEME}://`));
+    if (link) handleAppLink(link);
+  });
   for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => app.quit());
   app.on("window-all-closed", () => {
     if (!tray) app.quit(); // 有托盘时常驻

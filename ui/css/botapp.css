@@ -1,30 +1,52 @@
 /* 目录 Bot：发现页、专属界面容器（screens/discover.js、screens/bot-app.js）。 */
-.discover { --discover-w: 960px; --page-px: max(var(--page-gutter), calc((100% - var(--discover-w)) / 2)); height: 100%; overflow: auto; padding: var(--page-top) var(--page-px) var(--page-bottom); display: grid; gap: var(--space-4); align-content: start; }
+/* 发现页：居中一列（最宽 --discover-w），标题 + 一句话，下面按分组排卡片。
+   卡片 = 封面 + 头像、名字、一句话。封面是一张图（cover/light|dark.png），圆角和模板卡同一个 --r-well；
+   没有封面时是 --well 上一个大头像。精选最多两列、封面 16:9，其余最多三列、封面 16:10；窗口窄了自动少一列 */
+.discover { --discover-w: 960px; --page-px: max(var(--page-gutter), calc((100% - var(--discover-w)) / 2)); height: 100%; overflow: auto; padding: var(--page-top) var(--page-px) var(--page-bottom); display: grid; gap: var(--section-gap); align-content: start; }
 .discover-head { display: grid; gap: var(--space-1); -webkit-app-region: drag; }
 .discover-head > * { -webkit-app-region: no-drag; }
 .discover-head h1, .discover-head p { margin: 0; }
 .discover-head p { font-size: var(--fs-md); color: var(--muted); }
-.discover-part { margin: var(--space-4) 0 0; font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--fg-2); }
+.discover-sec { display: grid; gap: var(--space-3); min-width: 0; }
+.discover-part { margin: 0; font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--fg-2); }
 .discover-search { margin: var(--space-3) 0 0; }
-.discover-grid { --discover-col: 260px; display: grid; gap: var(--space-5); grid-template-columns: repeat(auto-fill, minmax(min(var(--discover-col), 100%), 1fr)); }
-.discover-card { all: unset; cursor: pointer; display: grid; gap: var(--space-3); min-width: 0; }
-.discover-card:focus-visible .discover-thumb { outline: 2px solid var(--accent); }
-.discover-thumb { display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; background: var(--well); border-radius: var(--r-lg); transition: opacity var(--t-fast); }
-.discover-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.discover-card:hover .discover-thumb { opacity: .88; }
-.discover-meta { display: flex; gap: var(--space-2); align-items: center; min-width: 0; }
-.discover-text { display: grid; min-width: 0; }
-.discover-text .title { font-size: var(--fs-lg); font-weight: var(--fw-medium); }
+/* 列数：小卡最多三列、精选最多两列（每列至少占 1/3、1/2），窗口窄到放不下 --discover-col 时再少一列 */
+.discover-grid { --discover-col: 200px; --discover-cols: 3; --discover-gap: var(--space-5); display: grid; gap: var(--space-6) var(--discover-gap); grid-template-columns: repeat(auto-fill, minmax(min(100%, max(var(--discover-col), calc((100% - (var(--discover-cols) - 1) * var(--discover-gap)) / var(--discover-cols)))), 1fr)); }
+.discover-grid.big { --discover-col: 260px; --discover-cols: 2; }
+.discover-card { all: unset; cursor: pointer; display: grid; gap: var(--space-3); align-content: start; min-width: 0; }
+.discover-card:focus-visible .discover-cover { outline: 2px solid var(--accent); }
+.discover-cover { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 10; overflow: hidden; background: var(--well); border-radius: var(--r-well); }
+.discover-card.big .discover-cover { aspect-ratio: 16 / 9; }
+.discover-cover img { width: 100%; height: 100%; object-fit: cover; }
+/* 悬停：和可点的组一样叠深一级（浅色压暗、深色提亮），不浮起、不缩放 */
+.discover-cover::after { content: ""; position: absolute; inset: 0; background: var(--pill-hover); opacity: 0; transition: opacity var(--t-fast); pointer-events: none; }
+.discover-card:hover .discover-cover::after { opacity: 1; }
+.discover-meta { display: flex; gap: var(--space-2-5); align-items: flex-start; min-width: 0; }
+.discover-meta > :first-child { flex: none; }
+.discover-text { display: grid; gap: var(--space-0-5); min-width: 0; }
+.discover-text .title { font-size: var(--fs-lg); font-weight: var(--fw-medium); color: var(--fg); line-height: var(--lh-tight); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.discover-card.big .discover-text .title { font-size: var(--fs-xl); }
+.discover-text .summary { font-size: var(--fs-sm); color: var(--muted); line-height: var(--lh-snug); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 
+/* 专属界面容器：顶栏 + Bot 的界面（iframe，填满剩下的高度）+ 底部输入区。
+   输入区和对话页是同一列：--col、--dock-pb 和 chat.css 的 .chat 同一个算法，输入框就是对话页那个 .composer，
+   宽、高、圆角、发送钮都一样；上方依次是最新回复、等你确认的卡片、示例，全都对齐这一列。 */
 .botapp { --botapp-side-w: var(--panel-w); height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
 .botapp.with-side { grid-template-columns: minmax(0, 1fr) var(--botapp-side-w); }
-.botapp-main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.botapp-main {
+  --col: min(var(--col-w), calc(100% - 2 * var(--page-gutter)));
+  --dock-pb: var(--space-4);
+  min-width: 0; min-height: 0; display: flex; flex-direction: column;
+}
 .botapp-main > .notice { flex: none; }
-/* 提示条数量会变；界面始终填满顶栏和输入区之间的剩余空间。 */
+/* 提示条数量会变；界面始终填满顶栏和输入区之间的剩余空间。下沿和对话流一样淡出一窄条，不是一刀切 */
 .botapp-stage { position: relative; flex: 1; min-width: 0; min-height: 0; display: grid; overflow: hidden; }
+.botapp-stage:has(> .botapp-frame) { mask-image: linear-gradient(to top, transparent, var(--black) var(--space-3)); }
 .botapp-frame { width: 100%; height: 100%; border: 0; background: transparent; }
-/* 聊天页的输入区悬浮在消息上；这里要占位，避免盖住 Bot 的内容和信息侧栏。 */
-.botapp-dock { position: relative; flex: none; padding: var(--space-3) var(--space-4) var(--space-4); pointer-events: auto; }
+/* 对话页的输入区悬浮在消息上；这里要占位，不盖住 Bot 的界面。子项都是 --col 宽、居中 */
+/* 和对话页的 .composer-dock 一样给滚动条留出那一条（scrollbar-gutter），两边切换时输入框的位置一像素不差 */
+.botapp-dock { flex: none; display: grid; gap: var(--space-2-5); padding: var(--space-2) 0 var(--dock-pb); overflow: hidden; scrollbar-gutter: stable; }
+.botapp-dock > * { width: var(--col); margin-inline: auto; }
 .botapp-loading { display: grid; place-items: center; }
 .botapp-sample { font-size: var(--fs-sm); color: var(--fg-2); }
 .botapp-side { min-height: 0; min-width: 0; overflow: auto; background: var(--well); }
@@ -33,15 +55,31 @@
 .botapp-info h3 { margin: 0; }
 .botapp-info ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); }
 .botapp-skills li { display: grid; }
-.botapp-starters { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; padding-bottom: var(--space-2); }
-.botapp-reply { all: unset; cursor: pointer; display: flex; gap: var(--space-2); align-items: flex-start; padding-bottom: var(--space-2); color: var(--fg-2); font-size: var(--fs-sm); min-width: 0; }
-.botapp-reply .text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: pre-wrap; }
-.botapp-reply.open .text { display: block; }
+/* 示例：一排建议卡片（2–3 句，通常一行放下；列窄了折行，折下去的那张占满整行），整句都看得到（最多四行，悬停看全文）。
+   和对话页的建议胶囊一样是一层静默填充，不描边、不浮起 */
+.botapp-starters { --starter-min: 168px; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.botapp-starter {
+  flex: 1 1 var(--starter-min); display: flex; align-items: flex-start; min-width: 0; padding: var(--space-2-5) var(--space-3-5); border-radius: var(--r-well);
+  background: var(--pill); color: var(--fg-2); font-size: var(--fs-sm); line-height: var(--lh-snug); text-align: start;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.botapp-starter:hover:not(:disabled) { background: var(--pill-hover); color: var(--fg); }
+.botapp-starter:active:not(:disabled) { background: var(--pill-press); }
+.botapp-starter:disabled { color: var(--faint); cursor: default; }
+.botapp-starter-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; overflow-wrap: anywhere; }
+/* 最新回复：头像 + 对话里那样的回复正文（同字号、同行距、同 Markdown 排版），平时露三行，展开后限高滚动 */
+.botapp-reply { --reply-lines: 3; display: flex; gap: var(--space-3); align-items: flex-start; min-width: 0; }
+.botapp-reply > :first-child { flex: none; margin-top: var(--space-0-5); }   /* 微调：22 的头像和 15/1.7 的首行居中对齐 */
+.botapp-reply-main { flex: 1; min-width: 0; display: grid; gap: var(--space-1); }
+.botapp-reply-body { color: var(--fg); line-height: var(--lh-prose); max-height: calc(1em * var(--lh-prose) * var(--reply-lines)); overflow: hidden; }
+.botapp-reply.long:not(.open) .botapp-reply-body { mask-image: linear-gradient(to top, transparent, var(--black) 1.2em); }
+.botapp-reply.open .botapp-reply-body { max-height: 40vh; overflow-y: auto; }
+.botapp-reply-bar { display: flex; gap: var(--space-1); margin-inline-start: calc(-1 * var(--space-2-5)); }   /* 微调：幽灵按钮的字和正文左对齐 */
+.botapp-reply-wait { line-height: var(--ctl-sm); color: var(--muted); font-size: var(--fs-md); }
 
 .side-group { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--side-row-px) var(--space-1); }
 .side-group .text { color: var(--fg-2); }
 .thread-new-dot { width: var(--space-2); height: var(--space-2); border-radius: var(--r-full); background: var(--signal); flex: none; }
-.thread-icon { display: grid; place-items: center; width: var(--space-8); }
 
 @media (max-width: 720px) {
   .botapp.with-side { grid-template-columns: minmax(0, 1fr); }

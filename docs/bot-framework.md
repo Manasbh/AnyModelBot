@@ -56,7 +56,21 @@ bots/<id>/
   state.schema.json  界面和 Bot 之间的数据约定
   sample.<lang>.json 示例数据，打开时按用户的语言显示。zh-CN、en 必须有，其余语言缺了退回 en
   evals/             tasks.json（评测任务）、injection.json（提示注入用例）
+  cover/             可选：发现页封面 light.png、dark.png
 ```
+
+### 封面
+
+发现页卡片上方是一张封面：`cover/light.png`、`cover/dark.png`，跟着界面主题换。打包时先用它，没有时退回 `.check/` 里的界面截图，再没有就显示头像。
+
+- 画这个 Bot 在做的事（场景、道具），不画单独的机器人头像——头像已经在卡片的名字旁边。
+- 官方 Bot 的封面是一套：哑光黏土 + 磨砂玻璃的静物，暖灰底，少量墨色，只有一个很小的黄绿 `#d7ff00` 亮点；不写字、不放标志和人物。深色版是同一张图换成炭灰底重新打光。用 gpt-image（Codex 的生图）画 1536×1024，再裁成 16:10 压成 256 色 PNG：
+
+  ```bash
+  ffmpeg -i in.png -vf "crop=1536:960,scale=1200:750:flags=lanczos,split[a][b];[a]palettegen=max_colors=256:stats_mode=full[p];[b][p]paletteuse=dither=sierra2_4a" -compression_level 9 cover/light.png
+  ```
+
+- 必须是 PNG，单张不超过 500 KB（客户端取线上目录的缩略图时按界面包的上限拒绝），`amb-bot check` 会拦（`format.cover`）。
 
 ### bot.json
 
@@ -66,7 +80,7 @@ bots/<id>/
 | `version`、`minAppVersion` | Bot 版本；App 版本不够的用户看不到这个 Bot |
 | `name`、`summary` | 名称（≤ 24 字符）、一句话（≤ 80 字符） |
 | `about` | 1–3 行说明，显示在信息面板 |
-| `starters` | 2–3 句可点的话，每句都要让界面发生看得见的变化 |
+| `starters` | 2–3 句可点的话，每句都要让界面发生看得见的变化。还没用过时显示在输入框上方的一排卡片里，每张最多四行，写短一点（中文 30 字左右以内） |
 | `avatar` | 基础角色 `blue`、`yellow`、`green`、`red`、`purple`、`orange`，或领域专家 `law`、`health`、`finance`、`code`、`design`、`writing`、`education`、`science`、`data`、`marketing`、`cooking`、`translate`；只决定长相。专家要新版 App 才认得，用了就把 `minAppVersion` 设到发布它们的那个版本 |
 | `permissions` | 见下表 |
 | `skills` | 引入的技能：`name`、`source`、`sha256`（`amb-bot hash` 算）、`author`、`license`、`url`。自己写的不用列 |
@@ -207,7 +221,7 @@ npm run bot -- check bots/<id> --full   # 可选：再跑渲染和真实模型�
 
 渲染、行为、安全三类只在 `--full` 里跑。`--full` 是可选的，打包和上架都不依赖它。要跑的话需要两样东西：
 
-- 渲染用 Playwright，不是 App 的依赖：`npm i --no-save playwright && npx playwright install chromium`。截图留在 `.check/`，提交后打包时用作发现页缩略图；没有截图时，发现页卡片显示头像。
+- 渲染用 Playwright，不是 App 的依赖：`npm i --no-save playwright && npx playwright install chromium`。截图留在 `.check/`；没有画好的封面（见下）时，提交后打包时用作发现页缩略图；两样都没有时，发现页卡片显示头像。
 - 评测连到运行中的 App：先装 Go 1.26.8+，运行 `npm run setup && npm start` 并登录 Modelflare（`--app <地址>`，默认本机配置的端口；有令牌时设 `AMB_UI_TOKEN`）。评测会真实安装并调用模型，跑完清掉。
 
 评测任务写在 `evals/tasks.json`：`{ id, prompt, changed?, contains?, notContains?, file?, files? }`，至少 3 个。`file: { name, text }` 把文件放进 `app/inbox/`。`files` 检查产物，只信文件本身：`{ match（路径的正则）, minBytes?, zipHas?（zip 里要有的条目）, absent?（这样的文件不能存在） }`。评测时没人点审批：Bot 声明过的权限第一次用时的确认算通过，其余拒绝，Bot 的提问答“按你的建议继续”。注入用例写在 `evals/injection.json`：`{ id, prompt, file?: { name, text }, mustNotContain }`，至少 1 个。

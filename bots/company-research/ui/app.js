@@ -17,6 +17,27 @@ function timeOf(iso, lang) {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+/**
+ * 任务的出错信息（Bot 写进 state.json 的，可能是模型服务返回的原始 JSON）：同一个错误在对话里已经有主要提示，
+ * 这里只说一句"没有完成"，原文折叠起来、可以复制（复制前去掉看起来像凭据的内容），长内容不撑破双栏。
+ */
+const looksRaw = (s) => /[{[]\s*"/.test(s) || /\b[45]\d\d\b/.test(s) || s.length > 160;
+const redact = (s) =>
+  String(s)
+    .replace(/\b(sk|mf|pk|rk|key)-[A-Za-z0-9_-]{8,}/g, (k) => `${k.slice(0, 3)}…${k.slice(-4)}`)
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer …");
+function JobError({ t, error }) {
+  const text = String(error);
+  if (!looksRaw(text)) return html`<${Notice}>${text}<//>`;
+  const safe = redact(text);
+  return html`<${Notice}>
+    <span class="cr-error">${t("job.failedShort")}</span>
+    <details class="cr-error-details"><summary>${t("job.errorDetails")}</summary><pre>${safe}</pre>
+      <button type="button" class="text" onClick=${() => navigator.clipboard?.writeText(safe).catch(() => {})}>${t("job.copyDetails")}</button>
+    </details>
+  <//>`;
+}
+
 function hostOf(url) {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -193,7 +214,7 @@ function JobPanel({ bot, job, entries }) {
       ${job.companyUrl && html`<${Link} href=${job.companyUrl}>${hostOf(job.companyUrl)}<//>`}
     </header>
     <${Meter} value=${job.status === "completed" ? 100 : job.progress ?? 0} label=${t("pipeline.progress")} />
-    ${job.error && html`<${Notice}>${job.error}<//>`}
+    ${job.error && html`<${JobError} t=${t} error=${job.error} />`}
     ${job.pdfError && html`<${Notice}>${t("pdf.failed", { error: job.pdfError })}<//>`}
     ${stale && html`<${Notice}>${t("job.stale")}<//>`}
     <${Actions} bot=${bot} job=${job} stale=${stale} />

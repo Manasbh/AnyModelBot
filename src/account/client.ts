@@ -99,7 +99,8 @@ export class AccountSession {
     this.refreshing ??= (async () => {
       try {
         const t = await refreshTokens(await this.o.endpoints(), this.o.clientId, this.o.record.refreshToken, this.fetch);
-        this.o.record = { ...this.o.record, refreshToken: t.refreshToken, scope: t.scope || this.o.record.scope };
+        // 刷新令牌时服务端若带回 ID Token，顺带补上账户标识（升级前登录的没有记过）
+        this.o.record = { ...this.o.record, refreshToken: t.refreshToken, scope: t.scope || this.o.record.scope, ...(t.subject ? { subject: t.subject } : {}) };
         this.o.persist(this.o.record);
         this.access = { token: t.accessToken, expiresAt: t.expiresAt };
         return t.accessToken;

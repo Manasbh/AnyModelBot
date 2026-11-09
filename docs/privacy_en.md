@@ -57,7 +57,7 @@ This document explains what AnyModelBot stores where, what leaves your device, a
 
 - Model requests go from the bundled magpie gateway to Modelflare, which forwards them to the provider you chose.
 - A request contains what the model needs to answer: the prompt, conversation context, memory in use, file contents, tool results and, with computer use, screenshots.
-- Requests carry an `X-Modelflare-Skill: anymodel-bot/<version>` header so Modelflare can identify the source; Modelflare links opened from the app carry `utm_source=anymodelbot`.
+- Requests carry an `X-Modelflare-Skill: anymodel-bot/<version>` header so Modelflare can identify the source; Modelflare links opened from the app carry `utm_source=anymodelbot`. When the app opens the top-up page, the URL carries the account identifier from the sign-in ID token after `#` (`#amb_account=…`, not a secret) so the Modelflare page can check that the browser is signed in to the same account; what follows `#` is not sent to servers, CDNs or analytics scripts. The "Key configuration changed" notice compares an HMAC of the key computed locally with a random salt; the key and its digest are neither stored for this nor uploaded.
 - Modelflare keeps request logs; see the [Modelflare Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) for what is kept and for how long. How each model provider handles data is governed by its own terms.
 
 ## Using your own official API keys

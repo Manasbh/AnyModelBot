@@ -37,7 +37,7 @@ import type { AccessEntry, RuleMode } from "../store/db.js";
 import { normalizeSchedule, type Schedule } from "../tasks/schedule.js";
 import { exportFileName } from "../tasks/export.js";
 import type { StageGroup } from "../tasks/stage.js";
-import { GUIDE_STEPS, deriveGuide, isGuideStep, mergeGuide, normalizeGuide, type GuideState } from "../guide.js";
+import { GUIDE_STEPS, deriveGuide, isGuideChannel, isGuideStep, mergeGuide, normalizeGuide, type GuideState } from "../guide.js";
 import { lang, normalizeLang, requestLang, setLangPref, t, withLang, type LangPref, t as tr } from "../i18n/index.js";
 
 const log = logger("web");
@@ -225,6 +225,8 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
   // 用上目录 Bot 之后，命令行方式在非 Linux 的回环模式下也要令牌：技能脚本是外部代码，而进程来源检查只在 Linux 生效（agent/peer-guard.ts）。
   // 目录没启用时没有外部代码，行为不变
   const usesCatalog = app.catalog.enabled || app.store.listBots().some((b) => b.origin === "catalog");
+  /** /guide 在账户信息还没读到时补读账户的时间（离线时限流） */
+  let guideRefreshAt = 0;
   const loopbackNeedsToken = isLoopback(host) && !app.desktop && process.platform !== "linux" && usesCatalog;
   if ((!isLoopback(host) || loopbackNeedsToken) && !token) {
     const f = path.join(cfg.dataDir, "ui-token");
@@ -476,8 +478,27 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         return send(res, 200, status());
       }
       if (sub === "logout" && m === "POST") {
+        // 用户在确认框里知道有任务在跑、仍选择退出：先停下正在进行的对话（已生成的部分保留），
+        // 不让它们在连接断开后各自报一串凭据错误。后台任务由任务服务记为中断，重新接入后可以继续
+        const b = await readJson(req).catch(() => ({}));
+        if (b?.stopRunning) for (const conv of app.runtime.activeConversations()) stopConversation(conv);
         const r = await app.account.logout();
+        app.store.setKV("connection.setup", "1");
         return send(res, 200, { ...status(), revoked: r.revoked });
+      }
+      if (sub === "setup" && m === "POST") {
+        const b = await readJson(req).catch(() => ({}));
+        if (b?.stopRunning) for (const conv of app.runtime.activeConversations()) stopConversation(conv);
+        app.store.setKV("connection.setup", "1");
+        return send(res, 200, { ok: true });
+      }
+      if (sub === "continue" && m === "POST") {
+        app.store.deleteKV("connection.setup");
+        return send(res, 200, { ok: true });
+      }
+      if (sub === "key-notice" && m === "DELETE") {
+        app.dismissKeyChangeNotice();
+        return send(res, 200, { ok: true });
       }
       if (sub === "alerts" && m === "PUT") {
         const b = await readJson(req);
@@ -612,7 +633,52 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
     // attention："需要你"的件数（侧栏那一行，没有就是 0）；needs：每个机器人几件、最早那件（机器人行的第二行）
     if (p === "/agent" && m === "GET") {
       const items = app.attention.list();
-      return send(res, 200, { ...app.agent.status(), busy: [...new Set([...live.bots(), ...app.runtime.busyBots()])], background: app.tasks.background(), attention: items.length, needs: app.attention.byBot(items) });
+      return send(res, 200, { ...app.agent.status(), busy: [...new Set([...live.bots(), ...app.runtime.busyBots()])], background: app.tasks.background(), attention: items.length, needs: app.attention.byBot(items),
+        cuBlocked: Object.keys(app.cuPermissions.view().blocked) });
+    }
+    // —— 电脑操作的系统权限（macOS 桌面版，第 18 项）：状态、系统原生请求、打开设置页、稍后、重新打开应用 ——
+    if (p === "/computer-use/relaunch-drafts" && m === "GET") {
+      const raw = app.store.getKV("relaunch.drafts");
+      app.store.deleteKV("relaunch.drafts");
+      let drafts = {};
+      try {
+        drafts = raw ? JSON.parse(raw) : {};
+      } catch {
+        drafts = {};
+      }
+      return send(res, 200, { drafts });
+    }
+    if (seg[0] === "computer-use" && seg[1] === "permissions") {
+      const perms = app.cuPermissions;
+      const kind = (v: unknown) => {
+        if (v !== "accessibility" && v !== "screen") throw new HttpError(400, "unknown permission");
+        return v;
+      };
+      if (seg.length === 2 && m === "GET") return send(res, 200, perms.view());
+      if (seg[2] === "request" && m === "POST") {
+        await perms.request(kind((await readJson(req)).kind));
+        return send(res, 200, perms.view());
+      }
+      if (seg[2] === "open" && m === "POST") {
+        perms.openSettings(kind((await readJson(req)).kind));
+        return send(res, 200, perms.view());
+      }
+      if (seg[2] === "blocked" && seg[3] && m === "DELETE") {
+        perms.dismiss(decodeURIComponent(seg[3]));
+        return send(res, 200, perms.view());
+      }
+      if (seg[2] === "relaunch" && m === "POST") {
+        if (!app.desktop?.relaunch) throw new HttpError(404, "not supported");
+        // 没发出的草稿暂存一次：重新打开后界面取回（GET …/relaunch-drafts）就删掉
+        const b = await readJson(req).catch(() => ({}));
+        const drafts = Object.fromEntries(Object.entries(b?.drafts && typeof b.drafts === "object" ? b.drafts : {})
+          .filter(([k, v]) => typeof v === "string" && k.length <= 200).slice(0, 50).map(([k, v]) => [k, String(v).slice(0, 8000)]));
+        if (Object.keys(drafts).length) app.store.setKV("relaunch.drafts", JSON.stringify(drafts));
+        send(res, 200, { ok: true });
+        setTimeout(() => app.desktop?.relaunch?.(), 300);
+        return;
+      }
+      throw new HttpError(404, "not found");
     }
     // —— 需要你（3b）：所有机器人里在等人的事，和对它们的操作 ——
     // 全局渠道账号（设置 › 连接）：所有机器人共用，消息交给哪个机器人见 core/routes.ts。key 只是账号的命名空间
@@ -1012,33 +1078,70 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
     }
     // —— 新手引导（上手清单）：进度写进 config.json；读的时候把能从数据里看出来做过的步骤并进去 ——
     if (p === "/guide") {
+      // 进度按当前用户存：登录了 Modelflare 按账户（ownerKey，本机由发行方 + 用户名算出的哈希），没登录按本机（local）。
+      // 推导用的事实（会话、记忆、渠道）是这台电脑上的数据，换账户登录看到的也是同一份，所以照样用来推导。
+      // 账户信息还没读到时补读一次；离线时一分钟最多试一次，不让每次轮询都等网络
+      if (app.account.ownerKey === "pending-account" && Date.now() - guideRefreshAt > 60_000) {
+        guideRefreshAt = Date.now();
+        await app.account.refresh().catch(() => undefined);
+      }
+      const owner = app.account.ownerKey;
+      // 账户信息还没读到（离线等）：只读不写，免得进度落到一个临时的命名空间里，之后真正的账户反而看不到
+      const writable = owner !== "pending-account";
+      const key = `guide.owner.${owner}`;
+      const saved = app.store.getKV(key);
+      // 这个用户还没有自己的进度时，从这台电脑上的进度（config.json 的 ui.guide：升级前的进度，或者没登录时做的）开始，
+      // 先用自己的 Key、后来登录账户的人不会看到做完或关掉的清单又冒出来；之后各存各的
+      let current = saved ? normalizeGuide(JSON.parse(saved)) : normalizeGuide(cfg.ui.guide);
+      const visible = usesCatalog ? ["weixin", "memory", "media"] : [...GUIDE_STEPS];
+      const allDone = (g: GuideState) => visible.every((id) => g.done.includes(id as (typeof GUIDE_STEPS)[number]));
       const save = (g: GuideState) => {
-        cfg.ui.guide = g;
-        saveConfigFile(cfg.dataDir, (f) => (f.ui = { ...(f.ui ?? {}), guide: g }));
+        // 全部完成是里程碑：记一次，之后断开渠道、删掉记忆都不会让清单重新出现
+        if (allDone(g) && !g.seen.includes("completed")) g = { ...g, seen: [...g.seen, "completed"] };
+        current = g;
+        if (!writable) return;
+        app.store.setKV(key, JSON.stringify(g));
+        // 没登录账户时仍写回 config.json，和老版本兼容
+        if (owner === "local") {
+          cfg.ui.guide = g;
+          saveConfigFile(cfg.dataDir, (f) => (f.ui = { ...(f.ui ?? {}), guide: g }));
+        }
       };
       if (m === "PUT") {
         const b = await readJson(req);
         const add: unknown[] = b.done === undefined ? [] : Array.isArray(b.done) ? b.done : [b.done];
         if (!add.every(isGuideStep)) throw new HttpError(400, t("web.unknownGuideStep"));
-        const g = b.reset ? normalizeGuide({}) : cfg.ui.guide;
+        if (b.channel !== undefined && !isGuideChannel(b.channel)) throw new HttpError(400, t("web.unknownGuideStep"));
+        // 换了账户以后，上一个账户的界面迟到的请求不能推进这个账户的清单
+        if (b.owner && b.owner !== owner) throw new HttpError(409, "account changed");
+        const g = b.reset ? normalizeGuide({}) : current;
         save(normalizeGuide({
           done: [...g.done, ...add],
           hidden: b.hidden !== undefined ? !!b.hidden : g.hidden,
+          // 重新开始时连"全部完成"的里程碑一起清掉；能从数据看出来做过的步骤下面照样并进来
           seen: [...g.seen, ...(typeof b.seen === "string" ? [b.seen] : [])],
+          channel: b.channel ?? g.channel,
         }));
       } else if (m !== "GET") throw new HttpError(405, "method not allowed");
       const bots = app.store.listBots();
+      // 已经打过勾的步骤不再去查：渠道状态、记忆文件都要读磁盘或问渠道
+      const channelConnected = !current.done.includes("weixin") && app.store.listChannelAccounts().some((a) => (app.channelStatus(a.key) as Record<string, { state?: string } | undefined>)[a.channel]?.state === "connected");
+      const memoryDone = current.done.includes("memory");
+      // 打过招呼 = 有一条真正的回复（出错提示以 ⚠️ 开头，不算）。已经打过勾就不再翻消息；找到第一条就停
+      const convs = app.store.listConversations();
+      const replied = !current.done.includes("hello") && convs.some((c) => c.messageCount >= 2 && app.store.listMessages(c.id, 20).some((x) => x.role === "assistant" && !!x.content.trim() && !x.content.startsWith("⚠️")));
       const derived = deriveGuide({
-        conversations: app.store.listConversations(),
+        conversations: convs.map((c) => ({ messageCount: c.messageCount, model: c.model, successfulReply: replied })),
         bots,
-        channelBound: () => app.store.listChannelAccounts().length > 0,
-        // 机器人自己的记忆，或所有机器人共享的团队记忆，有一条就算记下过
-        memoryCount: (id) =>
-          [{ kind: "bot" as const, id }, { kind: "team" as const, id: "" }].reduce((n, s) => n + app.agent.memory.entries(s).length + app.agent.memory.topics(s).length, 0),
+        // 至少有一个渠道真的连上了（只填了配置不算）
+        channelBound: () => channelConnected,
+        // 机器人自己的记忆或团队记忆里真的有条目（主文件 + 各主题）
+        memoryCount: (id) => memoryDone ? 0 : [{ kind: "bot" as const, id }, { kind: "team" as const, id: "" }].reduce((n, scope) =>
+          n + app.agent.memory.entries(scope).length + app.agent.memory.topics(scope).reduce((count, topic) => count + app.agent.memory.entries(scope, topic).length, 0), 0),
       });
-      const merged = mergeGuide(cfg.ui.guide, derived);
-      if (merged.done.length !== cfg.ui.guide.done.length) save(merged);
-      return send(res, 200, { steps: GUIDE_STEPS, ...cfg.ui.guide });
+      const merged = mergeGuide(current, derived);
+      if (!saved || JSON.stringify(merged) !== JSON.stringify(current) || (!current.seen.includes("completed") && allDone(current))) save(merged);
+      return send(res, 200, { steps: GUIDE_STEPS, owner, ...current });
     }
     // —— 故障排查（设置 → 故障排查）：所有输出都已脱敏 ——
     if (seg[0] === "diagnostics") {

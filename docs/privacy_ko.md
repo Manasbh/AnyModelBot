@@ -57,7 +57,7 @@
 
 - 모델 요청은 내장 magpie 게이트웨이에서 Modelflare로 전달되고, Modelflare가 선택한 제공업체로 전달합니다.
 - 요청에는 답변에 필요한 프롬프트, 대화 맥락, 사용 중인 기억, 파일 내용, 도구 결과와 컴퓨터 사용 시의 스크린샷이 포함됩니다.
-- Modelflare가 요청 출처를 식별하도록 `X-Modelflare-Skill: anymodel-bot/<version>` 헤더를 보냅니다. 앱에서 여는 Modelflare 링크에는 `utm_source=anymodelbot`이 포함됩니다.
+- Modelflare가 요청 출처를 식별하도록 `X-Modelflare-Skill: anymodel-bot/<version>` 헤더를 보냅니다. 앱에서 여는 Modelflare 링크에는 `utm_source=anymodelbot`이 포함됩니다. 앱에서 충전 페이지를 열 때 URL의 `#` 뒤에 로그인 시 ID 토큰의 계정 식별자(`#amb_account=…`, 비밀 정보 아님)를 붙여 Modelflare 페이지가 브라우저에 같은 계정으로 로그인되어 있는지 확인합니다. `#` 뒤의 내용은 서버, CDN, 분석 스크립트로 전송되지 않습니다. ‘키 구성 변경’ 안내는 기기에서 임의의 솔트로 키의 HMAC을 계산해 비교할 뿐, 키나 그 요약을 저장하거나 전송하지 않습니다.
 - Modelflare는 요청 로그를 보관합니다. 항목과 기간은 [Modelflare 신뢰 센터](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)를 확인하세요. 각 모델 제공업체의 데이터 처리는 자체 약관을 따릅니다.
 
 ## 내 공식 API 키 사용

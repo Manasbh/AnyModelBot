@@ -6,14 +6,17 @@ import { BotAvatar } from "../components/avatar.js";
 import { Markdown, Linkified } from "../components/markdown.js";
 import { ModelPicker, prefetchModelInfo, shortModel, sameModel } from "../components/model-picker.js";
 import { officialSource } from "../lib/models.js";
+import { classifyError, redact, uiActionOf } from "../lib/errors.js";
+import { MF_TOPUP } from "../lib/links.js";
 import { PwshHint } from "../components/pwsh-hint.js";
 import { ActivityLine, currentStep, upsertStep } from "../components/activity.js";
 import { TaskChip } from "../components/tasks.js";
 import { DeliveredFiles } from "../components/files.js";
 import { GuideChecklist, MediaDemo } from "../components/guide.js";
+import { CuPermissionCard } from "../components/cu-permission.js";
 import { api, attachChat, streamChat } from "../lib/api.js";
 import { confirmSheet, failed, saved, useStore } from "../lib/store.js";
-import { completed, currentStep as guideStep, demo, fill, guide, isActive, isMediaFile, markDone, refreshGuide } from "../lib/guide.js";
+import { completed, composerBusy, currentStep as guideStep, demo, fill, guide, isActive, isMediaFile, markDone, refreshGuide, refreshGuideSoon } from "../lib/guide.js";
 import { fmtSep, fmtClock, fmtDur } from "../lib/format.js";
 import { perms, confirmPermission } from "../lib/perms.js";
 import { prefs } from "../lib/prefs.js";
@@ -201,18 +204,60 @@ export function WorkLine({ live, stopping, text, startedAt, workedMs, steps, cou
   return html`<${ActivityLine} label=${label} phase=${phase} live=${live} steps=${steps} count=${count} load=${load} />`;
 }
 
+/**
+ * 用户消息：界面按钮发给目录 Bot 的 "[ui-action] {json}" 不给人看 JSON（第 9 项），显示附带的说明，
+ * 没有说明时显示"在界面上操作"。复制的仍是原文（Bot 按原文执行，内部上下文不丢）。
+ */
+function userMessage(it) {
+  const ua = uiActionOf(it.text);
+  if (!ua) return html`<div class="msg"><${Linkified} text=${it.text} /></div><${MsgActions} text=${it.text} at=${it.at} />`;
+  return html`<div class="msg">${ua.text ? html`<${Linkified} text=${ua.text} />` : html`<span class="tone-muted">${t("firstUse.errors.uiAction")}</span>`}</div><${MsgActions} text=${ua.text || it.text} at=${it.at} />`;
+}
+
 /** 消息下方的操作：复制 + 时刻（悬停时出现，最后一条回复常显） */
 export function MsgActions({ text, at }) {
   return html`<div class="msg-actions"><${CopyButton} text=${text} label=${t("chat.copyMessage")} />${at && html`<span class="when num">${fmtClock(at)}</span>`}</div>`;
 }
 
-export function ErrorNotice({ text, onRetry, onFixKey, source = "" }) {
-  const auth = isAuthError(text);
-  return html`<${Notice} tone="red" action=${html`${auth && onFixKey && html`<button type="button" class="btn" onClick=${onFixKey}>${source ? t("chat.error.fixOfficialKey") : t("chat.error.fixKey")}</button>`}
-    ${onRetry && html`<button type="button" class="btn" onClick=${onRetry}>${t("common.retry")}</button>`}`}>${auth ? (source ? t("chat.error.officialKeyInvalid", { name: source }) : t("chat.error.authInvalid")) : text}<//>`;
+/**
+ * 任务出错（第 9 项）：一句简明的主提示 + 和错误来源对得上的恢复入口，原始报错折叠在"错误详情"里，可以复制（已去掉凭据）。
+ * - 余额 / 额度不足：Modelflare 的给"充值"；自己的 API Key（source = 厂商名）不引导去 Modelflare 充值，只提示去厂商那里看。
+ * - 凭据失效、模型不可用、限流、网络、其他 403 分开说，不把所有 403 都当成欠费。
+ * - "重新发送"是从头再执行这条消息：这一轮已经做过操作（有步骤、交付了文件）时先说清楚可能会重复，再让用户决定。
+ */
+export function ErrorNotice({ text, onRetry, onFixKey, onSwitchModel, source = "", ranSteps = false, topupUrl = "" }) {
+  const e = classifyError(text);
+  const auth = e.kind === "auth" || isAuthError(text);
+  const kind = auth ? "auth" : e.kind;
+  const main = auth
+    ? source ? t("chat.error.officialKeyInvalid", { name: source }) : t("chat.error.authInvalid")
+    : kind === "balance" ? (source ? t("firstUse.errors.balanceOfficial", { name: source }) : t("firstUse.errors.balance"))
+    : kind === "unfinished" && !e.raw ? text
+    : t(`firstUse.errors.${kind}`);
+  const hint = kind === "balance" ? (source ? t("firstUse.errors.balanceOfficialHint", { name: source }) : t("firstUse.errors.balanceHint")) : kind === "model" ? t("firstUse.errors.modelHint") : "";
+  const retry = async () => {
+    if (ranSteps && !(await confirmSheet({ title: t("firstUse.errors.retryTitle"), body: t("firstUse.errors.retryBody"), confirmLabel: t("firstUse.errors.retry") }))) return;
+    onRetry();
+  };
+  const details = kind !== "unfinished" || e.raw;
+  const detailText = redact(text);
+  return html`<${Notice} tone="red" action=${html`
+      ${kind === "balance" && !source && html`<a class="btn primary" href=${topupUrl || MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("sidebar.topUp")}</a>`}
+      ${auth && onFixKey && html`<button type="button" class="btn" onClick=${onFixKey}>${source ? t("chat.error.fixOfficialKey") : t("chat.error.fixKey")}</button>`}
+      ${(kind === "balance" || kind === "model") && onSwitchModel && html`<button type="button" class="btn" onClick=${onSwitchModel}>${t("chat.menu.switchModel")}</button>`}
+      ${onRetry && kind !== "auth" && html`<button type="button" class="btn" title=${t("firstUse.errors.retryHint")} onClick=${retry}>${t("firstUse.errors.retry")}</button>`}`}>
+    <div class="err-main">${main}</div>
+    ${hint && html`<div class="err-hint">${hint}</div>`}
+    ${details && html`<details class="err-details">
+      <summary>${t("firstUse.errors.details")}</summary>
+      ${(e.status || e.requestId) && html`<div class="err-meta">${e.status ? html`<span>${t("firstUse.errors.status", { status: e.status })}</span>` : ""}${e.requestId ? html`<span>Request ID: <code>${e.requestId}</code></span>` : ""}</div>`}
+      <pre class="err-raw">${detailText}</pre>
+      <${CopyButton} text=${detailText} label=${t("firstUse.errors.copy")} />
+    </details>`}
+  <//>`;
 }
 
-export function ChatScreen({ bot, models, modelsError, reloadModels, defaultModel, infoOpen, onToggleInfo, onWorking, onOpenSettings, onOpenBotSettings, onBotUpdated, pending = 0, serverBusy = false, account, onAccount, initialFocus, onBackToSearch, visible = true }) {
+export function ChatScreen({ bot, models, modelsError, reloadModels, defaultModel, infoOpen, onToggleInfo, onWorking, onOpenSettings, onOpenBotSettings, onBotUpdated, pending = 0, serverBusy = false, account, onAccount, initialFocus, onBackToSearch, visible = true, cuBlocked = false }) {
   const viewId = `${bot.id}:web:console`;
   const savedView = useRef(chatView(viewId));
   const restoreView = useRef(true);
@@ -269,9 +314,14 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   useEffect(() => {
     if (justDone && justDone.at > born.current) setCue({ kind: "done", at: justDone.at });
   }, [justDone && justDone.at]);
+  // 输入框里有没发出的草稿：自动弹出的引导卡片先不出来（第 11.2 项）
+  useEffect(() => {
+    composerBusy.set(!!text.trim());
+  }, [!!text.trim()]);
+  useEffect(() => () => composerBusy.set(false), []);
   useEffect(() => {
     if (!fillReq || fillReq.at < born.current) return;
-    setText(fillReq.text);
+    setText((v) => v.trim() ? `${v}\n${fillReq.text}` : fillReq.text);
     setSlashOff(true);
     requestAnimationFrame(() => {
       ta.current?.focus();
@@ -451,10 +501,8 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
     const finalText = await follow("a" + t.id, t.id, (h, signal) => attachChat(bot.id, t.id, h, signal));
     reloadAfter.current = false;
     if (finalText === null) return;
-    if (isError(finalText)) {
-      setCue({ kind: "error", at: Date.now() });
-      failed(errText(finalText));
-    }
+    // 出错时只在对话里留一个主要提示（重新读历史后就是那条出错的回复），不再另弹一条同样的提示
+    if (isError(finalText)) setCue({ kind: "error", at: Date.now() });
     load({ since: t.startedAt, ms: Date.now() - t.startedAt });
   };
   attachRef.current = attach;
@@ -511,7 +559,11 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
       if (!msg.startsWith("/")) markDone("hello");
       else if (/^\/model\s+\S/i.test(msg)) markDone("model");
       const gs = guide.get();
-      if (isActive(gs) && guideStep(gs)) refreshGuide();
+      if (isActive(gs) && guideStep(gs)) {
+        refreshGuide();
+        // 记忆可能在回合之后才写入、渠道可能稍后才连上：再看几次
+        refreshGuideSoon();
+      }
     }
     if (isError(finalText)) setCue({ kind: "error", at: Date.now() });
     if (reloadAfter.current) {
@@ -700,7 +752,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
         const shown = it.role === "user" ? it.text : shownText(it);
         out.push(html`<div class=${`${cls}${it.id === lastAi ? " last" : ""}`} data-message-id=${it.mid} key=${it.id}>
           ${it.role === "user"
-            ? html`<div class="msg"><${Linkified} text=${it.text} /></div><${MsgActions} text=${it.text} at=${it.at} />`
+            ? userMessage(it)
             : html`${(it.live || it.workedMs || it.steps) && html`<${WorkLine} live=${it.live} stopping=${it.live && stopping} text=${it.text} startedAt=${it.startedAt} workedMs=${it.workedMs}
                 steps=${it.activity} count=${it.steps} load=${it.mid ? loadActivity(it.mid) : undefined} />`}
               ${shown && html`<div class="msg"><${Markdown} text=${shown} /></div>`}
@@ -717,7 +769,8 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
           ${(it.activity?.length || it.steps) && html`<${WorkLine} workedMs=${it.workedMs} steps=${it.activity} count=${it.steps} load=${it.mid ? loadActivity(it.mid) : undefined} />`}
           ${it.interim?.length > 0 && html`<div class="msg"><${Markdown} text=${it.interim.join("\n\n")} /></div>`}
           ${files(it)}
-          <${ErrorNotice} text=${it.text} onRetry=${it.retry ? () => send(it.retry) : undefined} source=${officialSource(effective)} onFixKey=${() => onOpenSettings("modelflare", officialSource(effective) ? "official-add" : "account")} />
+          <${ErrorNotice} text=${it.text} topupUrl=${account?.topupUrl} onRetry=${it.retry ? () => send(it.retry) : undefined} source=${officialSource(effective)} ranSteps=${!!(it.activity?.length || it.steps || it.files?.length)}
+            onSwitchModel=${() => requestAnimationFrame(() => setMenu("model"))} onFixKey=${() => onOpenSettings("modelflare", officialSource(effective) ? "official-add" : "account")} />
         </div>`);
       }
       // 回复下面直接挂在同一行里（在复制按钮之前）；挂在卡片、文件、出错提示后面时自成一行
@@ -777,6 +830,10 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
     </div>
     ${toBottomBtn.mounted && html`<button type="button" class=${`to-bottom${toBottomBtn.leaving ? " leaving" : ""}`} aria-label=${t("chat.toBottom")} onClick=${toBottom}><${Icon} name="down" size="md" />${unseen && html`<span class="new"></span>`}</button>`}
     <div class="composer-dock">
+      ${cuBlocked && html`<${CuPermissionCard} botId=${bot.id} onRetry=${() => {
+        const last = lastUser.current || (items || []).findLast((x) => x.kind === "msg" && x.role === "user")?.text;
+        if (last) send(last);
+      }} />`}
       <div class="composer" data-guide="composer">
         <textarea ref=${ta} rows="1" placeholder=${t("chat.composer.placeholder", { name: bot.name })} aria-label=${t("chat.composer.label")} value=${text}
           onInput=${(e) => { setText(e.target.value); setSlashOff(false); setSlashSel(0); autoGrow(e.target); }}

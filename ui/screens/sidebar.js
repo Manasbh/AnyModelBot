@@ -3,7 +3,8 @@
 // 新建在主区的新建页（screens/new-bot.js）；新建页打开时，机器人列表末尾（建好后它就在这）有一行占位，跟着显示头像和名字。
 // 机器人和群聊的增删：新行淡入并定位到它（新机器人的头像打个招呼），删掉的行淡出（design/motion.js 的 useListPresence）。
 // 群聊排在机器人后面（screens/group.js）；有两个以上机器人时，新建按钮是一个菜单（机器人 / 群聊）。
-// 有事在等你时，机器人列表上方多一行「需要你 N」（没事时没有这一行）；机器人行的第二行换成最早那件事。
+// 搜索框下面是固定的导航（和设置导航同一种行）：「发现」，有事在等你时下面多一行「需要你 N」（没事时没有这一行）；
+// 导航之下才是可滚动的「我的」列表。有事在等的机器人，行的第二行换成最早那件事。
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, Icon, IconButton, Menu, Popover, Skeleton } from "../components/ui.js";
 import { BotAvatar } from "../components/avatar.js";
@@ -20,6 +21,8 @@ import { MF_TOPUP, usd } from "../lib/links.js";
 import { t, useLang } from "../lib/i18n.js";
 import { NeedsRow } from "./needs-you.js";
 import { catalogFold, catalogSeen, latestOf, setCatalogFold, tr } from "../lib/catalog.js";
+import { AccountLogin } from "./onboarding.js";
+import { previewText } from "../lib/errors.js";
 import { GroupAvatars } from "./group.js";
 
 /** 余额：一个数字 + 说明。低于提醒线时数字不变色（红字像欠费），只多一行小字 */
@@ -33,40 +36,110 @@ export function Balance({ account, note }) {
 }
 
 /**
- * 左下角账户：头像字母 + 名称（登录后是 Modelflare 账户名），旁边是设置齿轮。
- * 余额不常驻：用户反馈一直看到它，会觉得一直在花钱。点头像才弹出来；余额低于提醒线时另有 LowBalance 提示。
- * 没有余额可看时（没登录、不是 Modelflare 托管），点头像和点齿轮一样打开设置。
+ * 左下角账户区（第 12、10、19 项）：
+ * - 头像 + 昵称常驻，整行可点，向上展开一个紧凑菜单：意见和反馈、检查更新、分隔线、退出登录（顺序固定）。
+ * - 上面一条：登录了 Modelflare 时是余额 + 充值（低于提醒线时多一行"余额较低"，充值一直能点，不用先关掉提示）；
+ *   用自己的 API Key、没登录 Modelflare 时是"登录 Modelflare"的独立入口，不显示不存在的余额。
+ * - 余额加载中 / 读取失败不显示成 0；名字缺失时显示"我的账号"，不拿内部生成的用户名冒充昵称。
  */
-export function AccountButton({ username, account, settingsOn, onSettings, onModelflare }) {
+export function AccountButton({ account, settingsOn, onSettings, update, onUpdateChanged }) {
   const [open, setOpen] = useState(false);
+  const [login, setLogin] = useState(false);
+  const [check, setCheck] = useState(""); // 这次手动检查的结果：checking / latest / failed（没检查过时为空，不说"已是最新"）
+  const [leaving, setLeaving] = useState(false);
   const ref = useRef(null);
-  const me = ((account && account.state === "signed_in" && account.name) || username || t("sidebar.localUser")).trim();
-  const bal = account && account.balanceUsd !== null && account.balanceUsd !== undefined ? usd(account.balanceUsd) : "";
-  return html`<button type="button" class=${`account${open ? " on" : ""}`} ref=${ref}
-      aria-label=${bal ? t("sidebar.account") : t("sidebar.openSettings")} aria-haspopup=${bal ? "dialog" : undefined} aria-expanded=${bal ? open : undefined}
-      onClick=${bal ? () => setOpen((v) => !v) : onSettings}>
-      <span class="me" aria-hidden="true">${me.slice(0, 1).toUpperCase()}</span>
-      <span class="who">${me}</span>
-    </button>
-    <${IconButton} icon="gear" iconSize="md" label=${t("sidebar.settingsTitle")} on=${settingsOn} onClick=${onSettings} />
-    ${open && bal && html`<${Popover} anchor=${ref.current} prefer="up" width=${260} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
-      <div class="account-pop">
-        <div class="account-pop-name">${me}</div>
-        <div class="account-pop-bal">
-          <${Balance} account=${account} />
-          <a class=${`btn sm${account.lowBalance ? " primary" : ""}`} href=${MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("sidebar.topUp")}</a>
-        </div>
+  const loginRef = useRef(null);
+  const signedIn = account?.state === "signed_in";
+  const me = (signedIn && account.name?.trim()) || t("firstUse.myAccount");
+  const changed = () => window.dispatchEvent(new Event("amb-connection-change"));
+  const phase = update?.phase;
+  const ready = phase === "ready";
+  const updateWorking = ["checking", "downloading", "installing"].includes(phase);
+  const runUpdate = async () => {
+    // 有新版本：已下载好的按"重启更新"（有任务在跑时服务端会拒绝）；没下载的开始下载；不支持应用内更新的打开下载页
+    if (!update?.supported) return void window.open(update?.downloadUrl || update?.releaseUrl || "https://github.com/modelflare-ai/AnyModelBot/releases", "_blank", "noopener");
+    try {
+      await api(`/update/${ready ? "install" : "download"}`, { method: "POST", body: {} });
+    } catch (e) {
+      failed(updateError(e));
+    } finally {
+      onUpdateChanged?.();
+    }
+  };
+  const checkUpdate = async () => {
+    if (update?.available) return runUpdate();
+    if (!update?.supported) return void window.open(update?.releaseUrl || "https://github.com/modelflare-ai/AnyModelBot/releases", "_blank", "noopener");
+    setCheck("checking");
+    try {
+      const result = await api("/update/check", { method: "POST", body: {} });
+      setCheck(result.error ? "failed" : result.available ? "" : "latest");
+    } catch {
+      setCheck("failed");
+    } finally {
+      onUpdateChanged?.();
+    }
+  };
+  const checkLabel = check === "checking" || phase === "checking" ? t("firstUse.checking")
+    : updateWorking || ready ? updateDescription(update)
+    : update?.available ? t("sidebar.update", { version: update.latest || "" })
+    : check === "failed" ? t("firstUse.updateFailed")
+    : check === "latest" ? t("firstUse.latest")
+    : t("firstUse.checkUpdate");
+  const leave = async () => {
+    if (leaving) return;
+    try {
+      const state = await api("/agent").catch(() => ({}));
+      const busy = !!(state.busy?.length || Object.values(state.background || {}).some((n) => Number(n) > 0));
+      const title = t(signedIn ? "firstUse.logout" : "firstUse.backConfig");
+      // 退出登录会断开 Modelflare 连接：有任务在跑时先说清楚影响，由用户决定；回到接入配置保留 Key，任务照常
+      const body = signedIn ? t(busy ? "firstUse.logoutBusy" : "firstUse.logoutBody") : t("firstUse.backConfigBody");
+      if (!(await confirmSheet({ title, body, confirmLabel: title, danger: signedIn }))) return;
+      setLeaving(true);
+      const result = await api(signedIn ? "/account/logout" : "/account/setup", { method: "POST", body: signedIn ? { stopRunning: busy } : {} });
+      if (signedIn && result.revoked === false) failed(t("settings.logout.notRevoked"));
+      setOpen(false);
+      changed();
+    } catch (e) {
+      failed(e);
+    } finally {
+      setLeaving(false);
+    }
+  };
+  const balance = !signedIn ? "" : account.error ? t("firstUse.balanceUnavailable") : account.balanceUsd == null ? t("firstUse.balanceLoading") : usd(account.balanceUsd);
+  return html`<div class="account-stack">
+    ${signedIn
+      ? html`<div class=${`account-balance${account.lowBalance && !account.error ? " low" : ""}`} role="status">
+          <span class="account-balance-text">
+            ${account.lowBalance && !account.error
+              ? html`<span class="account-low"><span class="dot warn"></span>${t("firstUse.lowBalance")}</span><span class="hint num">${balance}</span>`
+              : html`<span class="hint">${t("sidebar.balance")}</span><span class="num">${balance}</span>`}
+          </span>
+          <a class="text account-topup" href=${account.topupUrl || MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("firstUse.topUp")}</a>
+        </div>`
+      : account && account.state !== "unavailable" && html`<button type="button" class="account-login" ref=${loginRef} aria-expanded=${login} onClick=${() => setLogin((v) => !v)}>
+          <span class="account-login-title">${t("firstUse.signIn")}</span><span class="hint">${t("firstUse.signInSub")}</span></button>`}
+    <div class="account-row">
+      <button type="button" class=${`account${open ? " on" : ""}`} ref=${ref} title=${me} aria-label=${t("firstUse.accountMenu", { name: me })} aria-haspopup="menu" aria-expanded=${open} onClick=${() => setOpen((v) => !v)}>
+        <span class="me" aria-hidden="true">${me.slice(0, 1).toUpperCase()}</span><span class="who">${me}</span>
+        ${update?.available && html`<span class="dot new account-dot" title=${t("sidebar.update", { version: update.latest || "" })}></span>`}
+      </button>
+      <${IconButton} icon="gear" iconSize="md" label=${t("sidebar.settingsTitle")} on=${settingsOn} onClick=${onSettings} />
+    </div>
+    ${open && html`<${Popover} anchor=${ref.current} prefer="up" width=${280} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
+      <div class="account-menu" role="menu">
+        <a role="menuitem" href="https://github.com/modelflare-ai/AnyModelBot/issues/new/choose" target="_blank" rel="noopener noreferrer" onClick=${() => setOpen(false)}>
+          <span>${t("firstUse.feedback")}</span><span class="hint">${t("firstUse.feedbackNote")}</span></a>
+        <button type="button" role="menuitem" disabled=${check === "checking" || updateWorking || (ready && update.busy)} title=${ready && update.busy ? t("updates.busy") : ""} onClick=${checkUpdate}>
+          ${update?.available && html`<span class="dot new"></span>`}<span role="status">${checkLabel}</span></button>
+        <hr />
+        <button type="button" role="menuitem" class="danger" disabled=${leaving} onClick=${leave}>${t(signedIn ? "firstUse.logout" : "firstUse.backConfig")}</button>
       </div>
-      <div class="foot"><button type="button" onClick=${() => { setOpen(false); onModelflare(); }}>${t("sidebar.accountDetails")}</button></div>
-    <//>`}`;
-}
-
-/** 余额低于提醒线时，侧栏底部一行安静的提示：不写金额，金额在账户浮层里 */
-function LowBalance({ account }) {
-  if (!account || !account.lowBalance) return null;
-  return html`<a class="side-note" href=${MF_TOPUP} target="_blank" rel="noopener noreferrer" role="status">
-    <span class="side-note-main"><span class="dot warn"></span><span class="v">${t("sidebar.lowBalance")}</span><span class="go">${t("sidebar.topUp")}</span></span>
-  </a>`;
+    <//>`}
+    ${login && html`<${Popover} anchor=${loginRef.current} prefer="up" width=${300} label=${t("firstUse.signIn")} onClose=${() => setLogin(false)}>
+      <div class="account-pop"><p class="hint">${t("firstUse.signInKeep")}</p>
+        <${AccountLogin} autoStart secondary label=${t("firstUse.useAccount")} manual=${!!account?.manualLogin} onSignedIn=${() => { setLogin(false); changed(); }} /></div>
+    <//>`}
+  </div>`;
 }
 
 /** 更新提示：支持的桌面版直接下载/重启；手动分发继续打开安装包链接。 */
@@ -150,6 +223,9 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     if (entered || view === "new") root.current?.querySelector(".thread-item.anim-fade-in, .thread.draft")?.scrollIntoView({ block: "nearest" });
   }, [entered, view === "new"]);
   const canGroup = !!bots && bots.length >= 2;
+  // 搜索框下面固定的导航：「发现」（有目录 Bot 时）和「需要你」（有事时）。不跟着机器人列表滚动
+  const hasNav = catalog.length > 0 || needs.n > 0;
+  const discoverOn = !searchOpen && view === "discover";
 
   return html`<aside class="side" ref=${root} aria-label=${t("sidebar.bots")}>
     <div class="side-top">
@@ -162,18 +238,19 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       <input ref=${searchRef} type="search" placeholder=${t("search.placeholder")} aria-label=${t("search.title")} data-global-search-entry maxLength="200" value=${searchQuery} onFocus=${() => onOpenSearch?.(false)} onInput=${(e) => { onSearchQuery?.(e.target.value); onOpenSearch?.(false); }}
         onKeyDown=${(e) => { if (e.key === "Escape" && !e.isComposing && searchOpen) { e.preventDefault(); e.stopPropagation(); onCloseSearch?.(); } }} />
     </label>
+    ${hasNav && html`<div class="side-nav">
+      ${catalog.length > 0 && html`<button type="button" class=${`nav-item${discoverOn ? " sel" : ""}`} aria-current=${discoverOn ? "page" : undefined} onClick=${onDiscover}>
+        <${Icon} name="compass" size="md" /><span class="label">${t("botapp.sidebar.discover")}</span>${hasNew && html`<span class="thread-new-dot" title=${t("botapp.sidebar.new")}></span>`}
+      </button>`}
+      <${NeedsRow} count=${needs.n} on=${!searchOpen && view === "needs"} onClick=${onNeeds} />
+    </div>`}
     <nav class="side-list" aria-label=${t("sidebar.list")}>
-      <${NeedsRow} count=${needs.n} on=${view === "needs"} onClick=${onNeeds} />
-      ${catalog.length > 0 && html`<button type="button" class=${`thread${view === "discover" ? " sel" : ""}`} aria-current=${view === "discover" ? "page" : undefined} onClick=${onDiscover}>
-        <span class="thread-icon"><${Icon} name="spark" size="md" /></span>
-        <span class="body"><span class="line"><span class="title">${t("botapp.sidebar.discover")}</span>${hasNew && html`<span class="thread-new-dot" title=${t("botapp.sidebar.new")}></span>`}</span></span>
-      </button>
-      <div class="side-group"><span class="text t-label">${t("botapp.sidebar.mine")}</span></div>`}
+      ${hasNav && html`<div class="side-group"><span class="text t-label">${t("botapp.sidebar.mine")}</span></div>`}
       ${botsError && html`<div class="side-empty"><span>${t("sidebar.loadFailed")}</span><button type="button" class="btn" onClick=${reloadBots}>${t("common.retry")}</button></div>`}
       ${!bots && !botsError && [0, 1, 2].map((k) => html`<div class="thread" key=${k}><${Skeleton} w="38px" circle /><span class="thread-skel"><${Skeleton} w="50%" /><${Skeleton} w="75%" /></span></div>`)}
       ${bots && !bots.length && view !== "new" && html`<div class="side-empty"><span>${t("sidebar.empty")}</span><button type="button" class="btn primary" onClick=${onNew}>${t("sidebar.create")}</button></div>`}
       ${list.map(({ item: b, state: rowState }) => {
-        const sel = (view === "chat" || view === "bot-settings" || view === "app") && b.id === selectedId;
+        const sel = !searchOpen && (view === "chat" || view === "bot-settings" || view === "app") && b.id === selectedId;
         // 等你的：「需要你」里这个机器人的件数和最早那件（没有时退回待审批数）
         const nd = needs.bots[b.id];
         const n = nd?.n || pending[b.id] || 0;
@@ -191,7 +268,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
             <span class="avatar-wrap"><${BotAvatar} bot=${b} size=${38} greet=${rowState === "enter"} state=${n > 0 ? "waiting" : working[b.id] ? "working" : "idle"} />${working[b.id] && html`<span class="working-dot" title=${t("sidebar.working")}></span>`}</span>
             <span class="body">
               <span class="line"><span class="title">${b.name}</span>${pv?.at && html`<span class="when num">${fmtAgo(pv.at)}</span>`}</span>
-              <span class="line"><span class="snip">${nd?.line || (working[b.id] ? t("sidebar.workingNow") : pv?.text || t("sidebar.noChats"))}</span>${n > 0 && html`<span class="badge count" title=${t("sidebar.needs", { count: n })}>${n}</span>`}</span>
+              <span class="line"><span class="snip">${nd?.line || (working[b.id] ? t("sidebar.workingNow") : pv?.text || t("sidebar.noChats"))}</span>${n > 0 && html`<span class="needs-dot" role="img" title=${t("sidebar.needs", { count: n })} aria-label=${t("sidebar.needs", { count: n })}></span>`}</span>
             </span>
           </button>
           <${IconButton} icon="more" class="thread-more" label=${t("sidebar.moreFor", { name: b.name })} aria-haspopup="menu" aria-expanded=${menuOpen}
@@ -201,9 +278,9 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       ${view === "new" && html`<div class="thread sel draft anim-fade-in" aria-current="page"><${BotAvatar} char=${draft?.avatar} neutral size=${38} />
         <span class="body"><span class="line"><span class="title">${draft?.name || t("sidebar.newBot")}</span></span><span class="line"><span class="snip">${t("sidebar.creating")}</span></span></span></div>`}
       ${bots && shownGroups.map(({ item: g, state: rowState }) => {
-        const sel = view === "group" && g.id === groupId && rowState !== "leave";
+        const sel = !searchOpen && view === "group" && g.id === groupId && rowState !== "leave";
         const who = g.last?.botId ? (bots.find((b) => b.id === g.last.botId)?.name ?? "") : "";
-        const line = g.running && g.current ? t("group.working", { name: bots.find((b) => b.id === g.current)?.name ?? "" }) : g.last ? `${who ? `${who}: ` : ""}${g.last.text.replace(/^⚠️\s*/, "").replace(/\s+/g, " ")}` : t("group.noMessages");
+        const line = g.running && g.current ? t("group.working", { name: bots.find((b) => b.id === g.current)?.name ?? "" }) : g.last ? `${who ? `${who}: ` : ""}${previewText(g.last.text)}` : t("group.noMessages");
         const menuOpen = !!(groupCtx && groupCtx.el && groupCtx.group.id === g.id);
         const rowFx = rowState === "enter" ? " anim-fade-in" : rowState === "leave" ? " anim-fade-out" : "";
         return html`<div class=${`thread-item${rowFx}`} key=${"g" + g.id} inert=${rowState === "leave" || undefined}>
@@ -231,9 +308,8 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       </button>`)}`}
     </nav>
     <${UpdateNotice} update=${update} onChanged=${onUpdateChanged} />
-    <${LowBalance} account=${account} />
     ${bots && bots.length > 0 && html`<${GuidePill} onGo=${onGuide} />`}
-    <div class="side-foot"><${AccountButton} username=${username} account=${account} onSettings=${() => onOpenSettings()} onModelflare=${() => onOpenSettings("modelflare")} /></div>
+    <div class="side-foot"><${AccountButton} username=${username} account=${account} update=${update} onUpdateChanged=${onUpdateChanged} onSettings=${() => onOpenSettings()} onModelflare=${() => onOpenSettings("modelflare")} /></div>
     ${ctx && html`<${Menu} anchor=${ctx.el || { left: ctx.x, right: ctx.x, top: ctx.y, bottom: ctx.y, width: 0 }} align=${ctx.el ? "right" : undefined}
       width=${200} label=${t("sidebar.actionsFor", { name: ctx.bot.name })} onClose=${() => setCtx(null)}
       items=${[

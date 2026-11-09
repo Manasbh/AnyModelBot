@@ -20,6 +20,9 @@ export default {
     openUrlConfirm: "열기",
     removed: "이 봇은 카탈로그에서 내려갔습니다. 데이터는 남아 있습니다.",
     removedSecurity: "이 봇은 보안 문제로 내려갔고 스킬은 비활성화되었습니다. 데이터는 남아 있습니다.",
+    starters: "이렇게 시작해 보세요",
+    more: "더 보기",
+    less: "접기",
   },
   info: { what: "할 수 있는 일", skills: "사용하는 스킬", perms: "필요한 권한", settings: "봇 설정" },
   perm: {

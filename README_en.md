@@ -80,9 +80,9 @@ The easiest way to get models is **[Modelflare](https://modelflare.dev/?utm_sour
 
 **How AnyModelBot uses Modelflare**
 
-- **Sign in once.** The first launch opens your browser to sign in to (or sign up for) Modelflare. The app then connects this device itself, so there is no key to copy. Running in Docker or on a server? Sign in from a browser on any device, then paste the link you land on back into the app.
+- **Sign in once.** The first launch opens your browser to sign in to (or sign up for) Modelflare. The app then connects this device itself, so there is no key to copy, and brings you back once you approve. If you have no default model yet, it picks a low-cost model that supports tools. Running in Docker or on a server? Sign in from a browser on any device, then paste the link you land on back into the app.
 - **Every model, one picker.** Your Modelflare models are listed automatically, with context length, capabilities and reference prices next to each one.
-- **Pay for what you use.** Balance, low-balance reminders and per-day usage show up inside the app. Check the public price list and compare it with the official rates before you choose a model.
+- **Pay for what you use.** Your balance and a Top up link stay in the bottom-left corner, and low-balance reminders and per-day usage show up inside the app. Check the public price list and compare it with the official rates before you choose a model.
 - **An honest boundary.** Model requests travel through Modelflare to the provider you pick, and Modelflare keeps request logs. See the [Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) for what is kept and for how long. Everything else stays on your device ([details](#-how-it-works--privacy)).
 
 ---
@@ -232,7 +232,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 
 ## 🖥️ Operates your computer, and makes images and video
 
-- **Computer use** is powered by the bundled [Cua Driver](https://github.com/trycua/cua). By default, actions run automatically. Switch a bot to *ask before changing the screen* and every click and keystroke waits for you. Reading the screen never needs approval. On macOS, computer use is a Beta feature.
+- **Computer use** is powered by the bundled [Cua Driver](https://github.com/trycua/cua). By default, actions run automatically. Switch a bot to *ask before changing the screen* and every click and keystroke waits for you. Reading the screen never needs approval. On macOS, computer use is a Beta feature: Accessibility and Screen Recording permissions are requested only when a bot first needs them, and the chat explains which one is missing.
 - **Image and video generation** runs right away, taking the most reasonable reading of a loose request. It asks first only when the estimated cost is above 0.50 US dollars, so you see the model and prompt and can swap the model on the spot. To be asked every time, turn it on in the bot's settings.
 
 <p align="center">

@@ -232,6 +232,11 @@ export class BotRuntime {
     return !!set?.size || agentTurn;
   }
 
+  /** 正在处理消息的会话（纯对话和代理回合）：退出登录前停下它们用 */
+  activeConversations(): string[] {
+    return [...new Set([...[...this.inflight].filter(([, set]) => set.size > 0).map(([id]) => id), ...(this.opts.agent?.turnsInProgress.keys() ?? [])])];
+  }
+
   /** 会话里最早那条还在处理的消息是什么时候收到的 */
   busySince(conversationId: string): number | undefined {
     const set = this.inflight.get(conversationId);
@@ -971,6 +976,10 @@ export function turnFailedText(err: Error, steps: ActivityStep[]): string {
     const restart = err.restarted ? t("runtime.andRestarted") : "";
     if (err.reason === "user") return t("runtime.stoppedByUser", { d: fmtSecs(err.ms), restarted: err.restarted ? t("runtime.restartedNote") : "" });
     if (err.reason === "idle") return t("runtime.stoppedIdle", { d: fmtSecs(err.ms), restart, where });
+    if (err.reason === "permission") {
+      const names = err.missing.map((k) => t(k === "screen" ? "runtime.permScreen" : "runtime.permAccessibility"));
+      return t("runtime.stoppedPermission", { missing: names.join(t("runtime.listSep")) });
+    }
     return t("runtime.stoppedLimit", { d: fmtSecs(err.ms), restart, where });
   }
   if (/runtime (closed|exited)/i.test(err.message)) return t("runtime.runtimeRestarted");

@@ -1,10 +1,10 @@
 // 对话页（参考 Grok Bot 的顶栏、Codex 的对话与输入框）：顶栏左侧头像 + 名称，右侧新对话 / 信息面板；
 // 760 阅读列，用户消息是浅灰气泡，机器人回复是整列正文，上方一行"思考中 / 正在回复 / 用时"；底部两行输入框。
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "preact/hooks";
-import { html, Icon, IconButton, CopyButton, Menu, Popover, Badge, Notice, Skeleton, Spinner, autoGrow } from "../components/ui.js";
+import { html, Icon, IconButton, CopyButton, Badge, Notice, Skeleton, autoGrow } from "../components/ui.js";
 import { BotAvatar } from "../components/avatar.js";
 import { Markdown, Linkified } from "../components/markdown.js";
-import { ModelPicker, prefetchModelInfo, shortModel, sameModel } from "../components/model-picker.js";
+import { Composer, setConvModel, useConvModel } from "../components/composer.js";
 import { officialSource } from "../lib/models.js";
 import { classifyError, redact, uiActionOf } from "../lib/errors.js";
 import { MF_TOPUP } from "../lib/links.js";
@@ -15,31 +15,16 @@ import { DeliveredFiles } from "../components/files.js";
 import { GuideChecklist, MediaDemo } from "../components/guide.js";
 import { CuPermissionCard } from "../components/cu-permission.js";
 import { api, attachChat, streamChat } from "../lib/api.js";
-import { confirmSheet, failed, saved, useStore } from "../lib/store.js";
+import { confirmSheet, failed, useStore } from "../lib/store.js";
 import { completed, composerBusy, currentStep as guideStep, demo, fill, guide, isActive, isMediaFile, markDone, refreshGuide, refreshGuideSoon } from "../lib/guide.js";
 import { fmtSep, fmtClock, fmtDur } from "../lib/format.js";
-import { perms, confirmPermission } from "../lib/perms.js";
-import { prefs } from "../lib/prefs.js";
 import { t, useLang } from "../lib/i18n.js";
 import { notify, plainSnippet } from "../lib/notify.js";
 import { reducedMotion, usePresence } from "../design/motion.js";
 import { ConversationFind, HistoryBar, HistoryPageButton, useMessageHistory } from "../components/chat-search.js";
 import { chatView, saveChatView, useChatDraft } from "../lib/chat-view.js";
 
-// 文案跟着界面语言：渲染时再取（写成函数，不在模块顶层缓存翻译）
-const commands = () => [
-  ["/model", t("chat.commands.model")],
-  ["/new", t("chat.commands.new")],
-  ["/reset", t("chat.commands.reset")],
-  ["/status", t("chat.commands.status")],
-  ["/stop", t("chat.commands.stop")],
-  ["/tasks", t("chat.commands.tasks")],
-  ["/help", t("chat.commands.help")],
-];
-// 文件权限（输入框左下角，参考 Codex 的权限胶囊）：机器人设置里的同一项，预设在 lib/perms.js
 const NEAR_BOTTOM = 80;
-const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
-const MOD_ENTER = isMac ? "⌘Enter" : "Ctrl+Enter";
 let seq = 0;
 const uid = () => `l${++seq}`;
 
@@ -262,7 +247,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   const savedView = useRef(chatView(viewId));
   const restoreView = useRef(true);
   const [items, setItems] = useState(null);
-  const [convModel, setConvModel] = useState("");
+  const convModel = useConvModel(bot.id);
   const [text, setText] = useChatDraft(viewId);
   const [findOpen, setFindOpen] = useState(false);
   // generating：正在跟着一条消息（本页发出的，或切回 / 刷新后接上的）；stopping：按了停止，等服务端收尾
@@ -271,10 +256,6 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   const [atBottom, setAtBottom] = useState(true);
   const [scrolled, setScrolled] = useState(false); // 内容滚到顶栏底下了：顶栏出现细线
   const [unseen, setUnseen] = useState(false);
-  const [menu, setMenu] = useState(null); // "plus" | "perm" | "model" | null
-  const [perm, setPerm] = useState("");
-  const [slashSel, setSlashSel] = useState(0);
-  const [slashOff, setSlashOff] = useState(false);
   const [loadErr, setLoadErr] = useState("");
   const [cue, setCue] = useState(null); // 头像的一次性反应（出错）；完成时头像自己会播
   const [canOpen, setCanOpen] = useState(false); // 桌面版：交付的文件用系统程序打开
@@ -283,9 +264,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   const stick = useRef(savedView.current.atBottom);
   const history = useMessageHistory({ scope: { conversation: viewId }, scroller, stick, initialFocus, visible });
   const ta = useRef(null);
-  const plusRef = useRef(null);
-  const modelRef = useRef(null);
-  const permRef = useRef(null);
+  const composer = useRef(null); // 输入框给的 { openModel, closeSlash }
   // 正在跟的那条消息的事件流 { ac, local }：同一时刻只跟一条，切走时断开（消息在服务端照常处理）
   const following = useRef(null);
   const mounted = useRef(true);
@@ -303,7 +282,6 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   const justDone = useStore(completed);
   const fillReq = useStore(fill);
   const demoReq = useStore(demo);
-  const { sendKey } = useStore(prefs);
   const born = useRef(Date.now());
   // 生图的预置演示：只在本地对话流里放一遍（你的那句话 + 演示的回复），不发给机器人，刷新后就没了
   useEffect(() => {
@@ -322,7 +300,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   useEffect(() => {
     if (!fillReq || fillReq.at < born.current) return;
     setText((v) => v.trim() ? `${v}\n${fillReq.text}` : fillReq.text);
-    setSlashOff(true);
+    composer.current?.closeSlash();
     requestAnimationFrame(() => {
       ta.current?.focus();
       autoGrow(ta.current);
@@ -335,7 +313,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
       const d = await api(`/bots/${encodeURIComponent(bot.id)}/chat`);
       if (!mounted.current) return;
       convId.current = d.conversationId || "";
-      setConvModel(d.model || "");
+      setConvModel(bot.id, d.model || "");
       setCanOpen(!!d.canOpen);
       const list = toItems(d.messages || []);
       const reply = ended && list.findLast((x) => x.role !== "user");
@@ -366,9 +344,6 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
       following.current?.ac.abort();
     };
   }, [load]);
-  useEffect(() => {
-    api(`/bots/${encodeURIComponent(bot.id)}/settings`).then((d) => mounted.current && setPerm(d.settings.permission)).catch(() => {});
-  }, [bot.id]);
   useEffect(() => onWorking(bot.id, generating), [generating]);
   // 服务端开始处理这个机器人的消息，而本页没在跟（代理自己醒来的一轮、别的窗口发的）：读一次，接上进行中的那条
   useEffect(() => {
@@ -614,103 +589,8 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   };
   const loadActivity = (mid) => () => api(`/conversations/${encodeURIComponent(convId.current)}/messages/${mid}/activity`).then((d) => d.steps);
 
-  // —— 斜杠命令菜单 ——
-  const slashQuery = /^\/\S*$/.test(text) && !slashOff ? text.toLowerCase() : null;
-  const slashHits = slashQuery !== null ? commands().filter(([c]) => c.startsWith(slashQuery)) : [];
-  const slashOpen = slashHits.length > 0 && !(slashHits.length === 1 && slashHits[0][0] === text);
-  const completeSlash = (cmd) => {
-    setText(cmd === "/model" ? "/model " : cmd);
-    setSlashOff(cmd === "/model");
-    ta.current?.focus();
-  };
-
-  const onKey = (e) => {
-    if (e.isComposing || e.keyCode === 229) return;
-    if (slashOpen) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        return setSlashSel((s) => (s + 1) % slashHits.length);
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        return setSlashSel((s) => (s - 1 + slashHits.length) % slashHits.length);
-      }
-      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
-        e.preventDefault();
-        return completeSlash(slashHits[Math.min(slashSel, slashHits.length - 1)][0]);
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        return setSlashOff(true);
-      }
-    }
-    // 发送键（设置 › 常规 › 发送消息）：Enter 发送、Shift+Enter 换行；或 ⌘/Ctrl+Enter 发送、Enter 换行
-    if (e.key === "Enter" && !e.shiftKey && (sendKey !== "mod" || e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      send();
-    } else if (e.key === "Escape" && generating) {
-      e.preventDefault();
-      stop();
-    }
-  };
-
-  // —— 文件权限 ——
-  const pickPerm = async (p) => {
-    if (!(await confirmPermission(p))) return;
-    const prev = perm;
-    setPerm(p);
-    try {
-      const d = await api(`/bots/${encodeURIComponent(bot.id)}/settings`, { method: "PUT", body: { permission: p } });
-      setPerm(d.settings.permission);
-      saved();
-    } catch (e) {
-      setPerm(prev);
-      failed(e);
-    }
-  };
-
-  // —— 模型 ——
+  // 出错提示里的「当前模型」（官方 Key 的模型要去官方 Key 那里修）；选择在输入框里
   const effective = convModel || bot.defaultModel || defaultModel || (models && models[0]) || "";
-  // 模型资料（滑块要用）先取好，打开选择器时不用等
-  useEffect(() => {
-    if (models && models.length) prefetchModelInfo();
-  }, [!!(models && models.length)]);
-  const pickModel = async (m) => {
-    try {
-      await api(`/bots/${encodeURIComponent(bot.id)}/chat/model`, { method: "PUT", body: { model: m } });
-      setConvModel(m);
-      saved();
-      markDone("model");
-    } catch (e) {
-      failed(e);
-    }
-  };
-  const setBotDefault = async () => {
-    try {
-      const r = await api(`/bots/${encodeURIComponent(bot.id)}`, { method: "PUT", body: { defaultModel: effective } });
-      await api(`/bots/${encodeURIComponent(bot.id)}/chat/model`, { method: "PUT", body: { model: "" } });
-      setConvModel("");
-      onBotUpdated(r.bot);
-      saved();
-      markDone("model");
-    } catch (e) {
-      failed(e);
-    }
-  };
-  const plusItems = [
-    { label: t("chat.menu.switchModel"), onSelect: () => requestAnimationFrame(() => setMenu("model")) },
-    { sep: true },
-    { label: t("chat.menu.newConv"), note: "/new", onSelect: () => send("/new") },
-    {
-      label: t("chat.menu.reset"),
-      note: "/reset",
-      onSelect: async () => {
-        if (await confirmSheet({ title: t("chat.reset.title"), body: t("chat.reset.body", { name: bot.name }), confirmLabel: t("chat.reset.confirm"), danger: true })) send("/reset");
-      },
-    },
-    { label: t("chat.menu.status"), note: "/status", onSelect: () => send("/status") },
-    { label: t("chat.menu.allCommands"), note: "/help", onSelect: () => send("/help") },
-  ];
 
   // —— 渲染 ——
   /** 任务胶囊挂在哪一项后面：请求那条用户消息之后的第一条回复；那一轮还在进行时挂在进行中的回复后面 */
@@ -770,7 +650,7 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
           ${it.interim?.length > 0 && html`<div class="msg"><${Markdown} text=${it.interim.join("\n\n")} /></div>`}
           ${files(it)}
           <${ErrorNotice} text=${it.text} topupUrl=${account?.topupUrl} onRetry=${it.retry ? () => send(it.retry) : undefined} source=${officialSource(effective)} ranSteps=${!!(it.activity?.length || it.steps || it.files?.length)}
-            onSwitchModel=${() => requestAnimationFrame(() => setMenu("model"))} onFixKey=${() => onOpenSettings("modelflare", officialSource(effective) ? "official-add" : "account")} />
+            onSwitchModel=${() => composer.current?.openModel()} onFixKey=${() => onOpenSettings("modelflare", officialSource(effective) ? "official-add" : "account")} />
         </div>`);
       }
       // 回复下面直接挂在同一行里（在复制按钮之前）；挂在卡片、文件、出错提示后面时自成一行
@@ -786,9 +666,6 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
   const replying = generating && (items || []).some((x) => x.live && x.text);
   const face = pending > 0 ? "waiting" : generating ? (replying ? "replying" : "thinking") : text.trim() ? "listening" : "idle";
   const toBottomBtn = usePresence(!atBottom);
-  // 点发送 / 停止不抢输入框的焦点：光标留在原处，接着就能打下一句（键盘 Tab 过去照样能按）
-  const keepFocus = (e) => e.preventDefault();
-  const permMap = perms();
   return html`<section class=${`chat${scrolled ? " scrolled" : ""}${findOpen || history.context || history.loading || history.error ? " has-chat-tools" : ""}`} data-screen="chat" aria-label=${t("chat.aria", { name: bot.name })}>
     <header class="chat-head">
       ${onBackToSearch && html`<${IconButton} icon="chevLeft" label=${t("search.backResults")} onClick=${onBackToSearch} />`}
@@ -834,50 +711,11 @@ export function ChatScreen({ bot, models, modelsError, reloadModels, defaultMode
         const last = lastUser.current || (items || []).findLast((x) => x.kind === "msg" && x.role === "user")?.text;
         if (last) send(last);
       }} />`}
-      <div class="composer" data-guide="composer">
-        <textarea ref=${ta} rows="1" placeholder=${t("chat.composer.placeholder", { name: bot.name })} aria-label=${t("chat.composer.label")} value=${text}
-          onInput=${(e) => { setText(e.target.value); setSlashOff(false); setSlashSel(0); autoGrow(e.target); }}
-          onKeyDown=${onKey} />
-        <div class="composer-bar">
-        <button type="button" class="plus" ref=${plusRef} aria-label=${t("chat.menu.more")} aria-haspopup="menu" aria-expanded=${menu === "plus"} onClick=${() => setMenu(menu === "plus" ? null : "plus")}><${Icon} name="plus" size="md" /></button>
-        ${permMap[perm] && html`<button type="button" class=${`model-chip perm ${perm}`} ref=${permRef} title=${t("chat.perm.title", { note: permMap[perm].note })} aria-haspopup="menu" aria-expanded=${menu === "perm"}
-          onClick=${() => setMenu(menu === "perm" ? null : "perm")}>
-          <${Icon} name=${permMap[perm].icon} size="sm" class="lead" /><span class="v">${permMap[perm].label}</span><${Icon} name="chevDown" />
-        </button>`}
-        <span class="grow"></span>
-        <button type="button" class="model-chip" ref=${modelRef} data-guide="model" title=${effective ? t("chat.composer.currentModel", { model: effective }) : t("chat.composer.pickModel")} aria-haspopup="listbox" aria-expanded=${menu === "model"}
-          onClick=${() => setMenu(menu === "model" ? null : "model")}>
-          <span class="v">${effective ? shortModel(effective) : t("chat.composer.pickModel")}</span><${Icon} name="chevDown" />
-        </button>
-        ${generating && text.trim() && !text.trim().startsWith("/") && !stopping
-          ? html`<button type="button" class="send" aria-label=${t("chat.composer.steer")} title=${t("chat.composer.steerTitle", { key: sendKey === "mod" ? MOD_ENTER : "Enter" })} onMouseDown=${keepFocus} onClick=${() => send()}><${Icon} name="up" size="md" strong /></button>`
-          : null}
-        ${generating
-          ? html`<button type="button" class="send stop" aria-label=${stopping ? t("chat.composer.stopping") : t("chat.composer.stop")} title=${stopping ? t("chat.composer.stopping") : t("chat.composer.stopTitle")}
-              disabled=${stopping} aria-busy=${stopping} onMouseDown=${keepFocus} onClick=${stop}>${stopping ? html`<${Spinner} />` : html`<${Icon} name="stop" size="md" />`}</button>`
-          : html`<button type="button" class=${`send${sentOnce.current ? " back" : ""}`} aria-label=${t("chat.composer.send")} title=${t("chat.composer.sendTitle", { key: sendKey === "mod" ? MOD_ENTER : "Enter" })} disabled=${!text.trim()} onMouseDown=${keepFocus} onClick=${() => send()}><${Icon} name="up" size="md" strong /></button>`}
-        </div>
-      </div>
+      <${Composer} bot=${bot} text=${text} setText=${setText} taRef=${ta} ctl=${composer} guide steer
+        placeholder=${t("chat.composer.placeholder", { name: bot.name })} label=${t("chat.composer.label")}
+        generating=${generating} stopping=${stopping} sent=${sentOnce.current} onSend=${send} onStop=${stop}
+        models=${models} modelsError=${modelsError} reloadModels=${reloadModels} defaultModel=${defaultModel} account=${account} onAccount=${onAccount}
+        onBotUpdated=${onBotUpdated} onOpenBotSettings=${onOpenBotSettings} />
     </div>
-    ${slashOpen && ta.current && html`<${Popover} anchor=${ta.current} prefer="up" width=${320} keepFocus label=${t("chat.commandsLabel")} onClose=${() => setSlashOff(true)}>
-      <ul role="listbox" aria-label=${t("chat.commandsLabel")}>
-        ${slashHits.map(([c, d], i) => html`<li role="option" aria-selected=${i === slashSel} class=${`explained${i === Math.min(slashSel, slashHits.length - 1) ? " sel" : ""}`}
-          onPointerDown=${(e) => e.preventDefault()} onPointerMove=${() => setSlashSel(i)} onClick=${() => completeSlash(c)}>
-          <span class="v">${c}</span><span class="n">${d}</span>
-        </li>`)}
-      </ul>
-    <//>`}
-    ${menu === "plus" && html`<${Menu} anchor=${plusRef.current} prefer="up" width=${240} label=${t("chat.menu.more")} onClose=${() => setMenu(null)} items=${plusItems} />`}
-    ${menu === "perm" && html`<${Menu} anchor=${permRef.current} prefer="up" width=${280} label=${t("chat.perm.menu")} onClose=${() => setMenu(null)}
-      items=${[
-        { group: t("chat.perm.menu") },
-        ...Object.entries(permMap).map(([k, p]) => ({ label: p.label, note: p.note, icon: p.icon, danger: p.danger, cur: k === perm, onSelect: () => k !== perm && pickPerm(k) })),
-        { sep: true },
-        { label: t("chat.perm.more"), onSelect: () => onOpenBotSettings?.(bot.id, "permission") },
-      ]} />`}
-    ${menu === "model" && html`<${ModelPicker} anchor=${modelRef.current} prefer="up" align="right" models=${models} error=${modelsError} onRetry=${reloadModels}
-      current=${convModel || bot.defaultModel || defaultModel} onPick=${pickModel} onClose=${() => setMenu(null)} account=${account} onAccount=${onAccount || (() => {})}
-      reset=${{ label: t("chat.model.followBot"), note: shortModel(bot.defaultModel || defaultModel) || t("common.auto"), onSelect: () => pickModel("") }}
-      foot=${{ label: t("chat.model.setDefault"), disabled: !effective || sameModel(effective, bot.defaultModel), onClick: setBotDefault }} />`}
   </section>`;
 }

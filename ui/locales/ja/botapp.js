@@ -11,8 +11,6 @@ export default {
   app: {
     sample: "サンプル",
     placeholder: "話しかけると画面が変わります",
-    send: "送信",
-    stop: "停止",
     conversation: "会話全体",
     info: "情報",
     uiFailed: "画面に問題が起きたため、会話に切り替えました。",

@@ -11,8 +11,6 @@ export default {
   app: {
     sample: "샘플",
     placeholder: "말하면 화면이 바뀝니다",
-    send: "보내기",
-    stop: "중지",
     conversation: "전체 대화",
     info: "정보",
     uiFailed: "화면에 문제가 생겨 대화로 전환했습니다.",

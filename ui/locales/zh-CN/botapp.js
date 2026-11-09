@@ -11,8 +11,6 @@ export default {
   app: {
     sample: "示例",
     placeholder: "说一句，界面就会变",
-    send: "发送",
-    stop: "停止",
     conversation: "完整对话",
     info: "信息",
     uiFailed: "界面出了问题，已切换到对话。",

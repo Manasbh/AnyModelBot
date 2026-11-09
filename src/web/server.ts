@@ -1458,6 +1458,10 @@ export async function startWebServer(app: App, opts: { port?: number; host?: str
         res.on("close", off);
         return;
       }
+      // 控制台对话当前用的模型（空 = 跟着 Bot）：目录 Bot 的界面打开时读，不用把整段历史取回来
+      if (sub === "chat/model" && m === "GET") {
+        return send(res, 200, { conversationId: consoleConvId(id), model: app.store.getConversation(consoleConvId(id))?.model ?? "" });
+      }
       if (sub === "chat/model" && m === "PUT") {
         const b = await readJson(req);
         const conv = app.store.ensureConversation(id, "web", "console", "控制台");

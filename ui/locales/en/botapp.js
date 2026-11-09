@@ -11,8 +11,6 @@ export default {
   app: {
     sample: "Sample",
     placeholder: "Say something and the view updates",
-    send: "Send",
-    stop: "Stop",
     conversation: "Full conversation",
     info: "Info",
     uiFailed: "The view hit a problem, so this switched to the conversation.",

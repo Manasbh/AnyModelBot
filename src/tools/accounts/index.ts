@@ -9,8 +9,8 @@
  * 这里是机器人能读写的数据账号。从哪里和机器人聊（微信、飞书等聊天渠道）也是全局账号，见 core/routes.ts。
  */
 import crypto from "node:crypto";
-import { registerSecret } from "../log.js";
-import { t, tl, type MessageKey, type Params } from "../i18n/index.js";
+import { registerSecret } from "../../log.js";
+import { t, tl, type MessageKey, type Params } from "../../i18n/index.js";
 
 export const ACCOUNT_SERVICES = ["notion", "feishu"] as const;
 export type AccountService = (typeof ACCOUNT_SERVICES)[number];

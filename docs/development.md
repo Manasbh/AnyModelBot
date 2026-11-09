@@ -13,20 +13,27 @@
 ```
 src/
   core/          统一消息类型、会话队列与去重、运行时（/model /reset、流式）、重启后的提醒、准入（主人 + 允许名单）、持久化出站队列
-  agent/         代理模式：DSH 宿主与桥接、审批、权限预设、记忆与上下文管家、生图 / 生视频、联网搜索、电脑操作、Windows PowerShell
+  delivery/      主动消息的投递：免打扰、每天上限、合并摘要、微信 24 小时窗口和续期提醒
+  agent/         代理模式：DSH 宿主与桥接、审批、权限预设、记忆与上下文管家、DSH 会话目录
     prompts/     交给代理模型的全部提示词：人设、聊天规则、记忆说明、每段第一条消息、技能说明
+  tools/         代理用的能力：联网搜索（search.ts）、生图 / 生视频（media/）、电脑操作（computer-use/）、Windows PowerShell（pwsh/）、用户授权的账号 Notion / 飞书（accounts/）
   llm/           OpenAI 兼容客户端（模型接入接口）
   magpie/        内置 magpie 守护：隔离目录、空闲端口、自动生成密钥、健康检查、崩溃重启、干净退出
   channels/      feishu/（长连接 + CardKit）  weixin/（iLink，MIT 声明见 LICENSE.openclaw-weixin）  messenger/（Telegram、Slack、Discord，共用一套收发）
+  tasks/         后台任务和规则：运行、阶段、花费、保留与清理、时间表
+  botkit/        目录 Bot 框架：包格式、检查、打包签名、目录、安装、界面静态路由（见 docs/bot-framework.md）
+  skills/        用户自己装的技能（ZIP 包）
   store/         SQLite（node:sqlite，无需原生编译）
+  domain/        纯数据形状和规则：机器人设置、免打扰时段、时间表、目录 Bot 记录、代理步骤；不做 I/O，只依赖 i18n。store 只依赖它（依赖方向由 test/architecture.unit.test.ts 检查）
   account/       Modelflare 账户：PKCE 回环登录、令牌轮换、余额与提醒、机器人预算 Key、模型能力与参考价
-  web/           管理界面服务（JSON API + 流式对话 SSE）
+  web/           管理界面服务：server.ts 启动、鉴权、分发；routes/ 按领域放接口（JSON API + 流式对话 SSE）；http.ts 是共用的小函数
   cli/           init 首次设置向导、weixin-login
-  official-providers.ts  官方 API：厂商表（地址写死）、模型 id、校验失败时的说明
-  modelflare.ts  Modelflare 线路、密钥校验（GET /v1/models）、模型路由与归因
+  providers/     模型从哪来：modelflare.ts（线路、密钥校验 GET /v1/models、模型路由与归因）、modelflare-domains.ts（线路测速）、official.ts（官方 API 厂商表，地址写死）
+  updates/       更新：check.ts（检查新版本）、desktop.ts（桌面版的下载与重启）
   guide.ts       上手清单的进度
   i18n/          服务端多语言：报错、状态文字、托盘菜单、机器人发出的系统消息（messages/<命名空间>.ts）
   diagnostics.ts 故障排查：探测、日志尾部、脱敏的诊断报告
+  version.ts     应用版本号（package.json）
   main.ts        命令行入口
 electron/        桌面版主进程（启动器 + 托盘）
 ui/              管理界面（Preact + htm，无构建步骤）
@@ -64,7 +71,7 @@ npm run test:dsh-bundle  # 用 Electron 跑真实 DSH 集成测试，加载打�
 ```
 
 - DSH 代理运行时：`scripts/prepare-dsh.mjs` 按目标平台安装 `dsh-runtime/`，`scripts/bundle-dsh.mjs` 把它打成 `resources/dsh/dsh.asar`（全部 JS，一个文件）加上 `resources/dsh/node_modules/`（只有原生包，约 55 个文件）。Electron 主进程和 `ELECTRON_RUN_AS_NODE` 子进程直接读 asar，无需首启解压；安装包因此只需解出几百个文件（Windows 上解压与杀毒逐个扫描是安装慢的主因）。开发时仍直接用 `dsh-runtime/`。
-- Windows 上代理执行命令用的 PowerShell：经沙箱时 Windows PowerShell 5.1 每条命令要二三十秒，PowerShell 7 约 1 秒。应用按这个顺序选：系统里能用的 PowerShell 7（后台按 DSH 的方式试运行一次，什么都不下载）→ 应用内置的 PowerShell 7 → Windows PowerShell 5.1。没有能用的 7 且代理模式开着时，应用在后台自动下载官方 PowerShell 7.6.9（LTS）的 zip，装到 `%LOCALAPPDATA%\AnyModelBot\pwsh\`：不需要管理员权限，不写注册表、不改 PATH，不影响你自己的 PowerShell。版本和 x64 / arm64 两个 zip 的 SHA256 写死在 `src/agent/pwsh-private.ts`（升级用 `node scripts/pwsh-hashes.mjs <版本>`），下载后核对哈希、解压后核对微软 Authenticode 签名，再按 DSH 的方式试运行（版本、读写临时文件、拉起外部程序）通过才用；装失败或装了一半的不会被用，下次启动会清掉。装的时候对话页和 设置 → 常规 显示进度，`/status` 也有，装好之前命令照常用 5.1；装好后空闲的代理进程在后台换用它，不用重启应用。运行中代理拉不起它（被杀毒软件删除或隔离、被策略拦截）就自动退回上一种并提示原因；设置 → 故障排查 可以安装、重新安装、改回系统默认。Windows 10 1607 / Server 2016 以前的系统不下载。桌面版下载走系统代理（Chromium 网络栈）；命令行版用 Node 的 fetch（较新的 Node 设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）；`AMB_PWSH_MIRROR` 可换成镜像前缀（照样核对哈希和签名），`AMB_PWSH_AUTO_INSTALL=0` 关掉自动安装。
+- Windows 上代理执行命令用的 PowerShell：经沙箱时 Windows PowerShell 5.1 每条命令要二三十秒，PowerShell 7 约 1 秒。应用按这个顺序选：系统里能用的 PowerShell 7（后台按 DSH 的方式试运行一次，什么都不下载）→ 应用内置的 PowerShell 7 → Windows PowerShell 5.1。没有能用的 7 且代理模式开着时，应用在后台自动下载官方 PowerShell 7.6.9（LTS）的 zip，装到 `%LOCALAPPDATA%\AnyModelBot\pwsh\`：不需要管理员权限，不写注册表、不改 PATH，不影响你自己的 PowerShell。版本和 x64 / arm64 两个 zip 的 SHA256 写死在 `src/tools/pwsh/private.ts`（升级用 `node scripts/pwsh-hashes.mjs <版本>`），下载后核对哈希、解压后核对微软 Authenticode 签名，再按 DSH 的方式试运行（版本、读写临时文件、拉起外部程序）通过才用；装失败或装了一半的不会被用，下次启动会清掉。装的时候对话页和 设置 → 常规 显示进度，`/status` 也有，装好之前命令照常用 5.1；装好后空闲的代理进程在后台换用它，不用重启应用。运行中代理拉不起它（被杀毒软件删除或隔离、被策略拦截）就自动退回上一种并提示原因；设置 → 故障排查 可以安装、重新安装、改回系统默认。Windows 10 1607 / Server 2016 以前的系统不下载。桌面版下载走系统代理（Chromium 网络栈）；命令行版用 Node 的 fetch（较新的 Node 设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）；`AMB_PWSH_MIRROR` 可换成镜像前缀（照样核对哈希和签名），`AMB_PWSH_AUTO_INSTALL=0` 关掉自动安装。
 - 代理执行的命令能联网（沙箱只限制写文件），用的是你的代理：应用环境变量里的 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` / `NO_PROXY`（及小写）和证书、软件源变量（`SSL_CERT_FILE`、`REQUESTS_CA_BUNDLE`、`NODE_EXTRA_CA_CERTS`、`PIP_INDEX_URL`、`npm_config_registry`、`GOPROXY` 等）原样传下去；环境里没设代理时，桌面版每次拉起代理进程都问一次系统代理（系统设置和 PAC），按 `http://主机:端口` 传下去（见 `src/agent/proxy-env.ts`）。本机地址（`127.0.0.1`、`localhost`、`::1`）总是并进 `NO_PROXY`，永不走代理。
 - 数据目录：`<userData>/data`（macOS `~/Library/Application Support/anymodel bot/data`，Windows `%APPDATA%\anymodel bot\data`，Linux `~/.config/anymodel bot/data`）。日志在数据目录的 `logs/app.log`。
 - 单实例；关闭窗口默认隐藏到托盘（设置 → 常规 可改为退出）；托盘菜单：打开 / 在浏览器中打开 / 开机自启（macOS、Windows）/ 打开数据目录 / 退出。
@@ -104,7 +111,7 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 生成前确认：直接生成，不打扰你。机器人选了不是默认的模型、要求没说清，都不问：它按最合理的理解生成，再说一句用了什么。只在预计花费超过 $0.5 时（按参考价、张数、视频时长和分辨率估算；视频估不出来也算）先在聊天里问你这次用哪个模型（附提示词、参数、参考价和为什么问）。可以确认、换成别的模型或取消；微信回复编号或模型名，飞书 / 网页点选。10 分钟内没回答就不生成。想每次都确认：机器人设置 → 生图 / 生视频 → 生成前确认 →「每次都问」。
 - 联网搜索：代理的 `web_search` 不用 DeepSeek 自带的搜索（它要 DeepSeek 的 Key），经 `amb-web-search` 插件交给本程序搜。默认免费、不用设置：依次试 Exa 的公开 MCP、必应、DuckDuckGo，上次成功的先试，出错的（限流、验证页、必应给出不相干的结果）跳过 10 分钟。设置 → 网络与访问 → 联网搜索 可以换成 Tavily、Exa、博查、智谱（填 Key）或自己的 SearXNG，填了就先用它，出错时退回免费的。Key 和渠道令牌一样存在本机数据库里，代理进程拿不到。桌面版搜索走系统代理；命令行版用 Node 的 fetch（设 `NODE_USE_ENV_PROXY=1` 后认 `HTTPS_PROXY`）。
 - 聊天渠道账号（`src/core/routes.ts`）：微信、飞书、Telegram、Slack、Discord 的账号也是全局的，在设置 › 连接里添加，可以起别名。消息交给哪个机器人：这个人用 `/bot` 选过的 → 账号的默认机器人 → 第一个机器人。`/bot` 列出机器人，发一次 `/bot 名字` 就切换并记住，之后这个会话一直和它聊。每个机器人的系统提示词里都有其他机器人的名单和切换方法，用户问起时答得上来。名单和主人跟着账号走，能用这个账号的人可以和任何机器人聊。账号的 key 是命名空间：升级前的渠道 key 就是原来的机器人 id，登录态、配额、名单、队列都不用搬，默认机器人也是原来那个。删除机器人不影响账号。
-- 已授权账号（`src/agent/accounts.ts`）：全局一份（设置 › 连接），所有机器人共用，同一个服务可以加多个账号，比如对任何机器人说「看我第一个飞书和第二个飞书的消息」。`amb-connections` 插件把每次工具调用经 bridge 交给本程序，令牌不进代理进程；账号用工具的 `account` 参数选（序号或名字），`connected_accounts` 列出来。有账号的服务才有工具。只读机器人和观察规则不能写，宿主也会再查一次。聊天渠道账号见下一条。
+- 已授权账号（`src/tools/accounts/index.ts`）：全局一份（设置 › 连接），所有机器人共用，同一个服务可以加多个账号，比如对任何机器人说「看我第一个飞书和第二个飞书的消息」。`amb-connections` 插件把每次工具调用经 bridge 交给本程序，令牌不进代理进程；账号用工具的 `account` 参数选（序号或名字），`connected_accounts` 列出来。有账号的服务才有工具。只读机器人和观察规则不能写，宿主也会再查一次。聊天渠道账号见下一条。
   - **Notion**（`notion.ts`）：用户添加时选一键授权或令牌。令牌走 REST API；一键授权用 OAuth + PKCE + 动态注册，回调到本机 `/oauth/notion/callback`，再由本程序调官方远程 MCP（`mcp.notion.com`）的工具。模型看到的是同一套工具：`notion_search`、`notion_read_page`、`notion_query_database`，不是只读的机器人再加 `notion_create_page`、`notion_update_page`。没有删除页面的工具。
   - **飞书**（`feishu-account.ts`）：和官方 lark-cli 同一套流程：扫码创建个人应用（也可以填已有的自建应用），再设备授权拿用户令牌。只读，工具是 `feishu_list_chats`、`feishu_read_chat`、`feishu_search_messages`。
 - 默认图片 / 视频模型：首次设置时和默认文本模型一起选，之后在 设置 → 模型 修改；选「自动」时用推荐顺序里第一个不需要参考素材的模型。
@@ -130,7 +137,7 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 
 ## 官方 API Key
 
-- 引导页的「使用自己的 API Key」和 设置 → 模型 都能填。支持的厂商和地址写死在 `src/official-providers.ts`，接口（`GET /amb/api/official`、`PUT`/`DELETE /amb/api/official/<id>`）只认表里的 id，不能填地址。
+- 引导页的「使用自己的 API Key」和 设置 → 模型 都能填。支持的厂商和地址写死在 `src/providers/official.ts`，接口（`GET /amb/api/official`、`PUT`/`DELETE /amb/api/official/<id>`）只认表里的 id，不能填地址。
 - 每家是内置网关里的一个 provider，id 为 `official-<厂商>`，模型 id 为 `official-<厂商>/<模型>`，和 Modelflare 的同名模型分得开。Key 不经命令行参数：经网关本机接口的请求体写入隔离配置。
 - 校验走网关的模型列表接口（代理、各家的鉴权写法都在网关里），通过才保存。模型每小时和厂商的列表核对一次，不能对话的（语音、图片、向量……）不进选择器。
 - 代理的接口按厂商定：OpenAI 走 Responses，Anthropic 走 Messages，其余走 Chat Completions；上下文、价格、推理能力来自网关的模型目录（`/v1/models`）。只有官方 Key 时不读 Modelflare 的目录和账户。

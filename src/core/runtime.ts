@@ -14,11 +14,11 @@ import type { AgentManager } from "../agent/manager.js";
 import { promptButtons, promptText, questionsOf } from "../agent/approvals.js";
 import { segmentInput, type ChatPlace } from "../agent/prompts/index.js";
 import { clearInflight, markInflight, takeNotice } from "./recovery.js";
-import { pwshProbe, pwshStatusLine } from "../agent/pwsh.js";
-import { isBotProviderModel } from "../modelflare.js";
+import { pwshProbe, pwshStatusLine } from "../tools/pwsh/index.js";
+import { isBotProviderModel } from "../providers/modelflare.js";
 import type { ApprovalRow, Conversation } from "../store/db.js";
 import type { AccessControl } from "./access.js";
-import { takeTaskNotes } from "../tasks/service.js";
+import { takeTaskNotes } from "./task-notes.js";
 import { t } from "../i18n/index.js";
 import { localProxyFailureHint } from "../network-error.js";
 

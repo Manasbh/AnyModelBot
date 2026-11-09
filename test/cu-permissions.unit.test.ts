@@ -1,6 +1,6 @@
 // 电脑操作的 macOS 权限（第 18 项）：按工具实际要的那一项拦，不因为另一项没开就把能做的也拦下；其他平台一律放行。
 import { describe, expect, it } from "vitest";
-import { CuPermissions, permissionsFor, type CuPermissionState } from "../src/agent/cu-permissions.js";
+import { CuPermissions, permissionsFor, type CuPermissionState } from "../src/tools/computer-use/permissions.js";
 
 const hooks = (accessibility: CuPermissionState, screen: CuPermissionState) => ({
   status: () => ({ accessibility, screen }),

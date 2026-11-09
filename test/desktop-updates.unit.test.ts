@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 import { createRequire } from "node:module";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CancellationToken as Token } from "electron-updater";
-import { DesktopUpdateService } from "../src/desktop-updates.js";
+import { DesktopUpdateService } from "../src/updates/desktop.js";
 
 // 只加载更新器自己的纯 Node 依赖，不加载 Electron 或运行桌面应用。
 const require = createRequire(import.meta.url);

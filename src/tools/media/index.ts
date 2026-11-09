@@ -12,9 +12,9 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { logger } from "../log.js";
-import { t } from "../i18n/index.js";
-import { MediaJournal, mediaFingerprint, type MediaReceipt } from "./media-journal.js";
+import { logger } from "../../log.js";
+import { t } from "../../i18n/index.js";
+import { MediaJournal, mediaFingerprint, type MediaReceipt } from "./journal.js";
 
 const log = logger("agent.media");
 

@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { firstUseModel } from "./account/first-model.js";
-import { CuPermissions, type CuPermissionHooks } from "./agent/cu-permissions.js";
+import { CuPermissions, type CuPermissionHooks } from "./tools/computer-use/permissions.js";
 import { saveConfigFile, type AppConfig, type ReasoningEffort } from "./config.js";
 import { Store, type Bot, type ChannelAccount } from "./store/db.js";
 import { OpenAICompatClient, type ModelClient } from "./llm/client.js";
@@ -11,7 +11,7 @@ import { BotRuntime } from "./core/runtime.js";
 import { KeyedQueue } from "./core/queue.js";
 import { deferNotice, interruptedText, takeInterrupted, type Interrupted } from "./core/recovery.js";
 import { Outbox } from "./core/outbox.js";
-import { Delivery, type DeliveryOptions } from "./core/delivery.js";
+import { Delivery, type DeliveryOptions } from "./delivery/index.js";
 import { AccessControl } from "./core/access.js";
 import { MESSENGERS, MESSENGER_LABEL, isMessenger, type ChannelStatus, type MessengerId } from "./core/types.js";
 import { botForPeer, defaultBotFor } from "./core/routes.js";
@@ -28,8 +28,9 @@ import { initFileLog, logFilePath, logger, mask, registerSecret } from "./log.js
 import { AgentManager } from "./agent/manager.js";
 import { normalizeSettings } from "./agent/settings.js";
 import { locateDshRuntime } from "./agent/host.js";
-import { pwshProbe } from "./agent/pwsh.js";
+import { pwshProbe } from "./tools/pwsh/index.js";
 import { findAppRoot } from "./magpie/supervisor.js";
+import { appVersion } from "./version.js";
 import { BotCatalog } from "./botkit/catalog.js";
 import { catalogConfig } from "./botkit/config.js";
 import { BotInstaller } from "./botkit/installer.js";
@@ -45,16 +46,16 @@ import {
   verifyModelflareKey,
   type ModelflareLine,
   type VerifyResult,
-} from "./modelflare.js";
-import { OFFICIAL_PROVIDERS, officialFailure, officialModelName, officialOf, officialPicks, officialProvider, officialProviderId, type OfficialFailure, type OfficialProvider } from "./official-providers.js";
+} from "./providers/modelflare.js";
+import { OFFICIAL_PROVIDERS, officialFailure, officialModelName, officialOf, officialPicks, officialProvider, officialProviderId, type OfficialFailure, type OfficialProvider } from "./providers/official.js";
 import { AccountManager } from "./account/manager.js";
 import { AccountVault, type SecretBox } from "./account/vault.js";
 import { gatewayModelInfo, loadModelInfo, type ModelInfo, type Rates } from "./account/model-info.js";
 import { loadQualitySnapshot } from "./account/model-quality.js";
-import { MediaService, pickDefault } from "./agent/media.js";
-import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./agent/search.js";
-import { ConnectionService } from "./agent/connections.js";
-import { UpdateChecker, type DesktopUpdates } from "./update-check.js";
+import { MediaService, pickDefault } from "./tools/media/index.js";
+import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./tools/search.js";
+import { ConnectionService } from "./tools/accounts/connections.js";
+import { UpdateChecker, type DesktopUpdates } from "./updates/check.js";
 import { COMPACT_ENDPOINT, serverCompactionEnabled, type CompactEndpoint } from "./agent/server-compaction.js";
 import type { BotSettings } from "./agent/settings.js";
 import { UserSkills } from "./skills/service.js";
@@ -94,7 +95,7 @@ export interface DesktopHooks {
    * 只有桌面版有；命令行、Docker 没有，成功页就不去唤起本机可能装着的另一个客户端。
    */
   appLink?: string;
-  /** macOS 桌面版：电脑操作需要的系统权限（辅助功能、屏幕录制），见 agent/cu-permissions.ts */
+  /** macOS 桌面版：电脑操作需要的系统权限（辅助功能、屏幕录制），见 tools/computer-use/permissions.ts */
   cuPermissions?: CuPermissionHooks;
   /** 退出并重新打开应用（系统要求重启后权限才生效时；聊天、任务和输入草稿都已保存） */
   relaunch?(): void;
@@ -115,17 +116,8 @@ export interface ModelflareStatus {
   gateway: string;
 }
 
-let cachedVersion = "";
-export function appVersion(): string {
-  if (!cachedVersion) {
-    try {
-      cachedVersion = String(JSON.parse(fs.readFileSync(path.join(findAppRoot(), "package.json"), "utf8")).version || "");
-    } catch {
-      cachedVersion = "";
-    }
-  }
-  return cachedVersion;
-}
+// 版本号在 version.ts（web、诊断不用为了它依赖整个 App）；这里接着导出，旧的 import 照旧能用
+export { appVersion };
 
 /** 设置页里的一家官方 API（只有 Key 尾号，不外传 Key） */
 export interface OfficialView {
@@ -158,7 +150,7 @@ export interface AppOptions {
   fileLog?: boolean;
   /** 测试注入：主人的时区（免打扰、续期提醒；默认本机的） */
   timeZone?: string;
-  /** 测试注入：主动消息的每天上限、合并间隔（core/delivery.ts） */
+  /** 测试注入：主动消息的每天上限、合并间隔（delivery/index.ts） */
   deliveryLimits?: Pick<DeliveryOptions, "dailyCap" | "coalesceMs">;
 }
 
@@ -201,7 +193,7 @@ export class App {
   private webSearch: WebSearchSettings;
   /** 已授权账号：全局一份，所有机器人共用（设置 › 连接） */
   readonly connections: ConnectionService;
-  /** 新版本提示：只有桌面版启动检查（src/update-check.ts） */
+  /** 新版本提示：只有桌面版启动检查（src/updates/check.ts） */
   readonly updates: UpdateChecker;
   /** 目录 Bot：目录同步和实例（docs/bot-framework.md）。目录为空时对现有功能没有影响 */
   readonly catalog: BotCatalog;
@@ -837,7 +829,7 @@ export class App {
       setupRequired: this.store.getKV("connection.setup") === "1", keyChangeNotice: this.store.getKV("connection.notice") || "" };
   }
 
-  // ---------- 官方 API（用户自己的 Key，src/official-providers.ts） ----------
+  // ---------- 官方 API（用户自己的 Key，src/providers/official.ts） ----------
   officialStatus(): OfficialView[] {
     return OFFICIAL_PROVIDERS.map((p) => ({ id: p.id, name: p.name, region: p.region, keysUrl: p.keysUrl, connected: false, keyTail: "", models: 0, ...this.magpie?.officialInfo(p) }));
   }

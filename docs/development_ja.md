@@ -13,20 +13,27 @@
 ```
 src/
   core/          共通メッセージ型、セッションキューと重複排除、ランタイム（/model /reset、ストリーミング）、再起動通知、利用許可（所有者+許可リスト）、永続送信キュー
-  agent/         DSH ホストとブリッジ、承認、権限プリセット、記憶とコンテキスト管理、画像・動画生成、Web 検索、コンピューター操作、Windows PowerShell
+  delivery/      プロアクティブなメッセージの配信：サイレント時間帯、1 日の上限、まとめ送信、WeChat の 24 時間ウィンドウと更新リマインダー
+  agent/         DSH ホストとブリッジ、承認、権限プリセット、記憶とコンテキスト管理、DSH のセッションディレクトリ
     prompts/     モデルが読む全プロンプト：役割、会話ルール、記憶のガイド、区間の初回メッセージ、スキル
+  tools/         エージェントが使う機能：Web 検索（search.ts）、画像・動画生成（media/）、コンピューター操作（computer-use/）、Windows PowerShell（pwsh/）、接続済みの Notion・Feishu アカウント（accounts/）
   llm/           OpenAI 互換クライアント（モデルへのアクセス）
   magpie/        管理プロセス：隔離ディレクトリ、空きポート、秘密値の生成、ヘルスチェック、異常終了からの再起動、終了処理
   channels/      feishu/（持続接続+CardKit） weixin/（iLink、MIT 告知は LICENSE.openclaw-weixin） messenger/（Telegram・Slack・Discord 共通の送受信）
+  tasks/         バックグラウンドタスクとルール：実行、段階、費用、保持と削除、スケジュール
+  botkit/        カタログ Bot フレームワーク：パッケージ形式、検査、パックと署名、カタログ、インストール、UI の静的ルート（docs/bot-framework.md を参照）
+  skills/        ユーザーが自分で入れるスキル（ZIP パッケージ）
   store/         SQLite（node:sqlite、ネイティブビルド不要）
+  domain/        純粋なデータ型とルール：Bot 設定、サイレント時間帯、スケジュール、カタログ Bot の記録、エージェントのステップ。I/O なし、依存は i18n のみ。store はこれだけに依存（依存方向は test/architecture.unit.test.ts で検査）
   account/       Modelflare：PKCE ループバックログイン、トークン更新、残高と通知、ボット別予算キー、モデル機能と参考価格
-  web/           コンソールサーバー（JSON API+SSE の会話ストリーミング）
+  web/           コンソールサーバー：server.ts が起動・認証・振り分け、routes/ に領域ごとの API（JSON API+SSE の会話ストリーミング）、http.ts は共通の小さな関数
   cli/           初回設定 init、weixin-login
-  official-providers.ts  公式 API：提供元の一覧（アドレス固定）、モデル ID、キー確認に失敗したときの説明
-  modelflare.ts  Modelflare の経路、キー検証（GET /v1/models）、モデル振り分けと出所表示
+  providers/     モデルの提供元：modelflare.ts（経路、キー検証 GET /v1/models、モデル振り分けと出所表示）、modelflare-domains.ts（経路の速度テスト）、official.ts（公式 API の提供元一覧、アドレス固定）
+  updates/       更新：check.ts（新しいバージョンの確認）、desktop.ts（デスクトップ版のダウンロードと再起動）
   guide.ts       初回ガイドの進捗
   i18n/          サーバーの多言語化：エラー、状態、トレイ、システムメッセージ（messages/<namespace>.ts）
   diagnostics.ts 診断：疎通テスト、ログ末尾、秘密情報を除いたレポート
+  version.ts     アプリのバージョン（package.json）
   main.ts        CLI のエントリーポイント
 electron/        デスクトップのメインプロセス（起動とトレイ）
 ui/              コンソール画面（Preact+htm、ビルド不要）
@@ -64,7 +71,7 @@ npm run test:dsh-bundle  # build/dsh の実ランタイムを Electron でテス
 ```
 
 - DSH ランタイム：`scripts/prepare-dsh.mjs` が対象環境用の `dsh-runtime/` を用意し、`scripts/bundle-dsh.mjs` が `resources/dsh/dsh.asar`（全 JavaScript を 1 ファイル）と `resources/dsh/node_modules/`（ネイティブパッケージのみ、約 55 ファイル）にまとめます。Electron メインプロセスと `ELECTRON_RUN_AS_NODE` の子プロセスは asar を直接読み、初回展開はしません。インストール時の展開対象が数百ファイルに減り、Windows で時間のかかる展開とファイル別ウイルス検査を抑えます。開発時は `dsh-runtime/` を直接使います。
-- Windows のコマンド用 PowerShell：サンドボックスでは Windows PowerShell 5.1 が 1 コマンドに 20〜30 秒、PowerShell 7 が約 1 秒かかります。選択順は、システムの動作する PowerShell 7（DSH と同じ起動方法で一度バックグラウンドテストし、ダウンロードはしない）→アプリ専用の 7→5.1 です。使える 7 がなくエージェントが有効なら、公式 PowerShell 7.6.9（LTS）の zip を `%LOCALAPPDATA%\AnyModelBot\pwsh\` に取得します。管理者権限、レジストリ変更、PATH 変更は不要で、既存の PowerShell に影響しません。バージョンと x64・arm64 zip の SHA256 は `src/agent/pwsh-private.ts` で固定します（更新は `node scripts/pwsh-hashes.mjs <version>`）。取得後にハッシュ、展開後に Microsoft Authenticode 署名を検証し、DSH 形式の試運転（バージョン、仮ファイルの読み書き、外部プログラムの起動）を通過してから使います。失敗・未完了のものは使わず次回起動で掃除します。進捗は会話、設定 → 一般、`/status` に出し、準備が終わるまでは 5.1 を継続します。待機中のエージェントが裏で切り替わり、アプリ再起動は不要です。削除、ウイルス対策による隔離、ポリシーで起動不能になれば以前の選択肢に戻して理由を通知します。設定 → トラブルシューティングでインストール、再インストール、システム既定値への復帰が可能です。Windows 10 1607 / Server 2016 より古い環境では取得しません。デスクトップは Chromium のネットワーク機能でシステムプロキシを使い、CLI は Node fetch を使います（新しい Node は `NODE_USE_ENV_PROXY=1` で `HTTPS_PROXY` を反映）。`AMB_PWSH_MIRROR` はミラーの接頭辞を変えますがハッシュ・署名検証は維持し、`AMB_PWSH_AUTO_INSTALL=0` は自動取得を止めます。
+- Windows のコマンド用 PowerShell：サンドボックスでは Windows PowerShell 5.1 が 1 コマンドに 20〜30 秒、PowerShell 7 が約 1 秒かかります。選択順は、システムの動作する PowerShell 7（DSH と同じ起動方法で一度バックグラウンドテストし、ダウンロードはしない）→アプリ専用の 7→5.1 です。使える 7 がなくエージェントが有効なら、公式 PowerShell 7.6.9（LTS）の zip を `%LOCALAPPDATA%\AnyModelBot\pwsh\` に取得します。管理者権限、レジストリ変更、PATH 変更は不要で、既存の PowerShell に影響しません。バージョンと x64・arm64 zip の SHA256 は `src/tools/pwsh/private.ts` で固定します（更新は `node scripts/pwsh-hashes.mjs <version>`）。取得後にハッシュ、展開後に Microsoft Authenticode 署名を検証し、DSH 形式の試運転（バージョン、仮ファイルの読み書き、外部プログラムの起動）を通過してから使います。失敗・未完了のものは使わず次回起動で掃除します。進捗は会話、設定 → 一般、`/status` に出し、準備が終わるまでは 5.1 を継続します。待機中のエージェントが裏で切り替わり、アプリ再起動は不要です。削除、ウイルス対策による隔離、ポリシーで起動不能になれば以前の選択肢に戻して理由を通知します。設定 → トラブルシューティングでインストール、再インストール、システム既定値への復帰が可能です。Windows 10 1607 / Server 2016 より古い環境では取得しません。デスクトップは Chromium のネットワーク機能でシステムプロキシを使い、CLI は Node fetch を使います（新しい Node は `NODE_USE_ENV_PROXY=1` で `HTTPS_PROXY` を反映）。`AMB_PWSH_MIRROR` はミラーの接頭辞を変えますがハッシュ・署名検証は維持し、`AMB_PWSH_AUTO_INSTALL=0` は自動取得を止めます。
 - エージェントのコマンドはネットワークを使えます（サンドボックスは書き込みを制限）。`HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` / `NO_PROXY` と小文字版、証明書・パッケージ取得先の変数（`SSL_CERT_FILE`、`REQUESTS_CA_BUNDLE`、`NODE_EXTRA_CA_CERTS`、`PIP_INDEX_URL`、`npm_config_registry`、`GOPROXY` など）をアプリから引き継ぎます。環境変数にプロキシがなければ、デスクトップはエージェント起動ごとにシステム設定と PAC を調べ、`http://host:port` で渡します（`src/agent/proxy-env.ts`）。ループバックの `127.0.0.1`、`localhost`、`::1` は常に `NO_PROXY` に追加し、プロキシを通しません。
 - データ保存先：`<userData>/data`（macOS `~/Library/Application Support/anymodel bot/data`、Windows `%APPDATA%\anymodel bot\data`、Linux `~/.config/anymodel bot/data`）。ログはその中の `logs/app.log` です。
 - 単一インスタンスで動作し、閉じると既定ではトレイに入ります（設定 → 一般で終了に変更可能）。トレイには開く、ブラウザーで開く、ログイン時に起動（macOS・Windows）、データフォルダーを開く、終了があります。
@@ -104,7 +111,7 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> を�
 - 生成前の確認：既定では直ちに生成します。既定以外のモデルや曖昧な依頼を理由に質問せず、妥当に解釈して作成し、使った条件を一行で述べます。見積もりが 0.5 米ドルを超えるときだけ、モデル、プロンプト、条件、参考価格、確認理由を提示します。画像枚数、動画時間・解像度で計算し、費用不明の動画も確認対象です。承認・変更・中止ができ、WeChat は番号・モデル名、Feishu と Web はクリックで回答します。10 分応答がなければ生成しません。毎回確認するには、ボット設定 → 画像・動画 → 生成前に確認で常に確認する設定を選びます。
 - Web 検索：`web_search` は DeepSeek キーが必要な内蔵検索を使わず、`amb-web-search` がアプリへ委譲します。初期設定不要で、Exa 公開 MCP、Bing、DuckDuckGo を試し、前回成功したものを優先します。失敗（制限、ボット確認、無関係な Bing 結果）したものは 10 分避けます。設定 → ネットワークとアクセス → Web 検索でキー付きの Tavily・Exa・Bocha・Zhipu、または独自 SearXNG を指定すると最初に使い、失敗時は無料検索へ戻します。キーはローカル DB に保存し、エージェントへ渡しません。デスクトップはシステムプロキシ、CLI は Node fetch（`NODE_USE_ENV_PROXY=1` なら `HTTPS_PROXY`）を使います。
 - チャネルアカウント（`src/core/routes.ts`）：WeChat、Feishu、Telegram、Slack、Discord も設定 › 接続で全体管理し、別名を付けられます。送信者が `/bot` で選んだボット→アカウントの既定→先頭のボットの順で決定します。`/bot` は一覧、`/bot name` は選択を記憶します。各ボットのシステムプロンプトに他のボットと切り替え方を載せ、質問に答えられるようにします。所有者・許可リストはアカウント単位なので、許可された人は全ボットと話せます。アカウントキーは名前空間で、旧チャネルは旧ボット ID を維持し、ログイン、上限、許可、キュー、既定ボットを引き継ぎます。ボット削除はアカウントに影響しません。
-- 接続アカウント（`src/agent/accounts.ts`）：全ボットが設定 › 接続の一つの一覧を共有し、同サービスの複数アカウントを使えます。「1 つ目と 2 つ目の Feishu を調べて」と頼めます。`amb-connections` がブリッジで呼び出しをアプリに渡すためトークンはエージェントに届きません。`account` 引数で番号・名前を選び、`connected_accounts` で一覧化します。アカウントがあるサービスだけツールを出します。読み取り専用のボットと観察モードのルールは書き込めず、ホストも再検査します。チャネルアカウントは別項目で扱います。
+- 接続アカウント（`src/tools/accounts/index.ts`）：全ボットが設定 › 接続の一つの一覧を共有し、同サービスの複数アカウントを使えます。「1 つ目と 2 つ目の Feishu を調べて」と頼めます。`amb-connections` がブリッジで呼び出しをアプリに渡すためトークンはエージェントに届きません。`account` 引数で番号・名前を選び、`connected_accounts` で一覧化します。アカウントがあるサービスだけツールを出します。読み取り専用のボットと観察モードのルールは書き込めず、ホストも再検査します。チャネルアカウントは別項目で扱います。
   - **Notion**（`notion.ts`）：ワンクリック認可またはトークンを選びます。トークンは REST API、認可は PKCE・動的登録付き OAuth でローカル `/oauth/notion/callback` に戻り、公式リモート MCP（`mcp.notion.com`）を呼びます。どちらも `notion_search`、`notion_read_page`、`notion_query_database` を提供し、読み取り専用でなければ `notion_create_page` と `notion_update_page` も出します。削除ツールはありません。
   - **Feishu**（`feishu-account.ts`）：公式 lark-cli と同様、スキャンして個人アプリを作るか自分のアプリを入力し、デバイス認可でユーザートークンを取得します。`feishu_list_chats`、`feishu_read_chat`、`feishu_search_messages` の読み取り専用です。
 - 既定の画像・動画モデルは初回にテキストモデルと一緒に選び、後から設定 → モデル で変更できます。自動では、推奨順のうち参考素材が不要な最初のモデルを使います。
@@ -130,7 +137,7 @@ docker exec amb cat /data/ui-token     # http://<host>:3600/?token=<token> を�
 
 ## 公式 API キー
 
-- 初回画面の「自分の API キーを使う」と「設定 → モデル」で入力できます。対応する提供元とアドレスは `src/official-providers.ts` に固定され、API（`GET /amb/api/official`、`PUT`/`DELETE /amb/api/official/<id>`）は一覧の ID だけを受け付け、アドレスは指定できません。
+- 初回画面の「自分の API キーを使う」と「設定 → モデル」で入力できます。対応する提供元とアドレスは `src/providers/official.ts` に固定され、API（`GET /amb/api/official`、`PUT`/`DELETE /amb/api/official/<id>`）は一覧の ID だけを受け付け、アドレスは指定できません。
 - それぞれ内蔵ゲートウェイの provider で、ID は `official-<提供元>`、モデル ID は `official-<提供元>/<モデル>` です。Modelflare の同名モデルとは区別されます。キーはコマンドライン引数を通らず、ゲートウェイのローカル API のリクエスト本文で隔離された設定に書き込まれます。
 - 確認にはゲートウェイのモデル一覧を使い（プロキシや提供元ごとの認証方式はゲートウェイ側にあります）、通過した場合のみ保存します。モデルは 1 時間ごとに提供元の一覧と照合し、会話できないモデル（音声、画像、埋め込みなど）は選択肢に入れません。
 - エージェントの API は提供元で決まります。OpenAI は Responses、Anthropic は Messages、その他は Chat Completions です。コンテキスト長、価格、推論の対応はゲートウェイのモデルカタログ（`/v1/models`）から取得します。公式キーのみのときは Modelflare のカタログとアカウントを読み取りません。

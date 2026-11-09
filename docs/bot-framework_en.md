@@ -39,7 +39,7 @@ App: local catalog · runtime (sandboxed iframe, bridge, state files) · UI kit 
 | Publishing | `src/botkit/bundle.ts`, `pack.ts`, `sign.ts` | Content-addressed bundles, signed catalog, takedowns |
 | Catalog loading | `src/botkit/catalog.ts`, `config.ts` | Read bundled resources, verify and extract locally; remote catalogs require explicit configuration |
 | Instances | `src/botkit/installer.ts`, `app-skill.ts` | Install on first use, update, take down, remove |
-| Server | `src/web/botapp.ts` | Static routes with CSP, catalog and instance APIs |
+| Server | `src/web/botapp.ts`, `src/botkit/static.ts` | Catalog and instance APIs; static UI routes with CSP (also used by `amb-bot check` rendering) |
 | UI kit | `ui/botkit/` | The only thing a bot's UI may import |
 | Container | `ui/screens/bot-app.js`, `discover.js`, `ui/lib/bot-bridge.js` | iframe, bridge, composer, Discover page |
 | Permissions | `src/agent/host.ts`, `dsh-runtime/plugins/amb-bot-gate.mjs` | Undeclared permissions are refused at runtime |

@@ -5,7 +5,8 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import type { AddressInfo } from "node:net";
-import { dirHash, packFiles, readBundle, safeRelPath, sha256, unpackTo } from "../src/botkit/bundle.js";
+import { dirHash, packFiles, readBundle, sha256, unpackTo } from "../src/botkit/bundle.js";
+import { safeRelPath } from "../src/domain/paths.js";
 import { BotCatalog } from "../src/botkit/catalog.js";
 import { catalogConfig } from "../src/botkit/config.js";
 import { checkStatic } from "../src/botkit/check.js";
@@ -20,7 +21,7 @@ import { Store } from "../src/store/db.js";
 import { UserSkills } from "../src/skills/service.js";
 import { readSkillZip } from "../src/skills/archive.js";
 import { skillZip, skillMd } from "./skill-fixture.js";
-import { botAppCsp, serveBotAppStatic } from "../src/web/botapp.js";
+import { botAppCsp, serveBotAppStatic } from "../src/botkit/static.js";
 // @ts-expect-error 前端模块是无类型的原生 ES 模块
 import { safeExternalUrl } from "../ui/lib/bot-bridge.js";
 

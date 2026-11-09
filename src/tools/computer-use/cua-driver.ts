@@ -2,7 +2,7 @@ import { execFile, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { t } from "../i18n/index.js";
+import { t } from "../../i18n/index.js";
 
 /**
  * Cua Driver（trycua/cua libs/cua-driver，MIT）：默认的电脑操作后端，三个平台都用官方预编译的

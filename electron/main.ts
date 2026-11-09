@@ -16,8 +16,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "../src/config.js";
 import { App } from "../src/app.js";
-import { DesktopUpdateService } from "../src/desktop-updates.js";
-import { UpdateActionError } from "../src/update-check.js";
+import { DesktopUpdateService } from "../src/updates/desktop.js";
+import { UpdateActionError } from "../src/updates/check.js";
 import { findAppRoot } from "../src/magpie/supervisor.js";
 import { initFileLog, logFilePath, logger, registerSecret, setConsoleLog } from "../src/log.js";
 import { normalizeLang, onLangChange, setLangPref, setSystemLang, LANGS, t } from "../src/i18n/index.js";
@@ -125,7 +125,7 @@ function handleAppLink(link: string): void {
   }
 }
 
-/** macOS：电脑操作要的辅助功能、屏幕录制（只在机器人真正要用、用户点了以后才请求，见 src/agent/cu-permissions.ts） */
+/** macOS：电脑操作要的辅助功能、屏幕录制（只在机器人真正要用、用户点了以后才请求，见 src/tools/computer-use/permissions.ts） */
 function macPermissions(): NonNullable<import("../src/app.js").DesktopHooks["cuPermissions"]> | undefined {
   if (process.platform !== "darwin") return undefined;
   const media = (v: string) => (["granted", "denied", "not-determined", "restricted"].includes(v) ? v : "unknown") as "granted" | "denied" | "not-determined" | "restricted" | "unknown";

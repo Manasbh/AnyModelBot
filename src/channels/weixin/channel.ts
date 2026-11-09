@@ -8,7 +8,7 @@ import { Gone, Held, Later, Outbox, ReplyIds, sentText, stableId, type HeldGroup
 import { IlinkClient, MessageItemType, MessageType, WeixinApiError, hasDownloadableMedia, type InboundMedia, type MessageItem, type WeixinMessage } from "./api.js";
 import { StreamingMarkdownFilter } from "./markdown-filter.js";
 import { WeixinQuota } from "./quota.js";
-import type { Delivery } from "../../core/delivery.js";
+import type { Delivery } from "../../delivery/index.js";
 import { logger } from "../../log.js";
 import { t, t as tr, tl, TARGET_LANGS } from "../../i18n/index.js";
 
@@ -90,7 +90,7 @@ function transient(e: unknown): boolean {
 }
 
 /**
- * 这条能用几条配额：主动消息（任务结果、续期提醒…）用全部剩下的；聊天回复要给主动消息留出 reserved 条（core/delivery.ts）
+ * 这条能用几条配额：主动消息（任务结果、续期提醒…）用全部剩下的；聊天回复要给主动消息留出 reserved 条（delivery/index.ts）
  */
 function budgetOf(quota: WeixinQuota, userId: string, row: Pick<OutboxRow, "purpose">): number {
   const left = quota.remaining(userId);

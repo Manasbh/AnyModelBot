@@ -1,5 +1,5 @@
 /**
- * Notion 账号（accounts.ts）：一个账号要么是令牌，要么是一键授权，用户添加时自己选。模型看到的是同一套工具。
+ * Notion 账号（index.ts）：一个账号要么是令牌，要么是一键授权，用户添加时自己选。模型看到的是同一套工具。
  *
  * - 令牌（个人访问令牌或内部连接的令牌）：走 REST API，页面内容用 Markdown 接口（v2，官方推荐）。
  * - 一键授权：OAuth 2.0 + PKCE + 动态注册，不需要客户端密钥。拿到的令牌只能用于 Notion 的远程 MCP，
@@ -9,9 +9,9 @@
  * 没有删除页面的操作；改内容时也不允许删掉子页面和子数据库（Notion 默认拒绝，这里不打开）。
  */
 import crypto from "node:crypto";
-import { logger } from "../log.js";
-import { AccountStore, ConnectionError, LocalizedConnectionError, capped, clampLimit, wait, type ConnectedAccount, type NotionOAuthAuth } from "./accounts.js";
-import { parseRpcReply } from "./search.js";
+import { logger } from "../../log.js";
+import { AccountStore, ConnectionError, LocalizedConnectionError, capped, clampLimit, wait, type ConnectedAccount, type NotionOAuthAuth } from "./index.js";
+import { parseRpcReply } from "../search.js";
 
 const log = logger("agent.notion");
 

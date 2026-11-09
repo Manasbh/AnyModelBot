@@ -7,7 +7,7 @@
  *
  * 1. 系统里能用的 PowerShell 7（用户自己装的，什么都不下载）：先按 DSH 的顺序找文件，再补上 DSH 不看的位置（7-preview 等其他 7*
  *    目录、Microsoft Store / winget 的 WindowsApps 别名）。找到后在后台按 DSH 的方式试运行一次，没通过就不用它。
- * 2. 应用内置的 PowerShell 7（pwsh-private.ts）：没有 1 时在后台自动下载安装，试运行通过才用。
+ * 2. 应用内置的 PowerShell 7（private.ts）：没有 1 时在后台自动下载安装，试运行通过才用。
  * 3. 都没有：Windows PowerShell 5.1（和以前一样）。系统里有被排除的 pwsh 时明确写 5.1 的路径，免得 DSH 自己又找回它。
  *
  * - 运行中代理拉不起所用的 pwsh（宿主把 pwsh 工具的结果转过来，observeToolResult）就把它标记为坏，退回下一个，空闲时重启 DSH，并告诉用户。
@@ -20,7 +20,7 @@
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { logger } from "../log.js";
+import { logger } from "../../log.js";
 import {
   PrivatePwsh,
   depsJsonVersion,
@@ -32,8 +32,8 @@ import {
   type LaunchTest,
   type PrivatePwshStatus,
   type Runner,
-} from "./pwsh-private.js";
-import { t, type MessageKey, t as tr } from "../i18n/index.js";
+} from "./private.js";
+import { t, type MessageKey, t as tr } from "../../i18n/index.js";
 
 const log = logger("pwsh");
 const W = path.win32;

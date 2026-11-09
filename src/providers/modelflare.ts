@@ -1,10 +1,10 @@
 /**
- * Modelflare：登录账户就能用的模型来源（另一个来源是用户自己的官方 API Key，见 official-providers.ts）。
+ * Modelflare：登录账户就能用的模型来源（另一个来源是用户自己的官方 API Key，见 official.ts）。
  * - 三个 API 域名：modelflare.dev、origin.modelflare.dev、cf.modelflare.dev；
  *   飞行中的 POST 不跨主机重定向，所以线路由用户事先选定，不自动切换。
  * - 连接前用 GET {base}/models + Bearer 校验密钥；错误按状态码给出可操作的说明。
  */
-import { t } from "./i18n/index.js";
+import { t } from "../i18n/index.js";
 
 // 保留历史配置值；auto/global 都指向主域名，cn 指向 origin，不代表地域或质量差异。
 export type ModelflareLine = "auto" | "global" | "cn" | "cf";

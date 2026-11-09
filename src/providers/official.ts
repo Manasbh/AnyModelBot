@@ -5,7 +5,7 @@
  * - 网关里的 provider id 是 official-<id>，模型 id 是 official-<id>/<厂商的模型名>：和 Modelflare 的同名模型分得开，
  *   也不会被当成 Modelflare 的 openai/x 这种写法。
  */
-import { t } from "./i18n/index.js";
+import { t } from "../i18n/index.js";
 
 /** 代理用哪个接口（和 Modelflare 目录的 supported_endpoint_types 同一套写法，host.ts 的 agentApi 读它） */
 export type OfficialApi = "openai-response" | "anthropic" | "openai";

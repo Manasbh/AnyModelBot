@@ -17,14 +17,14 @@
  * 给 3b / 3d 的接口：addReserver（占配额）、addUpcoming（续期提醒里列出要来的规则）、attentionItems / act / onChange。
  */
 import path from "node:path";
-import type { BotSettings } from "../agent/settings.js";
+import type { BotSettings } from "../domain/bot-settings.js";
 import type { OutboxKind, OutboxPurpose, OutboxRow, Store } from "../store/db.js";
-import { botForPeer } from "./routes.js";
-import type { HeldGroup, Outbox } from "./outbox.js";
-import { DEFAULT_QUIET, fmtWhen, inQuiet, minuteOf, nextAt, quietEnd, quietStart, startOfDay, systemTimeZone, type QuietHours } from "./quiet.js";
+import { botForPeer } from "../core/routes.js";
+import type { HeldGroup, Outbox } from "../core/outbox.js";
+import { DEFAULT_QUIET, fmtWhen, inQuiet, minuteOf, nextAt, quietEnd, quietStart, startOfDay, systemTimeZone, type QuietHours } from "../domain/quiet.js";
 import { QUOTA_WINDOW_MS, WeixinQuota } from "../channels/weixin/quota.js";
 import { combineHeld, filterMarkdown } from "../channels/weixin/channel.js";
-import { MESSENGER_LABEL, isMessenger, type PushChannel } from "./types.js";
+import { MESSENGER_LABEL, isMessenger, type PushChannel } from "../core/types.js";
 import { logger } from "../log.js";
 import { t as tr } from "../i18n/index.js";
 

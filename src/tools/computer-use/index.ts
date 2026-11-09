@@ -2,8 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { cuaRoots, detectCua, CUA_READ_TOOLS, type CuaStatus } from "./cua-driver.js";
-import type { CuBackend } from "./settings.js";
-import { t, tl, type MessageKey } from "../i18n/index.js";
+import type { CuBackend } from "../../domain/bot-settings.js";
+import { t, tl, type MessageKey } from "../../i18n/index.js";
 
 /**
  * 电脑操作（Computer Use）有两个后端：

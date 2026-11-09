@@ -10,18 +10,18 @@ import { ApiFallbacks, shapeRejection, type ApiFallback } from "./api-fallback.j
 import { ControlChannel } from "./control.js";
 import os from "node:os";
 import { findAppRoot } from "../magpie/supervisor.js";
-import { adaptSkill, mcpPatchLines, resolveComputerUse, type CuResolved } from "./computer-use.js";
-import { cuaConfig, cuaMcpEnv, discoverAppsCached, type CuaApp } from "./cua-driver.js";
-import { pwshPatchLines, pwshProbe } from "./pwsh.js";
+import { adaptSkill, mcpPatchLines, resolveComputerUse, type CuResolved } from "../tools/computer-use/index.js";
+import { cuaConfig, cuaMcpEnv, discoverAppsCached, type CuaApp } from "../tools/computer-use/cua-driver.js";
+import { pwshPatchLines, pwshProbe } from "../tools/pwsh/index.js";
 import { hasEnvProxy, networkEnv, systemProxyEnv } from "./proxy-env.js";
 import { DEFAULT_SETTINGS, permissionMode, type BotSettings } from "./settings.js";
-import type { BotPermission } from "../botkit/format.js";
-import type { AccountService } from "./accounts.js";
+import type { BotPermission } from "../domain/app-ref.js";
+import type { AccountService } from "../tools/accounts/index.js";
 import { acceptsImages } from "../llm/client.js";
 import { CUA_SKILL, MEDIA_SKILL, TASK_RULES, agentPersona, botPrompt } from "./prompts/index.js";
 import { UserSkills } from "../skills/service.js";
 import { t, t as tr } from "../i18n/index.js";
-import { dirBytes, taskSessionDirs } from "../tasks/retention.js";
+import { dirBytes, taskSessionDirs } from "./session-dirs.js";
 
 const log = logger("agent.host");
 
@@ -230,7 +230,7 @@ export interface AgentHostOptions {
   idle?: () => boolean;
   /** 桌面版：系统给这个地址用的代理（PAC 写法，如 "PROXY 127.0.0.1:7890"）；环境里没设代理时每次拉起子进程问一次 */
   systemProxy?: (url: string) => Promise<string | undefined>;
-  /** macOS 桌面版：电脑操作工具调用前先查系统权限（amb-computer-use-gate 经 bridge 问 cu-permissions.ts） */
+  /** macOS 桌面版：电脑操作工具调用前先查系统权限（amb-computer-use-gate 经 bridge 问 tools/computer-use/permissions.ts） */
   cuPermissionCheck?: () => boolean;
 }
 
@@ -792,9 +792,9 @@ export class AgentHost {
       // 生图 / 生视频：宿主带着本机器人的 Key 调 Modelflare，文件存进工作区 media/；技能说明在 skills/media
       "    - id: amb-media",
       `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-media.mjs"))}`,
-      // 联网搜索：默认免费（Exa MCP、必应、DuckDuckGo），设置里可换成带 Key 的接口（search.ts）
+      // 联网搜索：默认免费（Exa MCP、必应、DuckDuckGo），设置里可换成带 Key 的接口（tools/search.ts）
       ...(this.allows("network") ? ["    - id: amb-web-search", `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-web-search.mjs"))}`] : []),
-      // 已授权账号（Notion、飞书）：有账号才注册工具（AMB_CONNECTIONS），令牌只在宿主这边（accounts.ts）
+      // 已授权账号（Notion、飞书）：有账号才注册工具（AMB_CONNECTIONS），令牌只在宿主这边（tools/accounts/index.ts）
       ...(this.allows("accounts") ? ["    - id: amb-connections", `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-connections.mjs"))}`] : []),
       // 目录 Bot：没声明的权限一律拒绝，声明了的第一次用时问用户（amb-bot-gate.mjs）
       ...(this.o.store.getBot(this.o.botId)?.app ? ["    - id: amb-bot-gate", `      name: ${yamlStr(path.join(this.o.runtimeDir, "plugins", "amb-bot-gate.mjs"))}`] : []),

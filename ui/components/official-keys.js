@@ -1,4 +1,4 @@
-// 官方 API Key：用户自己在模型厂商那里申请的 Key（src/official-providers.ts）。引导页和设置页共用填 Key 的表单。
+// 官方 API Key：用户自己在模型厂商那里申请的 Key（src/providers/official.ts）。引导页和设置页共用填 Key 的表单。
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, MenuButton, Spinner } from "./ui.js";
 import { api } from "../lib/api.js";

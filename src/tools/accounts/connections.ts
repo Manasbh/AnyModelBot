@@ -1,9 +1,9 @@
 /**
  * 已授权账号的入口：amb-connections 插件的每次工具调用经 bridge 到这里，按服务和 account 参数选账号，交给对应的实现。
- * 账号和令牌见 accounts.ts。
+ * 账号和令牌见 index.ts。
  */
-import { ACCOUNT_SERVICES, AccountStore, ConnectionError, type AccountService } from "./accounts.js";
-import { FeishuAccounts } from "./feishu-account.js";
+import { ACCOUNT_SERVICES, AccountStore, ConnectionError, type AccountService } from "./index.js";
+import { FeishuAccounts } from "./feishu.js";
 import { NOTION_WRITE_OPS, NotionService } from "./notion.js";
 
 export interface ConnectionServiceOptions {

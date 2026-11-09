@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { normalizeLine, type ModelflareLine } from "./modelflare.js";
+import { normalizeLine, type ModelflareLine } from "./providers/modelflare.js";
 import { normalizeGuide, type GuideState } from "./guide.js";
 import { normalizeLangPref, type LangPref } from "./i18n/index.js";
 

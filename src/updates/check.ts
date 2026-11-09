@@ -1,9 +1,9 @@
 /**
  * 手动更新的回退：没有原生更新器的桌面运行方式只查询版本、提供安装包链接。
- * 已安装的 macOS / Windows / AppImage 使用 desktop-updates.ts 管理下载和重启安装。
+ * 已安装的 macOS / Windows / AppImage 使用 desktop.ts 管理下载和重启安装。
  * 请求里只有当前版本号（User-Agent），不带账户和对话内容。Docker 和命令行不查，它们不靠安装包升级。
  */
-import { logger } from "./log.js";
+import { logger } from "../log.js";
 
 const log = logger("update");
 

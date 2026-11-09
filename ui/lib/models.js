@@ -5,7 +5,7 @@ export const normModel = (m) => (m && m.startsWith("modelflare/") ? m.slice("mod
 export const sameModel = (a, b) => !!a && !!b && normModel(a) === normModel(b);
 export const shortModel = (m) => (m && m.includes("/") ? m.slice(m.lastIndexOf("/") + 1) : m);
 
-/** 官方 API 的模型 id 是 official-<厂商>/<模型>（src/official-providers.ts）；这张表只管显示，test/official-providers.unit.test.ts 核对它和服务端的表一致 */
+/** 官方 API 的模型 id 是 official-<厂商>/<模型>（src/providers/official.ts）；这张表只管显示，test/official-providers.unit.test.ts 核对它和服务端的表一致 */
 const OFFICIAL_NAMES = {
   openai: "OpenAI",
   anthropic: "Anthropic",

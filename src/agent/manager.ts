@@ -1,23 +1,22 @@
 import type { ReasoningEffort } from "../config.js";
 import crypto from "node:crypto";
-import { resolveComputerUse } from "./computer-use.js";
+import { resolveComputerUse } from "../tools/computer-use/index.js";
 import type { Store } from "../store/db.js";
 import { logger } from "../log.js";
-import type { CuPermissions } from "./cu-permissions.js";
+import type { CuPermissions } from "../tools/computer-use/permissions.js";
 import { AgentBridge } from "./bridge.js";
 import path from "node:path";
 import { AgentHost, TurnStopped, callDetail, modelLimits, type ModelApiInfo, type TurnImage, type TurnInput, type TurnObserver, type TurnResult, type TurnUsage } from "./host.js";
 import { ServerCompaction, type CompactEndpoint, type CompactionEvent } from "./server-compaction.js";
 import { ActivityLog, promotedJob, type ActivityStep } from "./activity.js";
 import { ApiFallbacks, type ApiFallback } from "./api-fallback.js";
-import type { MediaModel, MediaPlan, MediaService } from "./media.js";
-import { SearchAborted, type SearchService, type WebSource } from "./search.js";
-import { ConnectionError } from "./accounts.js";
-import type { ConnectionService } from "./connections.js";
-import { APPROVAL_TTL_MS, ApprovalCenter, TASK_APPROVAL_TTL_MS, type QuestionItem } from "./approvals.js";
+import type { MediaModel, MediaPlan, MediaService } from "../tools/media/index.js";
+import { SearchAborted, type SearchService, type WebSource } from "../tools/search.js";
+import { ConnectionError } from "../tools/accounts/index.js";
+import type { ConnectionService } from "../tools/accounts/connections.js";
+import { APPROVAL_TTL_MS, ApprovalCenter, RULE_APPROVAL_TTL_MS, TASK_APPROVAL_TTL_MS, type QuestionItem } from "./approvals.js";
 import { MemoryError, MemoryStore, type Scope } from "./memory.js";
 import type { TaskHost, TaskService } from "../tasks/service.js";
-import { RULE_APPROVAL_TTL_MS } from "../tasks/rules.js";
 import { DEFAULT_SETTINGS, type BotSettings, type MediaConfirm } from "./settings.js";
 import { t, tl, t as tr, TARGET_LANGS } from "../i18n/index.js";
 import {
@@ -70,7 +69,7 @@ export interface AgentManagerOptions {
   effort?: () => ReasoningEffort;
   /** 桌面版：系统给这个地址用的代理（PAC 写法）；代理进程的环境里没设代理时用它 */
   systemProxy?: (url: string) => Promise<string | undefined>;
-  /** macOS 桌面版：电脑操作的系统权限（缺项时拦下工具调用并结束这一轮），见 cu-permissions.ts */
+  /** macOS 桌面版：电脑操作的系统权限（缺项时拦下工具调用并结束这一轮），见 tools/computer-use/permissions.ts */
   cuPermissions?: CuPermissions;
   /**
    * 服务端压缩（见 server-compaction.ts）：listed = 价格目录是否列出该模型的压缩端点（只是提示，用前还要探测）；
@@ -724,7 +723,7 @@ export class AgentManager {
 
   /**
    * 联网搜索：聊天和后台任务都能用。出错只回一个 error（插件给代理一句"搜索暂时不可用，可以直接用 web_fetch 打开网页"），
-   * 哪个后端、为什么出错记在日志里（search.ts）。
+   * 哪个后端、为什么出错记在日志里（tools/search.ts）。
    */
   private async searchOp(b: any, signal: AbortSignal): Promise<{ sources?: WebSource[]; truncated?: boolean; error?: string }> {
     const search = this.o.search;
@@ -745,7 +744,7 @@ export class AgentManager {
    */
   /**
    * 已授权账号：全局一份，所有机器人共用，机器人之间的差别只来自权限。写操作在这里再查一次（插件只是不给写工具）：
-   * 只读机器人和观察规则不能写。错误文字直接给模型看（accounts.ts）。
+   * 只读机器人和观察规则不能写。错误文字直接给模型看（tools/accounts/index.ts）。
    */
   private async connectionOp(b: any, signal: AbortSignal): Promise<{ text?: string; error?: string }> {
     const botId = String(b?.botId ?? "");

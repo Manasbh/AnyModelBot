@@ -2,9 +2,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { App, appVersion, type DesktopHooks } from "../src/app.js";
+import { App, type DesktopHooks } from "../src/app.js";
+import { appVersion } from "../src/version.js";
 import { loadConfig } from "../src/config.js";
-import { UpdateChecker, installerSuffix, isNewer } from "../src/update-check.js";
+import { UpdateChecker, installerSuffix, isNewer } from "../src/updates/check.js";
 
 const BASE = "https://github.com/modelflare-ai/AnyModelBot/releases";
 const ALL_ASSETS = ["win-x64.exe", "win-arm64.exe", "mac-x64.dmg", "mac-arm64.dmg", "linux-x86_64.AppImage", "linux-arm64.AppImage"].map((s) => ({

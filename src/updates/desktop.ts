@@ -1,7 +1,7 @@
 /** 桌面更新状态机。原生更新器由 Electron 注入；这里不加载 Electron，也不自行下载或解包。 */
 import type { AppUpdater, UpdateCheckResult } from "electron-updater";
-import { logger } from "./log.js";
-import { UpdateActionError, installerSuffix, type DesktopUpdates, type UpdateStatus } from "./update-check.js";
+import { logger } from "../log.js";
+import { UpdateActionError, installerSuffix, type DesktopUpdates, type UpdateStatus } from "./check.js";
 
 const log = logger("update");
 const RELEASES = "https://github.com/modelflare-ai/AnyModelBot/releases";

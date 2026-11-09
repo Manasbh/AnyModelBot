@@ -39,7 +39,7 @@ App：本地目录 · 运行时（沙箱 iframe、桥接、状态文件）· 界
 | 打包发布 | `src/botkit/bundle.ts`、`pack.ts`、`sign.ts` | 内容寻址的包、签名的目录、下架 |
 | 目录加载 | `src/botkit/catalog.ts`、`config.ts` | 默认读内置目录、校验并解压本地包；显式配置才使用远程目录 |
 | 实例 | `src/botkit/installer.ts`、`app-skill.ts` | 第一次使用时安装，升级、下架、移除 |
-| 服务端 | `src/web/botapp.ts` | 界面的静态路由和 CSP，目录和实例的接口 |
+| 服务端 | `src/web/botapp.ts`、`src/botkit/static.ts` | 目录和实例的接口；界面的静态路由和 CSP（`amb-bot check` 渲染也用） |
 | 界面套件 | `ui/botkit/` | Bot 的界面唯一能引用的东西 |
 | 容器 | `ui/screens/bot-app.js`、`discover.js`、`ui/lib/bot-bridge.js` | iframe、桥接、输入框、发现页 |
 | 权限 | `src/agent/host.ts`、`dsh-runtime/plugins/amb-bot-gate.mjs` | 没声明的权限运行时拒绝 |

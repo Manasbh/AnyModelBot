@@ -5,7 +5,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { dirHash, packFiles, walk, type BundleFile } from "./bundle.js";
-import { BOT_LANGS, KIT_SINCE, LICENSE_ALLOW, LIMITS, parseManifest, REQUIRED_LANGS, RESERVED_SKILLS, SAMPLE_FILES, sampleName, SKILL_NAME, versionGte, type BotManifest, type Issue } from "./format.js";
+import { BOT_LANGS, KIT_SINCE, LICENSE_ALLOW, LIMITS, parseManifest, REQUIRED_LANGS, SAMPLE_FILES, sampleName, SKILL_NAME, versionGte, type BotManifest, type Issue } from "./format.js";
+import { RESERVED_SKILLS } from "../skills/archive.js";
 import { unsupportedKeywords, validate, type JsonSchema } from "./schema.js";
 
 const REQUIRED_FILES = ["bot.json", "persona.md", "ui/index.html", "ui/locales/zh-CN.json", "ui/locales/en.json", "state.schema.json", ...REQUIRED_LANGS.map(sampleName), "evals/tasks.json", "evals/injection.json"];

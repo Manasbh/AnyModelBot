@@ -1,5 +1,5 @@
 /**
- * 飞书账号（accounts.ts）：用用户身份读这个人能看到的会话和消息，只读。和飞书聊天渠道（channels/feishu）是两回事：
+ * 飞书账号（index.ts）：用用户身份读这个人能看到的会话和消息，只读。和飞书聊天渠道（channels/feishu）是两回事：
  * 渠道账号用的是一个机器人应用，只能看到发给这个应用的消息。
  *
  * 添加账号（和官方 lark-cli 同一套流程）：
@@ -9,8 +9,8 @@
  */
 import crypto from "node:crypto";
 import QRCode from "qrcode";
-import { logger } from "../log.js";
-import { AccountStore, ConnectionError, LocalizedConnectionError, capped, clampLimit, wait, type ConnectedAccount, type FeishuBrand, type FeishuUserAuth } from "./accounts.js";
+import { logger } from "../../log.js";
+import { AccountStore, ConnectionError, LocalizedConnectionError, capped, clampLimit, wait, type ConnectedAccount, type FeishuBrand, type FeishuUserAuth } from "./index.js";
 
 const log = logger("agent.feishu-account");
 

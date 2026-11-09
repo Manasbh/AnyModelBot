@@ -12,13 +12,13 @@ import { discover, startLogin, pkcePair } from "../src/account/oauth.js";
 import { AccountManager, summarizeUsage, type AccountHooks } from "../src/account/manager.js";
 import { AccountVault } from "../src/account/vault.js";
 import { loadModelInfo, referencePrice } from "../src/account/model-info.js";
-import { MediaService, docSection, estimateUsd, type MediaModel } from "../src/agent/media.js";
+import { MediaService, docSection, estimateUsd, type MediaModel } from "../src/tools/media/index.js";
 import { AgentManager, MEDIA_ASK_USD, mediaAsk } from "../src/agent/manager.js";
 import { normalizeSettings } from "../src/agent/settings.js";
 import { locateDshRuntime } from "../src/agent/host.js";
 import { findAppRoot } from "../src/magpie/supervisor.js";
 import { Store } from "../src/store/db.js";
-import { bareModel, isBotProviderModel, routeModel, skillHeader } from "../src/modelflare.js";
+import { bareModel, isBotProviderModel, routeModel, skillHeader } from "../src/providers/modelflare.js";
 
 describe("回环 PKCE 登录", () => {
   let mf: Awaited<ReturnType<typeof mockModelflare>>;

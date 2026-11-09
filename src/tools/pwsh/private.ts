@@ -16,8 +16,8 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { logger } from "../log.js";
-import { t as tr } from "../i18n/index.js";
+import { logger } from "../../log.js";
+import { t as tr } from "../../i18n/index.js";
 
 const log = logger("pwsh.private");
 const W = path.win32;

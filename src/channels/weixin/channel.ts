@@ -353,6 +353,8 @@ export class WeixinChannel {
       return;
     }
     this.client = new IlinkClient({ baseUrl: acct.baseUrl, token: acct.botToken, fetchImpl: this.opts.fetchImpl, cdnBaseUrl: this.opts.cdnBaseUrl });
+    // 告诉服务端这个机器人上线了（同 openclaw-weixin）；失败不影响收消息
+    this.client.notifyStart().catch((e) => this.log.warn("notifystart failed (ignored)", { message: String((e as Error).message).slice(0, 200) }));
     this.abort = new AbortController();
     this.loop = this.run(this.abort.signal).finally(() => (this.loop = undefined));
     // 上线：出站队列里这个机器人的微信消息（含上次没发完的）由这里发
@@ -402,9 +404,12 @@ export class WeixinChannel {
   async stop(): Promise<void> {
     this.unregister?.();
     this.unregister = undefined;
+    const wasRunning = !!this.loop;
     this.abort?.abort();
     await this.loop?.catch(() => {});
     this.loop = undefined;
+    // 下线通知（同 openclaw-weixin）：只在真的跑过时发，失败忽略
+    if (wasRunning) await this.client?.notifyStop().catch((e) => this.log.warn("notifystop failed (ignored)", { message: String((e as Error).message).slice(0, 200) }));
     if (this.st.state !== "expired") this.st = { state: "disabled", since: Date.now() };
   }
 

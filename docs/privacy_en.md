@@ -86,6 +86,7 @@ Besides model requests, the app goes online to:
 - Telegram, Slack and Discord channels: once connected, talk to `api.telegram.org`, `slack.com`, `discord.com` and their file hosts to send and receive messages and the files you send.
 - On Windows, with agent mode on and no working PowerShell 7 on the system, download PowerShell 7 from Microsoft's official release location (turn this off with `AMB_PWSH_AUTO_INSTALL=0`; see the [development guide](./development_en.md)).
 - Installed desktop apps check GitHub for updates after startup and every 6 hours, and download update files in the background by default. You can turn automatic downloads off in Settings → General. Requests contain no account credentials or chat content. Installation requires you to click Restart and update, with no tasks running.
+- When you open What's new for a version you haven't installed yet, the app reads that version's changelog from GitHub (`raw.githubusercontent.com`). It only does so when you open it, with no account credentials or chat content. The changelog for installed versions ships with the app and needs no network.
 - Only when you explicitly set `AMB_CATALOG_URL` to use a remote bot catalog does the app fetch its list and download packages on demand, verifying signatures and hashes without uploading your data. By default, the official bot catalog, UIs, sample data and skills ship with the app; opening and installing them makes no such network requests.
 
 ## Computer use and screenshots

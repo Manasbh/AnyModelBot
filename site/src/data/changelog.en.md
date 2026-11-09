@@ -4,6 +4,22 @@
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
 
+## 0.1.30 - 2026-11-10
+
+### New
+
+- **Bot credits:** Accounts with Modelflare Bot credits see a ring and the percentage left in the bottom-left corner. Click it to see your Bot credits, account balance and the Top up link. Bot credits are usable only in AnyModelBot, and requests from keys the app issues use them first. The numbers refresh when you open the card and after each message is handled. Accounts without Bot credits see the same corner as before.
+- **$1 in Bot credits for new accounts:** The sign-in page and the API key page now mention the sign-up credit. Modelflare subscriptions add Bot credits worth 10% of the plan, as the credit card also explains.
+- **What's new:** After an update, the first launch shows what changed, and you can scroll down through every version. Clicking the new-version notice in the sidebar shows the new version's notes first, so you can decide before you download or restart. The changelog is always available in Settings → About.
+- **Official bots as desktop workspaces:** Company Research, PPT Master, Film Studio and US Stock Research show your work in a list on the left and the content on the right. New starts a short guided form. The top bar switches between Workspace and Chat, where you see the full conversation. US Stock Research charts the key numbers, Film Studio has a storyboard with picture, video and audio lanes, and PPT Master lets you page through previews.
+- **Model choice in bots with their own UI:** The input box works like a regular chat, with the model picker, the + menu and slash commands.
+- **Recent chats in search:** Before you type, the search dialog lists recent chats grouped as Today, Yesterday, Previous 7 days and Earlier.
+
+### Improvements and fixes
+
+- The account menu is as wide as the account area, and hovering darkens only the avatar. The settings navigation fills the sidebar, with the account area pinned to the bottom.
+- Starters in bots with their own UI are a row of single-line chips; hover to read a long one in full.
+
 ## 0.1.29 - 2026-11-09
 
 ### New

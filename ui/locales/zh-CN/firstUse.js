@@ -2,6 +2,7 @@ export default {
   "login": "登录 / 注册",
   "accountHint": "使用 Modelflare 账号登录 AnyModelBot",
   "signupHint": "没有账号？可在下一步注册",
+  "signupGift": "新用户注册即送 $1 Bot 额度",
   "noKey": "不想配置 API Key？",
   "useAccount": "使用 Modelflare 账号登录",
   "modelSettings": "模型设置",

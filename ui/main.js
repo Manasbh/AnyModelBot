@@ -17,6 +17,7 @@ import { MessageSearchScreen, ConversationHistoryScreen } from "./screens/messag
 import { BotAvatar, MAIN_CHAR } from "./components/avatar.js";
 import { Onboarding } from "./screens/onboarding.js";
 import { CoachMark } from "./components/guide.js";
+import { WhatsNewHost, openWhatsNew } from "./components/whats-new.js";
 import { api } from "./lib/api.js";
 import { loadGuide, setFocus, setGuideTrim } from "./lib/guide.js";
 import { restoreDrafts } from "./lib/chat-view.js";
@@ -24,6 +25,7 @@ import { previewText } from "./lib/errors.js";
 import { setThemeMode } from "./lib/theme.js";
 import { failed, toast, useStore } from "./lib/store.js";
 import { prefs, setPrefs } from "./lib/prefs.js";
+import { trailingThrottle } from "./lib/throttle.js";
 import { usePresence } from "./design/motion.js";
 import { t, useLang, adoptServerLang, changeLang, getLangPref, LANG_NAMES, LANGS } from "./lib/i18n.js";
 
@@ -212,12 +214,27 @@ function App() {
   useEffect(() => {
     if (connected) loadGuide();
   }, [connected]);
+  // 升级后第一次进到主界面：弹一次"更新了什么"（全新安装、首次登录引导时不弹）
+  useEffect(() => {
+    if (!connected) return;
+    api("/whats-new").then((w) => w.show && openWhatsNew({ mode: "installed", version: w.current, since: w.seen })).catch(() => {});
+  }, [connected]);
   useEffect(() => {
     if (!connected || !managed) return;
     const on = () => document.visibilityState === "visible" && api("/account/refresh", { method: "POST", body: {} }).then(setAccount).catch(() => {});
     window.addEventListener("focus", on);
     return () => window.removeEventListener("focus", on);
   }, [connected, managed]);
+  // 额度要最新的时候请后端立刻读一次（3 秒内读过就沿用）：打开额度卡片时（sidebar.js 发 amb-account-refresh），
+  // 以及每处理完一件事（下面看"工作中"的变化）。后者 10 秒内最多一次，期间又处理完的到时补一次
+  const refreshAccount = useRef(null);
+  refreshAccount.current = () => connected && managed && api("/account/refresh", { method: "POST", body: { maxAgeMs: 3000 } }).then(setAccount).catch(() => {});
+  useEffect(() => {
+    const on = () => refreshAccount.current?.();
+    window.addEventListener("amb-account-refresh", on);
+    return () => window.removeEventListener("amb-account-refresh", on);
+  }, []);
+  const usageRefresh = useMemo(() => trailingThrottle(() => refreshAccount.current?.(), 10_000, 1500), []);
   // 授权在网页上被撤销时后端会断开连接：回到登录页；余额跌破提醒线时提示一次
   const prevAccount = useRef(null);
   useEffect(() => {
@@ -240,7 +257,7 @@ function App() {
   }, [bot && bot.id]);
 
   // 信息面板：关上时多留一会儿，播完"列宽滑回 0、面板淡出"再卸载
-  const panelOpen = !searchOpen && route.view === "chat" && infoOpen && !!bot;
+  const panelOpen = route.view === "chat" && infoOpen && !!bot;
   // 目录 Bot 的主界面是专属界面；被安全原因下架的退回普通对话
   const isAppBot = (b) => !!b && b.origin === "catalog" && !b.app?.removed?.security;
   useEffect(() => {
@@ -315,6 +332,13 @@ function App() {
     for (const src of [bgWorking, localWorking]) for (const [k, v] of Object.entries(src)) if (v) m[k] = true;
     return m;
   }, [agentWorking, bgWorking, localWorking]);
+  // 某个机器人从"工作中"变回空闲（对话、渠道消息、后台任务处理完）：这次请求的花费已经记上，刷新额度
+  const prevWorking = useRef({});
+  useEffect(() => {
+    const prev = prevWorking.current;
+    prevWorking.current = working;
+    if (account?.state === "signed_in" && Object.keys(prev).some((id) => prev[id] && !working[id])) usageRefresh();
+  }, [working]);
   const wantWorking = useRef({});
   const onWorking = useCallback((id, on) => {
     wantWorking.current[id] = on;
@@ -357,7 +381,8 @@ function App() {
   const openNeeds = () => go("/needs");
   const openGroup = (id) => { setSearchOpen(false); setFromSearch(false); go(`/group/${encodeURIComponent(id)}`); };
   const openSearch = (focus = true) => {
-    if (!searchOpenRef.current && !document.activeElement?.matches("[data-global-search-entry]")) searchReturnFocus.current = document.activeElement;
+    // 搜索是弹窗：关上后焦点回到打开它的地方（侧栏的搜索入口、聊天输入框等）
+    if (!searchOpenRef.current) searchReturnFocus.current = document.activeElement;
     setSearchOpen(true); setPalette(false);
     if (focus || window.innerWidth <= 600) setSearchFocus((n) => n + 1);
   };
@@ -365,7 +390,7 @@ function App() {
     setSearchOpen(false);
     requestAnimationFrame(() => {
       const previous = searchReturnFocus.current;
-      if (previous?.isConnected && !previous.matches("[data-global-search-entry]")) previous.focus({ preventScroll: true });
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     });
   };
   const openSearchHit = (hit, query) => {
@@ -499,10 +524,10 @@ function App() {
   const view = route.view;
   const groups = groupsData ? groupsData.groups : [];
   const routedGroup = view === "group" ? groups.find((g) => g.id === route.groupId) : null;
-  const panelBot = !searchOpen && view === "chat" && infoOpen && bot;
+  const panelBot = view === "chat" && infoOpen && bot;
   const shownPanel = panelFx.mounted ? panelBot || lastPanel.current : null;
   const routedBot = view === "bot-settings" && bots ? bots.find((b) => b.id === route.botId) : null;
-  return html`<div class=${`app${panelBot ? " with-panel" : ""}${searchOpen ? " searching" : ""}${fromSearch && route.messageId ? " search-reading" : ""}`} ref=${appRef}>
+  return html`<div class=${`app${panelBot ? " with-panel" : ""}${fromSearch && route.messageId ? " search-reading" : ""}`} ref=${appRef}>
     ${view === "settings"
       ? html`<${SettingsSide} tab=${route.tab} query=${settingsQ} onQuery=${setSettingsQ} onTab=${(t) => openSettings(t)} onBack=${() => openChat()}
           username=${status && status.username} account=${managed ? account : null} update=${update} onUpdateChanged=${reloadUpdate} />`
@@ -511,23 +536,23 @@ function App() {
           onNew=${newBot} onSelect=${openChat} onNeeds=${openNeeds} onDeleted=${onDeleted} onOpenSettings=${(tab) => openSettings(tab)} onBotSettings=${openBotSettings} onGuide=${startGuide}
           groups=${groups} groupsLoaded=${!!groupsData} groupId=${route.groupId} onNewGroup=${() => setGroupSheet({})} onSelectGroup=${openGroup} onEditGroup=${(group) => setGroupSheet({ group })} onDeletedGroup=${onDeletedGroup}
           catalog=${catalog} catalogId=${route.catalogId} onDiscover=${openDiscover} onOpenCatalog=${openCatalog}
-          searchQuery=${searchQuery} searchOpen=${searchOpen} onSearchQuery=${setSearchQuery} onOpenSearch=${openSearch} onCloseSearch=${closeSearch} />`}
+          onOpenSearch=${openSearch} />`}
     <${Splitter} class="split-side" size="--side-w" label=${t("app.resizeSide")} value=${sideW} room=${room("--panel-track")} onCommit=${(v) => setPrefs({ sideW: v })} />
     <main class="main">
       ${mf.keyChangeNotice && html`<div class="key-change-note"><${Notice} action=${html`<${IconButton} icon="close" label=${t("common.close")} onClick=${async () => { await api("/account/key-notice", { method: "DELETE" }); reloadMf(); }} />`}>${t("firstUse.keyChanged")}<//></div>`}
-      <div class="route-content" hidden=${searchOpen} inert=${searchOpen || undefined}>
+      <div class="route-content" inert=${searchOpen || undefined}>
       ${view === "chat" && bot && html`<${ChatScreen} key=${bot.id} bot=${bot} models=${models} modelsError=${modelsError} reloadModels=${reloadModels}
-        initialFocus=${{ id: route.messageId, query: route.query, nonce: messageJump }} onBackToSearch=${fromSearch ? () => openSearch() : undefined} visible=${!searchOpen}
+        initialFocus=${{ id: route.messageId, query: route.query, nonce: messageJump }} onBackToSearch=${fromSearch ? () => openSearch() : undefined}
         defaultModel=${settings && settings.defaultModel} infoOpen=${infoOpen} onToggleInfo=${() => setInfoOpen((v) => !v)}
         onWorking=${onWorking} pending=${pending[bot.id] || 0} serverBusy=${!!agentWorking[bot.id]} onOpenSettings=${openSettings} onOpenBotSettings=${openBotSettings} onBotUpdated=${onBotUpdated}
         account=${managed ? account : null} onAccount=${setAccount} cuBlocked=${cuBlocked.includes(bot.id)} />`}
       ${view === "discover" && html`<${DiscoverScreen} catalog=${catalog} onOpen=${openCatalog} />`}
       ${(view === "preview" || (view === "app" && bot && bot.app)) && html`<${BotAppScreen} key=${view === "preview" ? route.catalogId : bot.app.catalogId} catalogId=${view === "preview" ? route.catalogId : bot.app.catalogId} bot=${view === "preview" ? (bots || []).find((b) => b.app?.catalogId === route.catalogId) || null : bot}
         onInstalled=${onInstalled} onBotUpdated=${onBotUpdated} onOpenBotSettings=${openBotSettings} onOpenSettings=${openSettings}
-        chatProps=${{ visible: !searchOpen, models, modelsError, reloadModels, defaultModel: settings && settings.defaultModel, onWorking, pending: (bot && pending[bot.id]) || 0, serverBusy: !!(bot && agentWorking[bot.id]), onOpenSettings: openSettings, onOpenBotSettings: openBotSettings, onBotUpdated, account: managed ? account : null, onAccount: setAccount, cuBlocked: !!(bot && cuBlocked.includes(bot.id)) }} />`}
+        chatProps=${{ models, modelsError, reloadModels, defaultModel: settings && settings.defaultModel, onWorking, pending: (bot && pending[bot.id]) || 0, serverBusy: !!(bot && agentWorking[bot.id]), onOpenSettings: openSettings, onOpenBotSettings: openBotSettings, onBotUpdated, account: managed ? account : null, onAccount: setAccount, cuBlocked: !!(bot && cuBlocked.includes(bot.id)) }} />`}
       ${view === "group" && routedGroup && bots && html`<${GroupScreen} key=${routedGroup.id} group=${routedGroup} bots=${bots} onEdit=${() => setGroupSheet({ group: routedGroup })} onOpenSettings=${openSettings} onChanged=${reloadGroups}
-        initialFocus=${{ id: route.messageId, query: route.query, nonce: messageJump }} onBackToSearch=${fromSearch ? () => openSearch() : undefined} visible=${!searchOpen} />`}
-      ${view === "conversation" && html`<${ConversationHistoryScreen} key=${route.conversationId} conversationId=${route.conversationId} initialFocus=${{ id: route.messageId, query: route.query, nonce: messageJump }} onBack=${() => openSearch()} onBot=${openChat} bots=${bots || []} visible=${!searchOpen} />`}
+        initialFocus=${{ id: route.messageId, query: route.query, nonce: messageJump }} onBackToSearch=${fromSearch ? () => openSearch() : undefined} />`}
+      ${view === "conversation" && html`<${ConversationHistoryScreen} key=${route.conversationId} conversationId=${route.conversationId} initialFocus=${{ id: route.messageId, query: route.query, nonce: messageJump }} onBack=${() => openSearch()} onBot=${openChat} bots=${bots || []} />`}
       ${view === "group" && groupsData && !routedGroup && html`<div class="empty-state"><b>${t("app.groupMissing")}</b><button type="button" class="text" onClick=${() => openChat()}>${t("app.backToChat")}</button></div>`}
       ${(view === "new" || (view === "chat" && bots && !bots.length)) && html`<${NewBotScreen} first=${!!bots && !bots.length}
         models=${models} modelsError=${modelsError} reloadModels=${reloadModels} defaultModel=${settings && settings.defaultModel}
@@ -553,6 +578,7 @@ function App() {
     ${palette && html`<${Palette} commands=${commands} onClose=${() => setPalette(false)} />`}
     ${groupSheet && bots && html`<${GroupSheet} group=${groupSheet.group} bots=${bots} onClose=${() => setGroupSheet(null)}
       onSaved=${async (g) => { setGroupSheet(null); await reloadGroups(); openGroup(g.id); }} />`}
+    <${WhatsNewHost} update=${update} onUpdateChanged=${reloadUpdate} />
     <${DialogHost} />
     <${Toasts} />
   </div>`;

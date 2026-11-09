@@ -17,6 +17,12 @@ export interface ConnectedAccount {
   used_usd: number;
   billed_to_enterprise: boolean;
   quota_per_unit: number;
+  /**
+   * bot 余额：只能在 AnyModelBot 里用的专属额度（注册赠送、订阅附赠），这次授权签发的 Key 发出的请求先扣它。
+   * remaining_percent 是相对最近一次发放后的余额算的，0–100 的整数（向下取整）。
+   * 不返回或为 null = 没有 bot 余额（从没获得过、企业托管成员，或服务端还没有这个字段）。
+   */
+  bot?: { balance_usd: number; remaining_percent: number } | null;
 }
 
 /**

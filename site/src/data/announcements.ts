@@ -47,6 +47,13 @@ export const RELEASE = {
   days: 30,
   /** 各版本的一句话亮点（可选），没有就显示"AnyModelBot {version} 已发布" */
   highlights: {
+    "0.1.30": {
+      zh: "Bot 额度、更新说明和官方 Bot 工作台",
+      en: "Bot credits, What's new and official bot workspaces",
+      ja: "Bot クレジット、更新内容、公式ボットのワークスペース",
+      ko: "Bot 크레딧, 업데이트 내용, 공식 봇 작업 공간",
+      ru: "Кредиты Bot, «Что нового» и рабочие пространства ботов",
+    },
     "0.1.24": {
       zh: "ZIP 技能导入和聊天记录搜索",
       en: "Import ZIP skills and search chat history",

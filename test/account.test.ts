@@ -9,7 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import { listen, mockModelflare, approveInBrowser, callbackLink, readJson, until } from "./helpers.js";
 import { discover, startLogin, pkcePair } from "../src/account/oauth.js";
-import { AccountManager, summarizeUsage, type AccountHooks } from "../src/account/manager.js";
+import { AccountManager, botQuota, summarizeUsage, type AccountHooks } from "../src/account/manager.js";
 import { AccountVault } from "../src/account/vault.js";
 import { loadModelInfo, referencePrice } from "../src/account/model-info.js";
 import { MediaService, docSection, estimateUsd, type MediaModel } from "../src/tools/media/index.js";
@@ -279,6 +279,29 @@ describe("AccountManager", () => {
     mf.s.balance = 2;
     await manager.refresh();
     expect(alerts.filter((a) => a.includes("余额只剩"))).toHaveLength(2);
+  });
+
+  it("Bot 额度：服务端返回 bot 时带上金额和剩余百分比；用完是 0%；不返回、null、读取失败时为 null，余额照旧", async () => {
+    await signIn();
+    // 旧版服务端：没有 bot 字段
+    expect(manager.status()).toMatchObject({ balanceUsd: 12.5, bot: null });
+    mf.s.bot = { balance_usd: 0.83, remaining_percent: 83 };
+    expect((await manager.refresh()).bot).toEqual({ balanceUsd: 0.83, remainingPercent: 83 });
+    expect(manager.status().balanceUsd).toBe(12.5);
+    mf.s.bot = { balance_usd: 0, remaining_percent: 0 };
+    expect((await manager.refresh()).bot).toEqual({ balanceUsd: 0, remainingPercent: 0 });
+    mf.s.bot = null;
+    expect((await manager.refresh()).bot).toBeNull();
+    mf.s.bot = { balance_usd: 0.5, remaining_percent: 50 };
+    await manager.refresh();
+    mf.s.accountFail = true;
+    const failed = await manager.refresh();
+    expect(failed).toMatchObject({ balanceUsd: null, bot: null });
+    expect(failed.error).toBeTruthy();
+    mf.s.accountFail = false;
+    expect((await manager.refresh()).bot).toEqual({ balanceUsd: 0.5, remainingPercent: 50 });
+    await manager.logout();
+    expect(manager.status().bot).toBeNull();
   });
 
   it("机器人预算：开启签发自己的 Key，调整只改上限，关闭删除 Key", async () => {
@@ -1005,5 +1028,20 @@ describe("Key 失效后自动重试", () => {
     expect(n).toBe(1);
     expect(r.recovers()).toBe(0);
     expect(r.finish).toContain("401 invalid token");
+  });
+});
+
+describe("Bot 额度字段", () => {
+  it("缺字段、类型不对、不是有限数时当作没有；百分比向下取整并夹到 0–100", () => {
+    expect(botQuota(undefined)).toBeNull();
+    expect(botQuota(null)).toBeNull();
+    expect(botQuota("0.83")).toBeNull();
+    expect(botQuota({ balance_usd: 0.83 })).toBeNull();
+    expect(botQuota({ balance_usd: "0.83", remaining_percent: 83 })).toBeNull();
+    expect(botQuota({ balance_usd: 0.83, remaining_percent: Number.NaN })).toBeNull();
+    expect(botQuota({ balance_usd: 0.83, remaining_percent: 83 })).toEqual({ balanceUsd: 0.83, remainingPercent: 83 });
+    expect(botQuota({ balance_usd: 0.837, remaining_percent: 83.9 })).toEqual({ balanceUsd: 0.837, remainingPercent: 83 });
+    expect(botQuota({ balance_usd: 2, remaining_percent: 140 })?.remainingPercent).toBe(100);
+    expect(botQuota({ balance_usd: 0, remaining_percent: -3 })?.remainingPercent).toBe(0);
   });
 });

@@ -30,6 +30,12 @@ export default {
     "computer-use": "Control your computer",
     accounts: "Use accounts you connected",
   },
+  view: { label: "View", app: "Workspace", chat: "Chat" },
+  intro: {
+    hello: "Hi, I'm {name}.",
+    try: "Try one of these",
+    note: "Or just say what you want. I only start working after your first message; everything here is a sample until then.",
+  },
   tip: { kept: "{name} stays in Mine. It'll be here tomorrow." },
   remove: {
     title: "Remove {name}?",

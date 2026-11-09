@@ -45,6 +45,19 @@ export interface BotBudget {
   limitUsd: number;
 }
 
+export interface BotQuota {
+  balanceUsd: number;
+  remainingPercent: number;
+}
+
+/** 读接口里的 bot 字段：不是对象、缺数或数不对时当作没有（界面退回只显示余额）；百分比夹到 0–100 的整数 */
+export function botQuota(v: unknown): BotQuota | null {
+  if (!v || typeof v !== "object") return null;
+  const { balance_usd: bal, remaining_percent: pct } = v as Record<string, unknown>;
+  if (typeof bal !== "number" || !Number.isFinite(bal) || typeof pct !== "number" || !Number.isFinite(pct)) return null;
+  return { balanceUsd: bal, remainingPercent: Math.min(100, Math.max(0, Math.floor(pct))) };
+}
+
 export type AccountState = "signed_out" | "signing_in" | "signed_in" | "unavailable";
 
 export interface AccountStatus {
@@ -54,6 +67,11 @@ export interface AccountStatus {
   /** 余额来源：account = 登录账户；key = 只用 API Key；none = 未连接 */
   source: "account" | "none";
   balanceUsd: number | null;
+  /**
+   * bot 额度（只能在 AnyModelBot 里用，本机签发的 Key 先扣它）：balanceUsd 是金额，remainingPercent 是相对最近一次发放的
+   * 剩余百分比（0–100 的整数）。没有 bot 额度、企业托管成员、服务端还没有这个字段、读取失败时为 null，界面照旧只显示余额。
+   */
+  bot: BotQuota | null;
   usedUsd: number | null;
   billedToEnterprise: boolean;
   updatedAt: number;
@@ -109,10 +127,11 @@ export class AccountManager {
   private finishedLogin: LoginAttempt | undefined;
   /** 正在完成登录时读到的余额（还没写进快照）：首用模型按它算体验额度 */
   private loginBalanceUsd: number | null = null;
-  private snapshot: Pick<AccountStatus, "name" | "source" | "balanceUsd" | "usedUsd" | "billedToEnterprise" | "updatedAt" | "error"> = {
+  private snapshot: Pick<AccountStatus, "name" | "source" | "balanceUsd" | "bot" | "usedUsd" | "billedToEnterprise" | "updatedAt" | "error"> = {
     name: "",
     source: "none",
     balanceUsd: null,
+    bot: null,
     usedUsd: null,
     billedToEnterprise: false,
     updatedAt: 0,
@@ -346,7 +365,7 @@ export class AccountManager {
     this.saveRouting({ applied: undefined });
     await this.o.hooks.disconnect();
     for (const botId of this.botKeyIds().keys()) this.o.store.deleteKV(BOT_KEY(botId));
-    this.snapshot = { name: "", source: "none", balanceUsd: null, usedUsd: null, billedToEnterprise: false, updatedAt: 0, error: "" };
+    this.snapshot = { name: "", source: "none", balanceUsd: null, bot: null, usedUsd: null, billedToEnterprise: false, updatedAt: 0, error: "" };
   }
 
   /** 授权在别处被撤销：断开并回到登录页 */
@@ -378,6 +397,7 @@ export class AccountManager {
       name: a.display_name || (/^mf_[a-z0-9]+$/i.test(a.username) ? "" : a.username),
       source: "account",
       balanceUsd: a.balance_usd,
+      bot: botQuota(a.bot),
       usedUsd: a.used_usd,
       billedToEnterprise: a.billed_to_enterprise,
       updatedAt: Date.now(),
@@ -398,13 +418,15 @@ export class AccountManager {
         // 启动后、之后每 5 分钟、切回窗口时都顺带核对一次 Key；不拖慢余额的返回
         void this.repairKeys(60_000);
       } else {
-        this.snapshot = { ...this.snapshot, source: "none", balanceUsd: null, usedUsd: null, updatedAt: Date.now() };
+        this.snapshot = { ...this.snapshot, source: "none", balanceUsd: null, bot: null, usedUsd: null, updatedAt: Date.now() };
       }
       this.checkLowBalance();
     } catch (e) {
       if (!(e instanceof AccountRevokedError)) {
         this.snapshot.error = (e as Error).message;
+        // 读不到时 bot 额度也不留旧数：界面和以前一样显示"暂不可用"
         this.snapshot.balanceUsd = null;
+        this.snapshot.bot = null;
       }
     }
     return this.status();

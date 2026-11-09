@@ -29,10 +29,10 @@ export function tagLink(url, campaign) {
   }
 }
 
-/** 美元金额：两位小数；很小的数保留四位，避免显示成 $0.00 */
-export function usd(n) {
+/** 美元金额：两位小数；很小的数保留四位，避免显示成 $0.00。digits 指定时一律按它（额度卡片的余额固定两位） */
+export function usd(n, digits) {
   if (n === null || n === undefined || !Number.isFinite(Number(n))) return "—";
   const v = Number(n);
-  const digits = Math.abs(v) > 0 && Math.abs(v) < 0.01 ? 4 : 2;
+  digits ??= Math.abs(v) > 0 && Math.abs(v) < 0.01 ? 4 : 2;
   return new Intl.NumberFormat(locale(), { style: "currency", currency: "USD", currencyDisplay: "narrowSymbol", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v);
 }

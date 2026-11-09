@@ -528,23 +528,37 @@ function WeixinScan({ accountKey, onConfirmed }) {
   useEffect(() => {
     if (login.state === "confirmed") onConfirmed();
   }, [login.state]);
+  // 交上去后后端马上回"正在验证"；输错了会回到要验证码、带上 codeError，输入框清空让用户重输
   const verify = (e) => {
     e.preventDefault();
-    api(`${base}/verify`, { method: "POST", body: { code: verifyCode } }).then(() => setVerifyCode("")).catch(failed);
+    if (!verifyCode.trim() || login.verifying) return;
+    api(`${base}/verify`, { method: "POST", body: { code: verifyCode } })
+      .then((s) => (setVerifyCode(""), s?.state && s.state !== "idle" && setLogin(s)))
+      .catch(failed);
   };
   const scanned = login.state === "scaned" || login.state === "need_verifycode";
+  const needCode = login.state === "need_verifycode";
+  const codeRef = useRef(null);
+  useEffect(() => {
+    if (needCode && !login.verifying) codeRef.current?.focus();
+  }, [needCode, login.verifying, login.codeError]);
   if (LOGIN_ENDED.includes(login.state)) {
     return html`<div class="qr-flow"><${ErrorLine} text=${login.message} /><button type="button" class="btn primary" onClick=${start}>${t("settings.connections.retry")}</button></div>`;
   }
+  // 等用户输入验证码时不转圈（在等人，不是在等机器）；输错了用红字
+  const waitingOnUser = needCode && !login.verifying;
   return html`<div class="qr-flow">
     <${Steps} items=${stepsOf("weixin")} current=${scanned ? 1 : 0} />
     ${login.qrDataUrl
       ? html`<span class=${`qr-box${scanned ? " scanned" : ""}`}><img class="qr-img" src=${login.qrDataUrl} alt=${t("info.weixin.qrAlt")} />${scanned && html`<span class="qr-check"><${Icon} name="check" size="md" strong /></span>`}</span>`
       : html`<${QrPlaceholder} />`}
-    <p class="qr-wait"><${Spinner} /> ${login.message || t("settings.connections.waitingScan")}</p>
-    ${login.state === "need_verifycode" && html`<form class="qr-code" onSubmit=${verify}>
-      <input class="field" placeholder=${t("info.weixin.verifyCode")} value=${verifyCode} onInput=${(e) => setVerifyCode(e.target.value)} />
-      <button type="submit" class="btn" disabled=${!verifyCode.trim()}>${t("info.weixin.submit")}</button>
+    ${waitingOnUser && login.codeError
+      ? html`<${ErrorLine} text=${login.message} />`
+      : html`<p class="qr-wait" role="status">${!waitingOnUser && html`<${Spinner} />`} ${login.message || t("settings.connections.waitingScan")}</p>`}
+    ${needCode && html`<form class="qr-code" onSubmit=${verify}>
+      <input class="field num" ref=${codeRef} inputmode="numeric" autocomplete="one-time-code" spellcheck="false" aria-label=${t("info.weixin.verifyCode")} placeholder=${t("info.weixin.verifyCode")}
+        aria-invalid=${!!login.codeError} disabled=${!!login.verifying} value=${verifyCode} onInput=${(e) => setVerifyCode(e.target.value)} />
+      <button type="submit" class="btn primary" disabled=${!verifyCode.trim() || !!login.verifying}>${login.verifying ? html`<${Spinner} />` : t("info.weixin.submit")}</button>
     </form>`}
   </div>`;
 }

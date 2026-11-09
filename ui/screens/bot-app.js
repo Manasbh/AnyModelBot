@@ -33,6 +33,33 @@ function BotInfo({ entry, lang, onSettings }) {
 }
 
 /**
+ * 还没有实例时的对话页：Bot 用一段话介绍自己（一句话 + 能做什么），下面是完整的几句示例（不省略，点了就发），
+ * 输入框照常在底部。给不知道该说什么的人一个像聊天一样的起点；发出第一句后实例建好，这里换成真正的对话。
+ */
+function BotIntro({ entry, lang, busy, onSend }) {
+  if (!entry) return null;
+  const about = tr(entry.about, lang) || [];
+  const starters = tr(entry.starters, lang) || [];
+  return html`<div class="botapp-intro">
+    <div class="botapp-intro-col">
+      <div class="botapp-intro-msg">
+        <${BotAvatar} char=${entry.avatar} size=${36} greet />
+        <div class="botapp-intro-text">
+          <p class="botapp-intro-hello">${t("botapp.intro.hello", { name: tr(entry.name, lang) })}</p>
+          <p>${tr(entry.summary, lang)}</p>
+          ${about.length > 0 && html`<ul>${about.map((x) => html`<li key=${x}>${x}</li>`)}</ul>`}
+        </div>
+      </div>
+      ${starters.length > 0 && html`<div class="botapp-intro-try" role="list" aria-label=${t("botapp.intro.try")}>
+        <h3 class="t-label">${t("botapp.intro.try")}</h3>
+        ${starters.map((s) => html`<button type="button" role="listitem" class="botapp-intro-starter" key=${s} disabled=${busy} onClick=${() => onSend(s)}>${s}</button>`)}
+      </div>`}
+      <p class="botapp-intro-note">${t("botapp.intro.note")}</p>
+    </div>
+  </div>`;
+}
+
+/**
  * 最新一条回复：头像 + 和对话里一样排版的正文（Markdown）。平时只露三行，放不下时可以展开（展开后限高滚动）；
  * 有实例时可以直接打开完整对话。还没出字时是一行"思考中"；出错（⚠️ 开头）时和对话页一样是一条红色提示。
  */
@@ -75,7 +102,10 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [reply, setReply] = useState("");
-  const [side, setSide] = useState(null); // "chat" | "info" | null
+  const [side, setSide] = useState(null); // "info" | null
+  // 顶栏的两种看法：工作台（Bot 的专属界面，给想看全貌、直接动手的人）和对话（完整对话流，给习惯聊天的人）。
+  // 界面切走时 iframe 不卸载，回来还是原来的分页和选中项
+  const [view, setView] = useState("app"); // "app" | "chat"
   const [prompts, setPrompts] = useState([]); // 这一轮里 Bot 在等用户确认的事（权限、提问）
   const [used, setUsed] = useState(!!bot);
   const [desktop, setDesktop] = useState(false);
@@ -347,28 +377,36 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
     void send(v);
     requestAnimationFrame(() => autoGrow(ta.current));
   };
+  // 界面出错时只剩对话；有实例时对话页就是完整的对话（自带输入框），底部的输入区让给它
+  const chatOnly = uiFailed && !!bot;
+  const showChat = chatOnly || view === "chat";
+  const views = [["app", t("botapp.view.app")], ["chat", t("botapp.view.chat")]];
   return html`<div class=${`botapp${side ? " with-side" : ""}`} data-screen="bot-app">
     <div class="botapp-main">
       <header class="chat-head">
         <span class="head-bot static">${entry && html`<${BotAvatar} bot=${bot} char=${bot ? undefined : entry.avatar} size=${22} />`}<span class="name">${name}</span></span>
         ${!bot && entry && html`<span class="botapp-sample">${t("botapp.app.sample")}</span>`}
         <span class="grow"></span>
-        ${bot && html`<${IconButton} icon="chat" iconSize="md" label=${t("botapp.app.conversation")} on=${side === "chat"} onClick=${() => setSide((s) => (s === "chat" ? null : "chat"))} />`}
+        ${!chatOnly && base && html`<div class="botapp-views" role="tablist" aria-label=${t("botapp.view.label")}>
+          ${views.map(([id, label]) => html`<button type="button" key=${id} role="tab" aria-selected=${view === id} onClick=${() => setView(id)}>${label}</button>`)}
+        </div>`}
+        <span class="grow"></span>
         <${IconButton} icon="info" iconSize="md" label=${t("botapp.app.info")} on=${side === "info"} onClick=${() => setSide((s) => (s === "info" ? null : "info"))} />
       </header>
       ${removed && html`<${Notice} tone="amber">${t(removed.security ? "botapp.app.removedSecurity" : "botapp.app.removed")}<//>`}
       ${uiFailed && !removed && html`<${Notice} tone="amber">${t("botapp.app.uiFailed")}<//>`}
       ${loadErr && html`<${Notice} tone="red">${loadErr}<//>`}
-      <div class="botapp-stage">
-        ${uiFailed && bot
-          ? html`<${ChatScreen} key=${bot.id} bot=${bot} ...${chatProps} infoOpen=${false} onToggleInfo=${() => setSide("info")} />`
-          : base && !uiFailed && html`<iframe ref=${frame} class="botapp-frame" title=${name} src=${`${base}index.html`} sandbox="allow-scripts allow-forms"></iframe>`}
+      <div class=${`botapp-stage${showChat ? " chat-view" : ""}`}>
+        ${base && !uiFailed && html`<iframe ref=${frame} class="botapp-frame" title=${name} src=${`${base}index.html`} sandbox="allow-scripts allow-forms" hidden=${showChat}></iframe>`}
+        ${showChat && (bot
+          ? html`<${ChatScreen} key=${bot.id} bot=${bot} ...${chatProps} infoOpen=${side === "info"} onToggleInfo=${() => setSide((s) => (s === "info" ? null : "info"))} />`
+          : html`<${BotIntro} entry=${entry} lang=${lang} busy=${busy} onSend=${send} />`)}
         ${!base && !loadErr && !uiFailed && html`<div class="botapp-loading"><${Spinner} /></div>`}
       </div>
-      ${!(uiFailed && bot) && html`<div class="botapp-dock">
-        ${(reply || busy) && html`<${LatestReply} bot=${bot} entry=${entry} text=${reply} busy=${busy} onOpenChat=${bot ? () => setSide("chat") : null} />`}
+      ${!(showChat && bot) && html`<div class="botapp-dock">
+        ${(reply || busy) && html`<${LatestReply} bot=${bot} entry=${entry} text=${reply} busy=${busy} onOpenChat=${bot ? () => setView("chat") : null} />`}
         ${prompts.map((p) => html`<${PromptCard} key=${p.requestId} requestId=${p.requestId} fallback=${p.prompt} />`)}
-        ${!used && starters.length > 0 && html`<div class="botapp-starters" role="list" aria-label=${t("botapp.app.starters")}>
+        ${!used && !showChat && starters.length > 0 && html`<div class="botapp-starters" role="list" aria-label=${t("botapp.app.starters")}>
           ${starters.map((s) => html`<button type="button" role="listitem" class="botapp-starter" key=${s} title=${s} disabled=${busy} onClick=${() => send(s)}><span class="botapp-starter-text">${s}</span></button>`)}
         </div>`}
         <${Composer} bot=${bot} modelKey=${bot?.id || previewKey} text=${draft} setText=${setDraft} taRef=${ta} showPerm=${false}
@@ -378,7 +416,6 @@ export function BotAppScreen({ catalogId, bot, onInstalled, onBotUpdated, onOpen
           account=${chatProps?.account} onAccount=${chatProps?.onAccount} onBotUpdated=${chatProps?.onBotUpdated} onOpenBotSettings=${onOpenBotSettings} />
       </div>`}
     </div>
-    ${side === "chat" && bot && html`<aside class="botapp-side"><${ChatScreen} key=${bot.id} bot=${bot} ...${chatProps} infoOpen=${false} onToggleInfo=${() => setSide("info")} /></aside>`}
     ${side === "info" && html`<aside class="botapp-side"><${BotInfo} entry=${entry} lang=${lang} onSettings=${bot ? () => onOpenBotSettings(bot.id) : null} /></aside>`}
   </div>`;
 }

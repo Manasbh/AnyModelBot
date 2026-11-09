@@ -30,6 +30,12 @@ export default {
     "computer-use": "컴퓨터 조작",
     accounts: "연결한 계정 사용",
   },
+  view: { label: "보기", app: "작업 공간", chat: "대화" },
+  intro: {
+    hello: "안녕하세요, {name}입니다.",
+    try: "이렇게 시작해 보세요",
+    note: "하고 싶은 일을 바로 말해도 됩니다. 첫 메시지를 보내기 전까지 보이는 내용은 모두 예시입니다.",
+  },
   tip: { kept: "{name}은(는) '내 봇'에 남습니다. 내일도 여기 있습니다." },
   remove: {
     title: "{name}을(를) 제거할까요?",

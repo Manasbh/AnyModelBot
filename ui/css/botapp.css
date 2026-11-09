@@ -39,15 +39,46 @@
   min-width: 0; min-height: 0; display: flex; flex-direction: column;
 }
 .botapp-main > .notice { flex: none; }
-/* 提示条数量会变；界面始终填满顶栏和输入区之间的剩余空间。下沿和对话流一样淡出一窄条，不是一刀切 */
+/* 提示条数量会变；界面始终填满顶栏和输入区之间的剩余空间。界面是桌面工作区（列表、内容各自滚动），下沿不再淡出：
+   淡出会把列表最后一行、固定在底部的东西也一起抹掉 */
 .botapp-stage { position: relative; flex: 1; min-width: 0; min-height: 0; display: grid; overflow: hidden; }
-.botapp-stage:has(> .botapp-frame) { mask-image: linear-gradient(to top, transparent, var(--black) var(--space-3)); }
 .botapp-frame { width: 100%; height: 100%; border: 0; background: transparent; }
 /* 对话页的输入区悬浮在消息上；这里要占位，不盖住 Bot 的界面。子项都是 --col 宽、居中 */
 /* 和对话页的 .composer-dock 一样给滚动条留出那一条（scrollbar-gutter），两边切换时输入框的位置一像素不差 */
 .botapp-dock { flex: none; display: grid; gap: var(--space-2-5); padding: var(--space-2) 0 var(--dock-pb); overflow: hidden; scrollbar-gutter: stable; }
 .botapp-dock > * { width: var(--col); margin-inline: auto; }
 .botapp-loading { display: grid; place-items: center; }
+/* 顶栏中间的两种看法：静止的分段控件（选中的一格是 thumb 的底色），所有 Bot 都一样 */
+.botapp-views { flex: none; display: inline-flex; gap: var(--space-0-5); padding: var(--space-0-5); border-radius: var(--r-md); background: var(--seg-track); }
+.botapp-views button {
+  --focus-offset: -2px;
+  height: var(--ctl-sm); padding: 0 var(--space-3); border-radius: var(--r-sm); font-size: var(--fs-sm); color: var(--ctl-fg); white-space: nowrap;
+  transition: color var(--t-fast), background var(--t-fast);
+}
+.botapp-views button:hover:not([aria-selected="true"]) { color: var(--fg); background: var(--pill); }
+.botapp-views button[aria-selected="true"] { background: var(--seg-thumb-bg); box-shadow: var(--seg-edge); color: var(--fg); font-weight: var(--fw-medium); }
+/* 对话页：完整对话放在顶栏下面，它自己的顶栏不再出现（名字、信息按钮已经在上面了） */
+.botapp-stage.chat-view > .chat { --head-h: 0px; }
+.botapp-stage.chat-view > .chat > .chat-head { display: none; }
+/* 还没有实例时的对话页：和对话列同宽，Bot 的开场白 + 完整的示例 */
+.botapp-intro { min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
+.botapp-intro-col { width: var(--col); margin: 0 auto; padding: var(--space-8) 0 var(--space-6); display: grid; gap: var(--space-6); align-content: start; }
+.botapp-intro-msg { display: flex; gap: var(--space-3); align-items: flex-start; }
+.botapp-intro-msg > :first-child { flex: none; }
+.botapp-intro-text { display: grid; gap: var(--space-2); min-width: 0; line-height: var(--lh-prose); color: var(--fg); }
+.botapp-intro-text p, .botapp-intro-text ul { margin: 0; }
+.botapp-intro-hello { font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
+.botapp-intro-text ul { display: grid; gap: var(--space-1); padding-inline-start: var(--space-5); color: var(--fg-2); font-size: var(--fs-md); }
+.botapp-intro-try { display: grid; gap: var(--space-2); }
+.botapp-intro-try h3 { margin: 0 0 var(--space-0-5); }
+.botapp-intro-starter {
+  display: block; width: 100%; padding: var(--space-2-5) var(--space-3-5); border-radius: var(--r-well); background: var(--pill); color: var(--fg-2);
+  font-size: var(--fs-md); line-height: var(--lh-snug); text-align: start; transition: background var(--t-fast), color var(--t-fast);
+}
+.botapp-intro-starter:hover:not(:disabled) { background: var(--pill-hover); color: var(--fg); }
+.botapp-intro-starter:active:not(:disabled) { background: var(--pill-press); }
+.botapp-intro-starter:disabled { color: var(--faint); cursor: default; }
+.botapp-intro-note { margin: 0; font-size: var(--fs-xs); color: var(--muted); }
 .botapp-sample { font-size: var(--fs-sm); color: var(--fg-2); }
 .botapp-side { min-height: 0; min-width: 0; overflow: auto; background: var(--well); }
 .botapp-info { display: grid; gap: var(--space-5); padding: var(--space-5); align-content: start; }
@@ -55,20 +86,21 @@
 .botapp-info h3 { margin: 0; }
 .botapp-info ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-1); }
 .botapp-skills li { display: grid; }
-/* 示例：一排建议卡片（2–3 句，通常一行放下；列窄了折行，折下去的那张占满整行），整句都看得到（最多四行，悬停看全文）。
-   和对话页的建议胶囊一样是一层静默填充，不描边、不浮起 */
-.botapp-starters { --starter-min: 168px; display: flex; flex-wrap: wrap; gap: var(--space-2); }
+/* 示例：一排单行胶囊，高度固定一个 --ctl-md，不折行、不随句子变高——底部的高度要留给 Bot 的界面。
+   放不下时按各自的长度一起收窄、句尾省略，悬停看全文（title）。和对话页的建议胶囊一样是一层静默填充，不描边、不浮起 */
+.botapp-starters { display: flex; gap: var(--space-2); min-width: 0; overflow: hidden; }
 .botapp-starter {
-  flex: 1 1 var(--starter-min); display: flex; align-items: flex-start; min-width: 0; padding: var(--space-2-5) var(--space-3-5); border-radius: var(--r-well);
-  background: var(--pill); color: var(--fg-2); font-size: var(--fs-sm); line-height: var(--lh-snug); text-align: start;
+  flex: 0 1 auto; display: flex; align-items: center; min-width: 5em; height: var(--ctl-md); padding: 0 var(--space-3); border-radius: var(--r-full);
+  background: var(--pill); color: var(--fg-2); font-size: var(--fs-sm); text-align: start;
   transition: background var(--t-fast), color var(--t-fast);
 }
 .botapp-starter:hover:not(:disabled) { background: var(--pill-hover); color: var(--fg); }
 .botapp-starter:active:not(:disabled) { background: var(--pill-press); }
 .botapp-starter:disabled { color: var(--faint); cursor: default; }
-.botapp-starter-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; overflow-wrap: anywhere; }
-/* 最新回复：头像 + 对话里那样的回复正文（同字号、同行距、同 Markdown 排版），平时露三行，展开后限高滚动 */
-.botapp-reply { --reply-lines: 3; display: flex; gap: var(--space-3); align-items: flex-start; min-width: 0; }
+.botapp-starter, .botapp-starter-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.botapp-starter-text { min-width: 0; }
+/* 最新回复：头像 + 对话里那样的回复正文（同字号、同行距、同 Markdown 排版），平时露两行，展开后限高滚动 */
+.botapp-reply { --reply-lines: 2; display: flex; gap: var(--space-3); align-items: flex-start; min-width: 0; }
 .botapp-reply > :first-child { flex: none; margin-top: var(--space-0-5); }   /* 微调：22 的头像和 15/1.7 的首行居中对齐 */
 .botapp-reply-main { flex: 1; min-width: 0; display: grid; gap: var(--space-1); }
 .botapp-reply-body { color: var(--fg); line-height: var(--lh-prose); max-height: calc(1em * var(--lh-prose) * var(--reply-lines)); overflow: hidden; }

@@ -17,8 +17,11 @@ export function accountRoutes(ctx: WebContext): Route {
       const status = () => ({ ...app.account.status(), manualLogin });
       if (sub === "" && m === "GET") return send(res, 200, status());
       if (sub === "refresh" && m === "POST") {
-        // 切回窗口时界面会来刷新；20 秒内刚读过就直接返回
-        if (Date.now() - app.account.status().updatedAt >= 20_000) await app.account.refresh();
+        // 切回窗口时界面会来刷新，20 秒内刚读过就直接返回。打开额度卡片、对话刚处理完时界面要最新的数，
+        // 带 maxAgeMs 缩短这个间隔，最短 3 秒（并发的刷新本来就合并成一次）
+        const b = await readJson(req).catch(() => ({}));
+        const maxAge = Math.min(20_000, Math.max(3_000, Number(b?.maxAgeMs) || 20_000));
+        if (Date.now() - app.account.status().updatedAt >= maxAge) await app.account.refresh();
         return send(res, 200, status());
       }
       if (sub === "login" && m === "POST") {

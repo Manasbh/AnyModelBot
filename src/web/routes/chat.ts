@@ -15,6 +15,8 @@ export function chatRoutes(ctx: WebContext): Route {
       const num = (key: string) => url.searchParams.has(key) ? Number(url.searchParams.get(key)) : undefined;
       try {
         if (seg.length === 2 && seg[1] === "scopes") return send(res, 200, { conversations: app.store.chatSearch.conversations() });
+        // 搜索弹窗没输入时的"最近对话"
+        if (seg.length === 2 && seg[1] === "recent") return send(res, 200, { conversations: app.store.chatSearch.recent(num("limit")) });
         if (seg.length === 2 && seg[1] === "search") {
           return send(res, 200, app.store.chatSearch.search({
             query: url.searchParams.get("q") || "", botId: url.searchParams.get("bot") || undefined,

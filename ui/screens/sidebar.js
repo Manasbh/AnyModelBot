@@ -11,6 +11,7 @@ import { BotAvatar } from "../components/avatar.js";
 import { GuidePill } from "../components/guide.js";
 import { api } from "../lib/api.js";
 import { updateDescription, updateError } from "../components/app-update.js";
+import { openWhatsNew } from "../components/whats-new.js";
 import { confirmSheet, failed, toast, useStore } from "../lib/store.js";
 import { deleteBot } from "../lib/bots.js";
 import { useListPresence } from "../design/motion.js";
@@ -25,6 +26,8 @@ import { AccountLogin } from "./onboarding.js";
 import { previewText } from "../lib/errors.js";
 import { GroupAvatars } from "./group.js";
 
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+
 /** 余额：一个数字 + 说明。低于提醒线时数字不变色（红字像欠费），只多一行小字 */
 export function Balance({ account, note }) {
   return html`<div class="bal">
@@ -35,19 +38,54 @@ export function Balance({ account, note }) {
   </div>`;
 }
 
+/** Bot 额度的圆环：剩余百分比画成一段弧（12 点起顺时针），中性色；0% 时只剩底圈 */
+export function QuotaRing({ percent }) {
+  const r = 6;
+  const c = 2 * Math.PI * r;
+  const p = Math.min(100, Math.max(0, Number(percent) || 0));
+  return html`<svg class="quota-ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+    <circle class="quota-ring-track" cx="8" cy="8" r=${r} />
+    ${p > 0 && html`<circle class="quota-ring-arc" cx="8" cy="8" r=${r} stroke-dasharray=${`${((c * p) / 100).toFixed(2)} ${c.toFixed(2)}`} transform="rotate(-90 8 8)" />`}
+  </svg>`;
+}
+
+/**
+ * 点圆环弹出的卡片：顶上一行说明 Bot 额度只能在 AnyModelBot 里用；Bot 额度剩余百分比、账户余额（两位小数）；
+ * 充值入口，下面一行小字说订阅套餐另送 Bot 额度。
+ * 那一行叫"余额"不叫"充值额度"：账户余额里还有 Modelflare 的赠额，不全是充值的钱。
+ */
+export function BotQuotaCard({ account }) {
+  const bot = account.bot;
+  return html`<div class="account-menu quota-card">
+    <p class="quota-scope">${t("sidebar.botQuotaScope")}</p>
+    <div class="quota-row"><span>${t("sidebar.botQuota")}</span><span class="num">${t("sidebar.botLeft", { percent: bot.remainingPercent })}</span></div>
+    <div class="quota-row"><span>${t("sidebar.balance")}</span><span class="num">${usd(account.balanceUsd, 2)}</span></div>
+    ${account.lowBalance && html`<div class="quota-note"><span class="dot warn"></span>${t("sidebar.belowLine", { amount: usd(account.alerts?.lowBalanceUsd) })}</div>`}
+    <hr />
+    <a href=${account.topupUrl || MF_TOPUP} target="_blank" rel="noopener noreferrer"><span>${t("firstUse.topUp")}</span><span class="hint">${t("sidebar.subscribeBonus")}</span></a>
+  </div>`;
+}
+
 /**
  * 左下角账户区（第 12、10、19 项）：
- * - 头像 + 昵称常驻，整行可点，向上展开一个紧凑菜单：意见和反馈、检查更新、分隔线、退出登录（顺序固定）。
+ * - 头像 + 昵称常驻，整行可点（悬停、打开时只有头像变深，不给整行铺底），向上展开菜单：设置、意见和反馈、检查更新、
+ *   分隔线、退出登录（顺序固定）。设置只放在这个菜单里（还有 ⌘, 快捷键），账户行旁边不再单独摆齿轮。
+ *   菜单贴着整个账户区往上开、和账户区一样宽，不盖住上面的余额条。
  * - 上面一条：登录了 Modelflare 时是余额 + 充值（低于提醒线时多一行"余额较低"，充值一直能点，不用先关掉提示）；
  *   用自己的 API Key、没登录 Modelflare 时是"登录 Modelflare"的独立入口，不显示不存在的余额。
  * - 余额加载中 / 读取失败不显示成 0；名字缺失时显示"我的账号"，不拿内部生成的用户名冒充昵称。
+ * - 有 Bot 额度的账户：余额那一条换成圆环 + "Bot 额度 剩余 N%"，点开是额度卡片（打开时刷新一次）。没有 Bot 额度
+ *   （或连的是还不返回这个字段的服务端）时这一条和以前完全一样。
  */
-export function AccountButton({ account, settingsOn, onSettings, update, onUpdateChanged }) {
+export function AccountButton({ account, onSettings, update, onUpdateChanged }) {
   const [open, setOpen] = useState(false);
   const [login, setLogin] = useState(false);
+  const [quota, setQuota] = useState(false);
+  const quotaRef = useRef(null);
   const [check, setCheck] = useState(""); // 这次手动检查的结果：checking / latest / failed（没检查过时为空，不说"已是最新"）
   const [leaving, setLeaving] = useState(false);
   const ref = useRef(null);
+  const stackRef = useRef(null);
   const loginRef = useRef(null);
   const signedIn = account?.state === "signed_in";
   const me = (signedIn && account.name?.trim()) || t("firstUse.myAccount");
@@ -106,14 +144,27 @@ export function AccountButton({ account, settingsOn, onSettings, update, onUpdat
     }
   };
   const balance = !signedIn ? "" : account.error ? t("firstUse.balanceUnavailable") : account.balanceUsd == null ? t("firstUse.balanceLoading") : usd(account.balanceUsd);
-  return html`<div class="account-stack">
+  const bot = signedIn && !account.error ? account.bot : null;
+  const toggleQuota = () => {
+    // 打开卡片时请后端读一次最新的额度（main.js 接这个事件）
+    if (!quota) window.dispatchEvent(new Event("amb-account-refresh"));
+    setQuota(!quota);
+  };
+  return html`<div class="account-stack" ref=${stackRef}>
     ${signedIn
       ? html`<div class=${`account-balance${account.lowBalance && !account.error ? " low" : ""}`} role="status">
-          <span class="account-balance-text">
-            ${account.lowBalance && !account.error
-              ? html`<span class="account-low"><span class="dot warn"></span>${t("firstUse.lowBalance")}</span><span class="hint num">${balance}</span>`
-              : html`<span class="hint">${t("sidebar.balance")}</span><span class="num">${balance}</span>`}
-          </span>
+          ${bot
+            ? html`<button type="button" class="account-quota" ref=${quotaRef} aria-haspopup="dialog" aria-expanded=${quota} onClick=${toggleQuota}
+                aria-label=${t("sidebar.botQuotaOpen", { percent: bot.remainingPercent })} title=${t("sidebar.botQuotaOpen", { percent: bot.remainingPercent })}>
+                <${QuotaRing} percent=${bot.remainingPercent} />
+                <span class="account-balance-text"><span class="hint">${t("sidebar.botQuota")}</span><span class="num">${t("sidebar.botLeft", { percent: bot.remainingPercent })}</span></span>
+              </button>
+              ${account.lowBalance && html`<span class="dot warn" role="img" aria-label=${t("firstUse.lowBalance")} title=${t("firstUse.lowBalance")}></span>`}`
+            : html`<span class="account-balance-text">
+                ${account.lowBalance && !account.error
+                  ? html`<span class="account-low"><span class="dot warn"></span>${t("firstUse.lowBalance")}</span><span class="hint num">${balance}</span>`
+                  : html`<span class="hint">${t("sidebar.balance")}</span><span class="num">${balance}</span>`}
+              </span>`}
           <a class="text account-topup" href=${account.topupUrl || MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("firstUse.topUp")}</a>
         </div>`
       : account && account.state !== "unavailable" && html`<button type="button" class="account-login" ref=${loginRef} aria-expanded=${login} onClick=${() => setLogin((v) => !v)}>
@@ -123,10 +174,11 @@ export function AccountButton({ account, settingsOn, onSettings, update, onUpdat
         <span class="me" aria-hidden="true">${me.slice(0, 1).toUpperCase()}</span><span class="who">${me}</span>
         ${update?.available && html`<span class="dot new account-dot" title=${t("sidebar.update", { version: update.latest || "" })}></span>`}
       </button>
-      <${IconButton} icon="gear" iconSize="md" label=${t("sidebar.settingsTitle")} on=${settingsOn} onClick=${onSettings} />
     </div>
-    ${open && html`<${Popover} anchor=${ref.current} prefer="up" width=${280} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
-      <div class="account-menu" role="menu">
+    ${open && html`<${Popover} anchor=${stackRef.current} trigger=${ref.current} prefer="up" width=${stackRef.current?.offsetWidth || 280} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
+      <div class="account-menu primary" role="menu">
+        <button type="button" role="menuitem" onClick=${() => { setOpen(false); onSettings?.(); }}>
+          <span>${t("sidebar.settings")}</span><kbd>${isMac ? "⌘," : "Ctrl+,"}</kbd></button>
         <a role="menuitem" href="https://github.com/modelflare-ai/AnyModelBot/issues/new/choose" target="_blank" rel="noopener noreferrer" onClick=${() => setOpen(false)}>
           <span>${t("firstUse.feedback")}</span><span class="hint">${t("firstUse.feedbackNote")}</span></a>
         <button type="button" role="menuitem" disabled=${check === "checking" || updateWorking || (ready && update.busy)} title=${ready && update.busy ? t("updates.busy") : ""} onClick=${checkUpdate}>
@@ -134,6 +186,9 @@ export function AccountButton({ account, settingsOn, onSettings, update, onUpdat
         <hr />
         <button type="button" role="menuitem" class="danger" disabled=${leaving} onClick=${leave}>${t(signedIn ? "firstUse.logout" : "firstUse.backConfig")}</button>
       </div>
+    <//>`}
+    ${quota && bot && html`<${Popover} anchor=${quotaRef.current} prefer="up" width=${260} label=${t("sidebar.botQuota")} onClose=${() => setQuota(false)}>
+      <${BotQuotaCard} account=${account} />
     <//>`}
     ${login && html`<${Popover} anchor=${loginRef.current} prefer="up" width=${300} label=${t("firstUse.signIn")} onClose=${() => setLogin(false)}>
       <div class="account-pop"><p class="hint">${t("firstUse.signInKeep")}</p>
@@ -143,31 +198,24 @@ export function AccountButton({ account, settingsOn, onSettings, update, onUpdat
 }
 
 /** 更新提示：支持的桌面版直接下载/重启；手动分发继续打开安装包链接。 */
-export function UpdateNotice({ update, onChanged }) {
+/**
+ * 新版本提示：点它先打开"更新了什么"（components/whats-new.js），看完再在弹窗里下载 / 重启更新，
+ * 不用盲目升级。不支持应用内更新的，弹窗底部是安装包链接。
+ */
+export function UpdateNotice({ update }) {
   const { updateDismissed } = useStore(prefs);
-  const [pending, setPending] = useState(false);
   const ready = update?.phase === "ready";
   const key = ready ? `${update.latest}:ready` : update?.latest;
   if (!update || !update.available || updateDismissed === key) return null;
-  const working = ["checking", "downloading", "installing"].includes(update.phase);
   const text = update.supported ? updateDescription(update) : t("sidebar.update", { version: update.latest });
-  const act = async () => {
-    if (pending || working) return;
-    setPending(true);
-    try { await api(`/update/${ready ? "install" : "download"}`, { method: "POST", body: {} }); }
-    catch (error) { toast(updateError(error), "err"); }
-    finally { setPending(false); onChanged?.(); }
-  };
   return html`<div class="side-note" role="status">
-    ${update.supported
-      ? html`<button type="button" class="side-note-main" disabled=${pending || working || (ready && update.busy)} onClick=${act} title=${ready && update.busy ? t("updates.busy") : text}>
-          <span class="dot new"></span><span class="v">${ready ? t("updates.restart") : text}</span></button>`
-      : html`<a class="side-note-main" href=${update.downloadUrl} target="_blank" rel="noopener noreferrer" title=${text}><span class="dot new"></span><span class="v">${text}</span></a>`}
+    <button type="button" class="side-note-main" title=${text} aria-haspopup="dialog" onClick=${() => openWhatsNew({ mode: "available", version: update.latest })}>
+      <span class="dot new"></span><span class="v">${ready ? t("updates.restart") : text}</span></button>
     <${IconButton} icon="close" size="xs" iconSize="xs" label=${t("sidebar.updateDismiss")} onClick=${() => setPrefs({ updateDismissed: key })} />
   </div>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onUpdateChanged, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupsLoaded = true, groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog, searchQuery = "", searchOpen = false, onSearchQuery, onOpenSearch, onCloseSearch }) {
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onUpdateChanged, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupsLoaded = true, groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog, onOpenSearch }) {
   const lang = useLang();
   const seen = useStore(catalogSeen);
   const fold = useStore(catalogFold);
@@ -179,7 +227,6 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
   const [renaming, setRenaming] = useState("");
   const [renameText, setRenameText] = useState("");
   const root = useRef(null);
-  const searchRef = useRef(null);
   const renameRef = useRef(null);
   useEffect(() => {
     if (renaming) requestAnimationFrame(() => (renameRef.current?.focus(), renameRef.current?.select()));
@@ -225,7 +272,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
   const canGroup = !!bots && bots.length >= 2;
   // 搜索框下面固定的导航：「发现」（有目录 Bot 时）和「需要你」（有事时）。不跟着机器人列表滚动
   const hasNav = catalog.length > 0 || needs.n > 0;
-  const discoverOn = !searchOpen && view === "discover";
+  const discoverOn = view === "discover";
 
   return html`<aside class="side" ref=${root} aria-label=${t("sidebar.bots")}>
     <div class="side-top">
@@ -233,16 +280,14 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       <${IconButton} icon="plus" iconSize="md" label=${canGroup ? t("sidebar.newMenu") : t("sidebar.newShortcut")} on=${view === "new"} aria-haspopup=${canGroup ? "menu" : undefined} aria-expanded=${canGroup ? !!newMenu : undefined}
         onClick=${(e) => { if (!canGroup) return onNew(); const el = e.currentTarget; setNewMenu((m) => (m ? null : el)); }} />
     </div>
-    <label class="side-search">
-      <${Icon} name="search" size="sm" />
-      <input ref=${searchRef} type="search" placeholder=${t("search.placeholder")} aria-label=${t("search.title")} data-global-search-entry maxLength="200" value=${searchQuery} onFocus=${() => onOpenSearch?.(false)} onInput=${(e) => { onSearchQuery?.(e.target.value); onOpenSearch?.(false); }}
-        onKeyDown=${(e) => { if (e.key === "Escape" && !e.isComposing && searchOpen) { e.preventDefault(); e.stopPropagation(); onCloseSearch?.(); } }} />
-    </label>
+    <button type="button" class="side-search" data-global-search-entry aria-haspopup="dialog" aria-label=${t("search.title")} onClick=${() => onOpenSearch?.()}>
+      <${Icon} name="search" size="sm" /><span class="side-search-label">${t("search.placeholder")}</span><kbd>${isMac ? "⌘⇧F" : "Ctrl+Shift+F"}</kbd>
+    </button>
     ${hasNav && html`<div class="side-nav">
       ${catalog.length > 0 && html`<button type="button" class=${`nav-item${discoverOn ? " sel" : ""}`} aria-current=${discoverOn ? "page" : undefined} onClick=${onDiscover}>
         <${Icon} name="compass" size="md" /><span class="label">${t("botapp.sidebar.discover")}</span>${hasNew && html`<span class="thread-new-dot" title=${t("botapp.sidebar.new")}></span>`}
       </button>`}
-      <${NeedsRow} count=${needs.n} on=${!searchOpen && view === "needs"} onClick=${onNeeds} />
+      <${NeedsRow} count=${needs.n} on=${view === "needs"} onClick=${onNeeds} />
     </div>`}
     <nav class="side-list" aria-label=${t("sidebar.list")}>
       ${hasNav && html`<div class="side-group"><span class="text t-label">${t("botapp.sidebar.mine")}</span></div>`}
@@ -250,7 +295,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       ${!bots && !botsError && [0, 1, 2].map((k) => html`<div class="thread" key=${k}><${Skeleton} w="38px" circle /><span class="thread-skel"><${Skeleton} w="50%" /><${Skeleton} w="75%" /></span></div>`)}
       ${bots && !bots.length && view !== "new" && html`<div class="side-empty"><span>${t("sidebar.empty")}</span><button type="button" class="btn primary" onClick=${onNew}>${t("sidebar.create")}</button></div>`}
       ${list.map(({ item: b, state: rowState }) => {
-        const sel = !searchOpen && (view === "chat" || view === "bot-settings" || view === "app") && b.id === selectedId;
+        const sel = (view === "chat" || view === "bot-settings" || view === "app") && b.id === selectedId;
         // 等你的：「需要你」里这个机器人的件数和最早那件（没有时退回待审批数）
         const nd = needs.bots[b.id];
         const n = nd?.n || pending[b.id] || 0;
@@ -278,7 +323,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
       ${view === "new" && html`<div class="thread sel draft anim-fade-in" aria-current="page"><${BotAvatar} char=${draft?.avatar} neutral size=${38} />
         <span class="body"><span class="line"><span class="title">${draft?.name || t("sidebar.newBot")}</span></span><span class="line"><span class="snip">${t("sidebar.creating")}</span></span></span></div>`}
       ${bots && shownGroups.map(({ item: g, state: rowState }) => {
-        const sel = !searchOpen && view === "group" && g.id === groupId && rowState !== "leave";
+        const sel = view === "group" && g.id === groupId && rowState !== "leave";
         const who = g.last?.botId ? (bots.find((b) => b.id === g.last.botId)?.name ?? "") : "";
         const line = g.running && g.current ? t("group.working", { name: bots.find((b) => b.id === g.current)?.name ?? "" }) : g.last ? `${who ? `${who}: ` : ""}${previewText(g.last.text)}` : t("group.noMessages");
         const menuOpen = !!(groupCtx && groupCtx.el && groupCtx.group.id === g.id);

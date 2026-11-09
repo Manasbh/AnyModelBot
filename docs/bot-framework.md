@@ -80,7 +80,7 @@ bots/<id>/
 | `version`、`minAppVersion` | Bot 版本；App 版本不够的用户看不到这个 Bot |
 | `name`、`summary` | 名称（≤ 24 字符）、一句话（≤ 80 字符） |
 | `about` | 1–3 行说明，显示在信息面板 |
-| `starters` | 2–3 句可点的话，每句都要让界面发生看得见的变化。还没用过时显示在输入框上方的一排卡片里，每张最多四行，写短一点（中文 30 字左右以内） |
+| `starters` | 2–3 句可点的话，每句都要让界面发生看得见的变化。还没用过时显示在输入框上方的一排单行胶囊里，放不下时省略、悬停看全文，写短一点（中文 20 字左右以内） |
 | `avatar` | 基础角色 `blue`、`yellow`、`green`、`red`、`purple`、`orange`，或领域专家 `law`、`health`、`finance`、`code`、`design`、`writing`、`education`、`science`、`data`、`marketing`、`cooking`、`translate`；只决定长相。专家要新版 App 才认得，用了就把 `minAppVersion` 设到发布它们的那个版本 |
 | `permissions` | 见下表 |
 | `skills` | 引入的技能：`name`、`source`、`sha256`（`amb-bot hash` 算）、`author`、`license`、`url`。自己写的不用列 |
@@ -146,6 +146,30 @@ mount(App);
 ### 组件
 
 `Page`、`Section`、`Card`（`on` 时用高亮底色）、`Row`、`Stack`、`Grid`、`Button`、`Field`、`Notice`、`Empty`、`Meter`、`Table`、`Link`（外部链接，点开前让用户确认）。设计系统的类（`.btn`、`.field`、`.t-title`…）和 token（`--fg`、`--well`、`--space-*`、`--fs-*`）都能直接用，规范见 [ui/design/README.md](../ui/design/README.md)。JS 里的 `style` 同样不能写死颜色、间距和字号，只放算出来的值，比如条形的宽度。
+
+### 桌面工作区
+
+专属界面是桌面应用里的一个窗口，不是一张从上往下滚的网页。有多份作品（项目、研究、任务）的 Bot 都用 `kit.css` 里同一套结构：
+
+```html
+<div class="kit-ws">
+  <nav class="kit-ws-list">
+    <div class="kit-list-head"><h2 class="t-label">项目</h2><button class="btn sm">新建</button></div>
+    <button class="kit-item on"><span class="kit-item-title">名称</span><span class="kit-item-meta">…</span></button>
+  </nav>
+  <main class="kit-ws-main">
+    <header class="kit-bar"><div class="kit-bar-text"><h1>当前这一份</h1><p>状态 · 一行说明</p></div><div class="kit-bar-actions">…</div></header>
+    <div class="kit-ws-body"><div class="kit-tabs" role="tablist">…</div>…</div>
+  </main>
+</div>
+```
+
+- 左边列表、右边内容各自滚动，填满界面的高度；工具栏往下滚时盖在内容上。窗口窄于 640px 时列表收到上面。
+- Bot 的名字已经在容器顶栏里，界面里不再写大标题；免责声明这类每次都一样的话放在末尾的 `.kit-foot`，不占顶部。
+- 主操作一个就够：按进度算出"下一步"，其余收进"更多"。分页用 `.kit-tabs`，最多五个。
+- 容器底部的示例是一排单行胶囊，可点的话写短一点，放不下时会被省略。
+- 容器顶栏有「工作台 / 对话」两种看法，所有 Bot 都一样：工作台是专属界面，对话是完整的对话流（还没用过时是一段开场白和完整的示例）。界面不用自己做聊天。
+- 让新手和懂行的人都能上手，每个 Bot 做两样东西：列表顶上的「新建」是向导——点选几项，界面把要求写成一句话（发出前显示出来）再 `send`；另外至少一个懂行的人熟悉的专业视图，比如研报的关键数字、来源核对、放映、分镜表。
 
 组件按真实需要加到 `ui/botkit/kit.js`：加进套件，不要在单个 Bot 里绕过。套件随 App 发布，所以往里加东西要发版。新能力登记在 `src/botkit/format.ts` 的 `KIT_SINCE`，用到它的 Bot 的 `minAppVersion` 不能更低，检查会拦（`ui.min-app-version`）。
 

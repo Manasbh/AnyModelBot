@@ -1,6 +1,6 @@
 /* 设置页与机器人设置（参考 Codex / macOS 系统设置）：大标题，分组标题是正文色的小标题，每组是一块 --well（底色深一级、
    不描边），一行一项、行间一条细线，开关用 Switch。
-   设置分页在侧栏（shell.css 的 .side-nav）。 */
+   设置分页在侧栏：和机器人列表同一种结构（shell.css 的 .side-list + .nav-item），列表撑满、账户区贴底。 */
 @layer app {
 .skill-list .name, .skill-list .sub { overflow-wrap: anywhere; }
 .skill-meta { color: var(--muted); }
@@ -223,6 +223,9 @@ button.need-head:hover, button.need-head:hover .need-who b { color: var(--fg); }
 .onboard .media-pick .row { --row-pl: 0; --row-pr: 0; }
 .onboard .connected { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
 .login-cta { display: grid; gap: var(--space-2-5); }
+/* 新用户注册送的 Bot 额度：按钮下面一行，和上面的说明文字一样靠左，比说明深一级，中性色（不用品牌黄绿） */
+.login-gift { margin: 0; display: flex; align-items: center; gap: var(--space-1-5); font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--fg-2); }
+.login-gift .ic { flex: none; }
 .login-manual { display: grid; gap: var(--space-2-5); }
 .login-manual .hint { margin: 0; }
 .login-cta > .pick { width: 100%; max-width: none; height: var(--ctl-lg); }
@@ -283,4 +286,20 @@ button.need-head:hover, button.need-head:hover .need-who b { color: var(--fg); }
 .new-model-settings > summary { cursor: pointer; padding-block: var(--space-2); }
 .new-model-settings > summary .hint { display: block; overflow-wrap: anywhere; color: var(--muted); }
 .new-model-settings[open] { display: grid; gap: var(--ctl-gap); }
+}
+
+@layer app {
+/* "更新了什么"弹窗（components/whats-new.js）：标题和底部按钮不动，中间的更新日志单独滚动，一直往下滑能看完全部版本。
+   滚动区贴着对话框的左右边（负外边距抵掉对话框内边距），滚动条不压在文字上 */
+.wn-body { max-height: min(62vh, 560px); overflow-y: auto; overscroll-behavior: contain; margin: 0 calc(-1 * var(--sheet-pad)); padding: 0 var(--sheet-pad) var(--space-1); display: grid; gap: var(--space-5); align-content: start; }
+.wn-body:focus-visible { outline-offset: -2px; }
+.wn-wait { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-4) 0; font-size: var(--fs-sm); color: var(--muted); }
+.wn-entry { display: grid; gap: var(--space-2); }
+.wn-ver { display: flex; align-items: baseline; gap: var(--space-2); margin: 0; font-size: var(--fs-lg); font-weight: var(--fw-semibold); color: var(--fg); }
+.wn-date { font-size: var(--fs-sm); font-weight: var(--fw-regular); color: var(--muted); }
+.wn-entry .md { font-size: var(--fs-md); color: var(--fg-2); }
+/* 更新日志里的"### 新增 / 改进与修复"：小一号的分组标题，不和版本号抢 */
+.wn-entry .md h3 { margin: var(--space-3) 0 var(--space-1-5); font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--muted); }
+.wn-earlier { margin: var(--space-2) 0 calc(-1 * var(--space-2)); color: var(--muted); }
+.wn-more { margin: 0; font-size: var(--fs-sm); }
 }

@@ -334,6 +334,10 @@ export async function mockModelflare() {
     /** 收到的 Key 请求（签发、修改）和请求体 */
     keyWrites: [] as Array<{ method: string; id?: number; body: Record<string, unknown> }>,
     balance: 12.5,
+    /** /account 里的 bot 字段：undefined = 不返回（旧版服务端），null = 返回 null，其他原样放进去 */
+    bot: undefined as unknown,
+    /** /account 返回 500（读余额失败） */
+    accountFail: false,
     revokeAll: false,
     /** GET /api-keys 被请求的次数 */
     keyLists: 0,
@@ -398,7 +402,8 @@ export async function mockModelflare() {
       const token = String(req.headers.authorization ?? "").replace(/^Bearer /, "");
       if (s.revokeAll || !s.access.has(token)) return json({ error: "invalid_token" }, 401);
       const p = u.pathname.slice("/api/connected-app".length);
-      if (p === "/account") return json({ success: true, data: { display_name: "Ada", username: "ada", group: "default", balance_usd: s.balance, used_usd: 3, billed_to_enterprise: false, quota_per_unit: 500000 } });
+      if (p === "/account" && s.accountFail) return json({ success: false, message: "account unavailable" }, 500);
+      if (p === "/account") return json({ success: true, data: { display_name: "Ada", username: "ada", group: "default", balance_usd: s.balance, used_usd: 3, billed_to_enterprise: false, quota_per_unit: 500000, ...(s.bot !== undefined ? { bot: s.bot } : {}) } });
       if (p === "/api-keys" && req.method === "POST") {
         const b = await readJson(req);
         s.keyWrites.push({ method: "POST", body: b });

@@ -4,6 +4,7 @@ import path from "node:path";
 import { appVersion } from "../../version.js";
 import { findAppRoot } from "../../magpie/supervisor.js";
 import { UpdateActionError } from "../../updates/check.js";
+import { fetchChangelog, readLocalChangelog } from "../../changelog.js";
 import { logger, logFilePath, readLogTail } from "../../log.js";
 import { diagnosticsReport, safeStatus, testAgent, testModel } from "../../diagnostics.js";
 import { saveConfigFile } from "../../config.js";
@@ -33,6 +34,27 @@ export function systemRoutes(ctx: WebContext): Route {
       });
     }
     if (p === "/update" && m === "GET") return send(res, 200, (app.desktop?.updates ?? app.updates).status());
+    // "更新了什么"：这一版要不要弹，看过之后记下
+    if (p === "/whats-new" && m === "GET") return send(res, 200, app.whatsNew());
+    if (p === "/whats-new/seen" && m === "POST") {
+      app.markWhatsNewSeen();
+      return send(res, 200, app.whatsNew());
+    }
+    // 更新日志：不带 version 或是本机这一版时读安装包里的；是检查到的新版本时（升级前看看）去取那个版本标签下的。
+    // 只认这两种版本号，不替界面去取任意地址
+    if (p === "/changelog" && m === "GET") {
+      const lang = url.searchParams.get("lang") || "en";
+      const current = appVersion();
+      const version = url.searchParams.get("version") || current;
+      if (version === current) return send(res, 200, { version, entries: readLocalChangelog(lang) });
+      const update = (app.desktop?.updates ?? app.updates).status();
+      if (!update.available || update.latest !== version) throw new HttpError(400, "unknown version");
+      try {
+        return send(res, 200, { version, entries: await fetchChangelog(version, lang) });
+      } catch (e) {
+        return send(res, 502, { error: (e as Error).message, releaseUrl: update.releaseUrl });
+      }
+    }
     if (["/update/check", "/update/download", "/update/install"].includes(p) && m === "POST") {
       try {
         const updates = app.desktop?.updates;

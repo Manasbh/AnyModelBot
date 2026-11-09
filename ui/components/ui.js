@@ -410,10 +410,15 @@ function Portal({ children }) {
   return null;
 }
 
-export function Popover({ anchor, onClose, class: cls = "", width = 280, prefer, align, maxHeight, children, label, keepFocus }) {
+/**
+ * 浮层。anchor 决定位置；点 anchor 不算"点外面"（让它自己的 onClick 去开关）。
+ * trigger：位置跟着一块更大的区域、开关却是其中一个按钮时传这个按钮，只有点它不关浮层（账户菜单贴着整个账户区）。
+ */
+export function Popover({ anchor, trigger, onClose, class: cls = "", width = 280, prefer, align, maxHeight, children, label, keepFocus }) {
   const ref = useRef(null);
-  const anchorRef = useRef(anchor && anchor.nodeType ? anchor : null);
-  anchorRef.current = anchor && anchor.nodeType ? anchor : null;
+  const own = trigger || anchor;
+  const anchorRef = useRef(own && own.nodeType ? own : null);
+  anchorRef.current = own && own.nodeType ? own : null;
   const pos = usePopPosition(anchor, true, { width, prefer, align, maxHeight });
   useDismiss(ref, onClose, true, anchorRef);
   useEffect(() => {

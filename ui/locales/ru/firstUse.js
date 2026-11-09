@@ -2,6 +2,7 @@ export default {
   "login": "Войти / Зарегистрироваться",
   "accountHint": "Войдите в AnyModelBot с аккаунтом Modelflare",
   "signupHint": "Нет аккаунта? Зарегистрируйтесь на следующем шаге.",
+  "signupGift": "Новым аккаунтам — $1 в кредитах Bot",
   "noKey": "Не хотите настраивать API-ключ?",
   "useAccount": "Войти через Modelflare",
   "modelSettings": "Настройки модели",

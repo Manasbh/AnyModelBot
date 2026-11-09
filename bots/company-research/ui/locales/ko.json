@@ -70,5 +70,16 @@
   "action.openPdf": "PDF 열기",
   "action.delete": "{company} 조사를 삭제해 줘",
   "action.deleteLabel": "삭제",
-  "action.deleteConfirm": "삭제 확인"
+  "action.deleteConfirm": "삭제 확인",
+  "jobs.title": "실사 작업",
+  "jobs.new": "새로 만들기",
+  "jobs.newTitle": "새 실사",
+  "jobs.newSub": "회사 이름만 있으면 시작할 수 있고, 웹사이트와 업종을 더하면 더 정확해집니다",
+  "form.cancel": "취소",
+  "form.hint": "아래 입력창에 바로 말해도 됩니다. 예: Stripe 전체 실사를 해 줘.",
+  "tab.process": "진행 흐름",
+  "sources.filter": "분야별 필터",
+  "sources.all": "전체",
+  "sources.usedOnly": "인용된 것만",
+  "sources.none": "조건에 맞는 출처가 없습니다"
 }

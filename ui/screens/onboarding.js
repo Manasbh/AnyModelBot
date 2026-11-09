@@ -17,8 +17,9 @@ export { MF_CONSOLE, MF_DOCS };
  * 登录 / 注册 Modelflare：桌面版由主进程在系统浏览器里打开授权页；浏览器版在新标签页打开（被拦截时
  * 用下面的链接）。等待期间每秒读一次账户状态，登录完成后 onSignedIn(status)。
  * manual：Docker / 远程部署，回调回不到这台机器：等待时让用户把登录后地址栏里的链接贴回来。
+ * explain / gift：按钮下面写上"新用户注册送 $1 Bot 额度"（首次启动的登录页、填 API Key 页里的"改用账号登录"）。
  */
-export function AccountLogin({ onSignedIn, onFace, manual = false, label = t("firstUse.login"), secondary = false, explain = false, autoStart = false }) {
+export function AccountLogin({ onSignedIn, onFace, manual = false, label = t("firstUse.login"), secondary = false, explain = false, gift = false, autoStart = false }) {
   const [waiting, setWaiting] = useState(false);
   const [url, setUrl] = useState("");
   const [err, setErr] = useState("");
@@ -109,6 +110,7 @@ export function AccountLogin({ onSignedIn, onFace, manual = false, label = t("fi
   return html`<div class="login-cta">
     <button type="button" class=${`btn${secondary ? "" : " primary"} lg block`} onClick=${start}>${label}</button>
     ${explain && html`<p class="hint">${t("firstUse.accountHint")}</p><p class="hint">${t("firstUse.signupHint")}</p>`}
+    ${(explain || gift) && html`<p class="login-gift"><${Icon} name="spark" size="sm" />${t("firstUse.signupGift")}</p>`}
     ${err && html`<div class="err-text" role="alert">${err}</div>`}
   </div>`;
 }
@@ -253,7 +255,7 @@ export function Onboarding({ gateway, defaultModel, onDone, skipModelStep, exist
       ${modelsErr && models === null ? null : models !== null
         ? html`<${ModelStep} models=${models} initial=${suggested} onDone=${onDone} auto=${skipModelStep} />`
         : ownKey
-          ? html`<${OfficialStart} onConnected=${loadModels} accountLogin=${html`<${AccountLogin} secondary label=${t("firstUse.useAccount")} manual=${manual} onFace=${onFace} onSignedIn=${loadModels} />`} />`
+          ? html`<${OfficialStart} onConnected=${loadModels} accountLogin=${html`<${AccountLogin} secondary gift label=${t("firstUse.useAccount")} manual=${manual} onFace=${onFace} onSignedIn=${loadModels} />`} />`
           : html`<${AccountLogin} explain manual=${manual} onFace=${onFace} onSignedIn=${loadModels} />
               <div class="login-links"><button type="button" class="text" onClick=${() => setOwnKey(true)}>${t("official.useOwn")}</button></div>`}
       ${existingConnection && models === null && html`<button type="button" class="text" onClick=${async () => { await api("/account/continue", { method: "POST", body: {} }); onDone(); }}>${t("firstUse.connectionContinue")}</button>`}

@@ -72,6 +72,8 @@ The easiest way to get models is **[Modelflare](https://modelflare.dev/?utm_sour
 
 **Special offers**: a single top-up of a set amount unlocks the GPT discount group at a 0.015x price multiplier and the Claude discount group at 0.03x, made for personal projects, feature testing and light use. These are limited-time offers, with thresholds and rules on Modelflare's site. Sign up through [this link](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme) to join.
 
+**Bot credits**: new accounts get Bot credits when they sign up, and Modelflare subscriptions add Bot credits worth 10% of the plan; see Modelflare's site for the current terms. Bot credits are usable only in AnyModelBot. Requests from the app use them first, and the bottom-left corner shows how much is left.
+
 **[Sign up for Modelflare →](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme)** ·
 [Price list](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme) ·
 [API docs](https://docs.modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) ·
@@ -82,7 +84,7 @@ The easiest way to get models is **[Modelflare](https://modelflare.dev/?utm_sour
 
 - **Sign in once.** The first launch opens your browser to sign in to (or sign up for) Modelflare. The app then connects this device itself, so there is no key to copy, and brings you back once you approve. If you have no default model yet, it picks a low-cost model that supports tools. Running in Docker or on a server? Sign in from a browser on any device, then paste the link you land on back into the app.
 - **Every model, one picker.** Your Modelflare models are listed automatically, with context length, capabilities and reference prices next to each one.
-- **Pay for what you use.** Your balance and a Top up link stay in the bottom-left corner, and low-balance reminders and per-day usage show up inside the app. Check the public price list and compare it with the official rates before you choose a model.
+- **Pay for what you use.** Your balance and a Top up link stay in the bottom-left corner (with the percentage of Bot credits left, if you have them), and low-balance reminders and per-day usage show up inside the app. Check the public price list and compare it with the official rates before you choose a model.
 - **An honest boundary.** Model requests travel through Modelflare to the provider you pick, and Modelflare keeps request logs. See the [Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) for what is kept and for how long. Everything else stays on your device ([details](#-how-it-works--privacy)).
 
 ---
@@ -195,7 +197,7 @@ A bot is more than a chat window: it has a persona, a default model, its own wor
 - **Approval cards, not surprises.** Out-of-bounds actions stop and wait for your answer.
 - **Told after a restart.** A message still in progress when the app quit or crashed is flagged in its conversation at the next start, so you can send it again; nothing is redone on its own.
 - **Group chats.** Create a group and add a few bots. Whoever you @ answers; with no @, the bot that answered last carries on. Bots can also @ another member to hand off. Each bot keeps its own model, workspace and memory, and costs are tracked per bot.
-- **Search chat history.** Search all messages saved on your device from the sidebar, filter by bot, conversation, channel or date, and jump to the original message. `Ctrl/Cmd+Shift+F` opens global search; `Ctrl/Cmd+F` searches the current chat. Searches do not call a model.
+- **Search chat history.** Search all messages saved on your device from the sidebar, filter by bot, conversation, channel or date, and jump to the original message. `Ctrl/Cmd+Shift+F` opens global search; `Ctrl/Cmd+F` searches the current chat. Searches do not call a model. Before you type, the search dialog lists recent chats by date.
 - **Slash commands** such as `/model` and `/reset` work in the app and in every chat channel. In a chat channel, `/bot` switches to another bot.
 
 <p align="center">
@@ -206,7 +208,7 @@ A bot is more than a chat window: it has a persona, a default model, its own wor
 
 If you don't want to write a persona, use a ready-made bot from Discover. Each has its own view. Opening one shows a sample, and it's only installed when you send your first message.
 
-Official bots include their UIs, samples, personas and skills in the installer. First preview and installation need no bot package downloads. Updates ship with app releases and preserve existing project data. Model calls and online research still need a network connection.
+Official bots include their UIs, samples, personas and skills in the installer. First preview and installation need no bot package downloads. Updates ship with app releases and preserve existing project data. Model calls and online research still need a network connection. Each bot is a desktop workspace: your work is listed on the left and the content is on the right, New starts a short guided form, the top bar switches to the full chat, and the input box has the model picker.
 
 - **Company Research:** Local company diligence with parallel research, curation, and sourced reports
 - **PPT Master:** Turn documents or topics into editable PPTX decks, or edit decks you have
@@ -283,7 +285,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 - **It answers to you.** By default a bot replies only to its owner (the WeChat account that scanned the QR code; on Feishu, Telegram, Slack and Discord, the first person to message it after you connect it, which is you) and the people you allow. Anyone else gets a one-line notice and no model is called; you let them in from the info panel, or by replying `yes <code>` in chat.
 - **Replies are not lost.** A reply is saved locally before it is sent; network errors are retried, sending resumes after a restart, and when WeChat's 24-hour window has closed the reply waits and arrives with your next message.
 - **Telemetry kept off.** Telemetry in the bundled computer-use driver is switched off, and the built-in gateway runs with auto-update disabled.
-- **In-app updates.** From 0.1.29, installed desktop apps enable Settings → General → Automatically download updates by default. New versions download in the background and offer Restart and update when ready. Installation requires your click and no running tasks; turn the setting off for manual downloads. Users on 0.1.28 or earlier must manually install 0.1.29 or later once. Docker and source deployments still update manually.
+- **In-app updates.** From 0.1.29, installed desktop apps enable Settings → General → Automatically download updates by default. New versions download in the background and offer Restart and update when ready. Installation requires your click and no running tasks; turn the setting off for manual downloads. Users on 0.1.28 or earlier must manually install 0.1.29 or later once. Docker and source deployments still update manually. From 0.1.30, the first launch after an update shows what changed, the new-version notice shows the notes before you upgrade, and the changelog is always in Settings → About.
 - **Light, dark or follow the system.** Six bot characters, and their eyes follow your pointer.
 - **Tray and autostart.** Close the window to hide to the tray; autostart is available on macOS and Windows.
 

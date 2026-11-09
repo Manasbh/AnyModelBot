@@ -82,10 +82,10 @@
   transition: background var(--t-fast), color var(--t-fast);
 }
 .side-search:hover { background: var(--pill-hover); }
-.side-search:focus-within { background: var(--card); color: var(--fg-2); }   /* 聚焦：换成实色面，不画边 */
-.side-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: none; background: transparent; font-size: var(--fs-md); color: var(--fg); }
-.side-search input::placeholder { color: var(--muted); }
-.side-search input::-webkit-search-cancel-button { display: none; }
+/* 搜索在弹窗里，这里是个按钮：样子仍是搜索框，文字是占位提示的颜色，右边是快捷键 */
+.side-search { width: calc(100% - 2 * var(--side-inset)); text-align: start; font-size: var(--fs-md); }
+.side-search-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-search kbd { flex: none; font-family: inherit; font-size: var(--fs-xs); color: var(--muted); }
 
 /* 上边留一行的间隙。
    右边用外边距而不是内边距：滚动条落在行的右边上，不落进侧栏和主区之间的空隙（那里是分隔条） */
@@ -147,7 +147,8 @@ button.thread:active { background: var(--side-press); }
 .thread-skel { flex: 1; display: grid; gap: var(--space-1-5); }
 /* 搜索框下面的固定导航：「发现」和「需要你」（screens/needs-you.js，只在有事时出现）。不跟着机器人列表滚动。
    和设置导航是同一种行（.nav-item）：16 的图标落在搜索图标那条竖线上，文字和搜索框的文字对齐；
-   右边的蓝点（上新、有事等你）和机器人行的时间、蓝点在同一条竖线上。选中时和机器人行一样深一级 */
+   右边的蓝点（上新、有事等你）和机器人行的时间、蓝点在同一条竖线上。选中时和机器人行一样深一级。
+   只给这块固定导航用，别和 .side-list 叠在同一个元素上：flex: none 会盖掉列表的撑满，账户区就不贴底了 */
 .side-nav { flex: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--side-row-gap); margin: 0 var(--side-inset) var(--space-1); }
 .side-nav .label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .thread .field { --field-h: 30px; }
@@ -159,19 +160,21 @@ button.thread:active { background: var(--side-press); }
 
 /* 账户行的下沿和主区的下沿对齐（都离窗口下沿 --pane-gap） */
 .side-foot { flex: none; display: flex; align-items: center; gap: var(--space-1); padding: var(--side-inset); }
+/* 账户行：整行可点，但悬停、按下、菜单打开时只有头像变深（不给整行铺一块底色，底部保持干净）；
+   打开时和按下一样深，比悬停深一级（同一种灰，不描边） */
 .account {
   --focus-offset: -2px;
   display: flex; align-items: center; gap: var(--space-2-5); min-width: 0; flex: 1; height: var(--ctl-2xl); padding: 0 var(--side-row-px);
-  border-radius: var(--r-xl); text-align: left; transition: background var(--t-fast);
+  border-radius: var(--r-xl); text-align: left;
 }
-.account:hover { background: var(--side-hover); }
-.account:active { background: var(--side-press); }
-.account.on { background: var(--side-active); }
 .account .me {
   width: var(--ctl-md); height: var(--ctl-md); border-radius: 50%; flex: none; display: grid; place-items: center;
   background: var(--pill);
   font-weight: var(--fw-semibold); font-size: var(--fs-sm); color: var(--fg-2);
+  transition: background var(--t-fast), color var(--t-fast);
 }
+.account:hover .me { background: var(--pill-hover); color: var(--fg); }
+.account:active .me, .account.on .me { background: var(--pill-press); color: var(--fg); }
 .account .who { flex: 1; min-width: 0; font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--fg); line-height: var(--lh-snug); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 账户浮层：余额只在这里显示，点头像才弹出（常驻显示会让人觉得一直在花钱） */
 .account-pop { display: grid; gap: var(--space-3); padding: var(--space-3); }
@@ -398,13 +401,35 @@ a.text { display: inline-flex; align-items: center; text-decoration: none; }
 .account-low { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--fg); }
 /* 充值一直留出位置：窄窗口里余额文字换行或省略，按钮不被挤掉 */
 .account-topup { flex: none; white-space: nowrap; font-size: var(--fs-xs); }
+/* Bot 额度：余额那一条换成圆环 + 剩余百分比（整块可点，点开额度卡片）；按下的范围往外扩一点，条的高度不变 */
+.account-quota { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-1-5); margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1-5)); padding: var(--space-1) var(--space-1-5); border-radius: var(--r-sm); color: inherit; text-align: left; }
+.account-quota:hover, .account-quota[aria-expanded="true"] { background: var(--side-active); }
+.quota-ring { flex: none; display: block; }
+.quota-ring circle { fill: none; stroke-width: 2; }
+.quota-ring-track { stroke: var(--line-strong); }
+.quota-ring-arc { stroke: var(--fg); stroke-linecap: round; transition: stroke-dasharray var(--dur-slow) var(--ease-out); }
+/* 额度卡片：左边名称、右边数，下面是充值（沿用账户菜单的行和留白，不画分隔线） */
+.quota-card .quota-scope { margin: 0; padding: var(--space-2) var(--space-2) var(--space-1); color: var(--muted); font-size: var(--fs-xs); }
+.quota-card .quota-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: var(--space-2); color: var(--fg); font-size: var(--fs-sm); }
+.quota-card .quota-row .num { font-weight: var(--fw-medium); white-space: nowrap; }
+.quota-card .quota-note { display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-2) var(--space-1); color: var(--muted); font-size: var(--fs-xs); }
 .account-login { display: grid; gap: 0; min-width: 0; padding: var(--space-1-5) var(--side-row-px); text-align: left; border-radius: var(--r-md); background: var(--side-hover); color: var(--fg); }
 .account-login:hover { background: var(--side-active); }
 .account-login-title { font-size: var(--fs-sm); font-weight: var(--fw-medium); }
 .account-login .hint { font-size: var(--fs-xs); color: var(--muted); }
 .account-menu { display: grid; padding: var(--pop-pad); }
 .account-menu > a, .account-menu > button { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); padding: var(--space-2); text-align: left; border-radius: var(--r-md); color: var(--fg); font-size: var(--fs-sm); text-decoration: none; }
+/* 头像弹出的账户菜单（.primary，和账户区同宽，见 sidebar.js）：单行项 36 高，和下面的余额条一样高，比一般菜单项松一点，
+   和 44 的账户行放在一起不局促；文字缩进让到 --side-row-px，和下面余额条的文字、头像落在同一条竖线上 */
+.account-menu.primary > a, .account-menu.primary > button {
+  gap: var(--space-0-5) var(--space-2); min-height: var(--ctl-xl);
+  padding: var(--space-2) calc(var(--side-row-px) - var(--pop-pad)); font-size: var(--fs-md);
+}
+/* 窄侧栏或长译文时"检查更新"那行在自己的格子里折行，蓝点留在文字前面，不被挤到单独一行 */
+.account-menu.primary > button > [role="status"] { flex: 1 1 0; min-width: 0; }
 .account-menu .hint { width: 100%; font-size: var(--fs-xs); color: var(--muted); }
+/* "设置"右边的快捷键：同一行靠右（.hint 会占满一整行，那是给"意见和反馈"的说明用的） */
+.account-menu kbd { margin-inline-start: auto; font-family: inherit; font-size: var(--fs-xs); color: var(--muted); }
 .account-menu > a:hover, .account-menu > button:hover:not(:disabled) { background: var(--pill-hover); }
 .account-menu > button:disabled { opacity: var(--o-disabled); }
 .account-menu hr { border: 0; height: var(--space-1-5); margin: 0; }   /* 分组之间留一段空，不画线（和菜单的 li.sep 一样） */

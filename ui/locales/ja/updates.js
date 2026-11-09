@@ -19,5 +19,19 @@ export default {
     "busy": "実行中のタスクが完了してから再起動してください。",
     "not_ready": "更新のダウンロードはまだ完了していません。",
     "unsupported": "この起動方法ではアプリ内更新を利用できません。"
+  },
+  "whatsNew": {
+    "title": "AnyModelBot を {version} に更新しました",
+    "availableTitle": "{version} の更新内容",
+    "historyTitle": "更新履歴",
+    "earlier": "以前のバージョン",
+    "loading": "更新内容を読み込み中…",
+    "failed": "更新内容を取得できませんでした。GitHub で確認できます。",
+    "viewOnGithub": "GitHub で見る ↗",
+    "allReleases": "すべてのリリース ↗",
+    "gotIt": "OK",
+    "later": "あとで",
+    "view": "更新履歴",
+    "empty": "更新内容はまだありません。"
   }
 };

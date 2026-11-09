@@ -80,7 +80,7 @@ A Discover card opens with a cover image: `cover/light.png` and `cover/dark.png`
 | `version`, `minAppVersion` | Bot version; users on an older app don't see the bot |
 | `name`, `summary` | Name (≤ 24 characters), one line (≤ 80 characters) |
 | `about` | 1–3 lines shown in the info panel |
-| `starters` | 2–3 clickable sentences; each must visibly change the view. Until first use they show as a row of cards above the composer, up to four lines each, so keep them short (under about 90 characters in English) |
+| `starters` | 2–3 clickable sentences; each must visibly change the view. Until first use they show as one row of single-line chips above the composer, truncated when they don't fit (hover shows the full text), so keep them short (under about 60 characters in English) |
 | `avatar` | A base character (`blue`, `yellow`, `green`, `red`, `purple`, `orange`) or a field expert (`law`, `health`, `finance`, `code`, `design`, `writing`, `education`, `science`, `data`, `marketing`, `cooking`, `translate`). It only sets the look. Older apps don't know the experts, so set `minAppVersion` to the release that added them |
 | `permissions` | See below |
 | `skills` | Imported skills: `name`, `source`, `sha256` (from `amb-bot hash`), `author`, `license`, `url`. Your own skills aren't listed |
@@ -146,6 +146,30 @@ The kit follows the app's theme, language, text size and motion preference on it
 ### Components
 
 `Page`, `Section`, `Card` (`on` adds the highlight background), `Row`, `Stack`, `Grid`, `Button`, `Field`, `Notice`, `Empty`, `Meter`, `Table`, `Link` (an external link the user confirms before it opens). Design system classes (`.btn`, `.field`, `.t-title`…) and tokens (`--fg`, `--well`, `--space-*`, `--fs-*`) work directly; see [ui/design/README.md](../ui/design/README.md). `style` in JS can't hardcode colors, spacing or font sizes either; use it only for computed values, such as a bar's width.
+
+### Desktop workspace
+
+A bot's UI is a window in a desktop app, not a web page that scrolls top to bottom. Bots that hold several pieces of work (projects, research runs, jobs) all use the same structure from `kit.css`:
+
+```html
+<div class="kit-ws">
+  <nav class="kit-ws-list">
+    <div class="kit-list-head"><h2 class="t-label">Projects</h2><button class="btn sm">New</button></div>
+    <button class="kit-item on"><span class="kit-item-title">Name</span><span class="kit-item-meta">…</span></button>
+  </nav>
+  <main class="kit-ws-main">
+    <header class="kit-bar"><div class="kit-bar-text"><h1>The selected one</h1><p>Status · one line</p></div><div class="kit-bar-actions">…</div></header>
+    <div class="kit-ws-body"><div class="kit-tabs" role="tablist">…</div>…</div>
+  </main>
+</div>
+```
+
+- The list on the left and the content on the right scroll separately and fill the UI's height; the toolbar stays over the content as it scrolls. Below 640px the list moves to the top.
+- The bot's name is already in the host's title bar, so the UI doesn't repeat a big title. Text that never changes, such as a disclaimer, goes in `.kit-foot` at the end instead of the top.
+- One primary action is enough: work out the next step from progress and put the rest under "More". Tabs use `.kit-tabs`, five at most.
+- The host shows starters as one row of single-line chips, so keep starters short; ones that don't fit are truncated.
+- The host title bar switches between Workspace and Chat for every bot: Workspace is the bot's UI, Chat is the full conversation (before first use, an introduction and the full starters). A UI doesn't build its own chat.
+- So that newcomers and experts both get going quickly, give each bot two things: "New" at the top of the list is a wizard — a few choices that the UI writes into one sentence (shown before sending) and passes to `send`; and at least one view experts know, such as key figures in a research note, a source audit, presentation mode or a storyboard sheet.
 
 Add components to `ui/botkit/kit.js` as real bots need them, rather than working around the kit in one bot. The kit ships with the app, so adding to it needs a release. Register new abilities in `KIT_SINCE` in `src/botkit/format.ts`: a bot using one can't have a lower `minAppVersion`, and the check enforces it (`ui.min-app-version`).
 

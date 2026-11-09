@@ -19,5 +19,19 @@ export default {
     "busy": "有任务正在运行，请完成后再重启更新。",
     "not_ready": "更新尚未下载完成。",
     "unsupported": "此运行方式不支持应用内更新。"
+  },
+  "whatsNew": {
+    "title": "AnyModelBot 已更新到 {version}",
+    "availableTitle": "{version} 更新了什么",
+    "historyTitle": "更新日志",
+    "earlier": "更早的版本",
+    "loading": "正在读取更新内容…",
+    "failed": "暂时取不到更新内容，可以到 GitHub 上查看。",
+    "viewOnGithub": "在 GitHub 上查看 ↗",
+    "allReleases": "全部发布记录 ↗",
+    "gotIt": "知道了",
+    "later": "以后再说",
+    "view": "更新日志",
+    "empty": "暂时没有更新说明。"
   }
 };

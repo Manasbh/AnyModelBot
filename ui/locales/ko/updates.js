@@ -19,5 +19,19 @@ export default {
     "busy": "실행 중인 작업이 완료된 후 재시작하세요.",
     "not_ready": "업데이트 다운로드가 아직 완료되지 않았습니다.",
     "unsupported": "이 실행 방식에서는 앱 내 업데이트를 지원하지 않습니다."
+  },
+  "whatsNew": {
+    "title": "AnyModelBot이 {version}(으)로 업데이트되었습니다",
+    "availableTitle": "{version} 업데이트 내용",
+    "historyTitle": "업데이트 기록",
+    "earlier": "이전 버전",
+    "loading": "업데이트 내용을 불러오는 중…",
+    "failed": "업데이트 내용을 불러올 수 없습니다. GitHub에서 확인할 수 있습니다.",
+    "viewOnGithub": "GitHub에서 보기 ↗",
+    "allReleases": "전체 릴리스 ↗",
+    "gotIt": "확인",
+    "later": "나중에",
+    "view": "업데이트 기록",
+    "empty": "아직 업데이트 내용이 없습니다."
   }
 };

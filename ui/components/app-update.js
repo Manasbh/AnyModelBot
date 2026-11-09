@@ -3,6 +3,7 @@ import { html } from "./ui.js";
 import { api } from "../lib/api.js";
 import { toast } from "../lib/store.js";
 import { t } from "../lib/i18n.js";
+import { openWhatsNew } from "./whats-new.js";
 
 export const updateError = (error) => t(`updates.errors.${error?.data?.code || "failed"}`);
 
@@ -35,6 +36,8 @@ export function UpdateActions({ update, onChanged }) {
         ${!ready && html`<button type="button" class="text" disabled=${pending || working} onClick=${() => act("check")}>${t("updates.check")}</button>`}
         ${ready && update.busy && html`<span class="hint">${t("updates.busy")}</span>`}`
       : update.available && html`<a class="text" href=${update.downloadUrl} target="_blank" rel="noopener noreferrer">${t("settings.rows.version.download")}</a>`}
-    ${update.available && html`<a class="text" href=${update.releaseUrl} target="_blank" rel="noopener noreferrer">${t("settings.rows.version.notes")}</a>`}
+    ${update.available
+      ? html`<button type="button" class="text" aria-haspopup="dialog" onClick=${() => openWhatsNew({ mode: "available", version: update.latest })}>${t("settings.rows.version.notes")}</button>`
+      : html`<button type="button" class="text" aria-haspopup="dialog" onClick=${() => openWhatsNew({ mode: "history", version: update.current })}>${t("updates.whatsNew.view")}</button>`}
   `;
 }

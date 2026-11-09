@@ -19,5 +19,19 @@ export default {
     "busy": "Wait for running tasks to finish before restarting to update.",
     "not_ready": "The update has not finished downloading.",
     "unsupported": "In-app updates are not supported for this installation."
+  },
+  "whatsNew": {
+    "title": "AnyModelBot is updated to {version}",
+    "availableTitle": "What's new in {version}",
+    "historyTitle": "Changelog",
+    "earlier": "Earlier versions",
+    "loading": "Loading release notes…",
+    "failed": "Couldn't load the release notes. You can read them on GitHub.",
+    "viewOnGithub": "View on GitHub ↗",
+    "allReleases": "All releases ↗",
+    "gotIt": "Got it",
+    "later": "Later",
+    "view": "Changelog",
+    "empty": "No release notes yet."
   }
 };

@@ -446,7 +446,7 @@ export default {
       available: "Version {version} is available",
       latest: "You're on the latest version",
       download: "Download ↗",
-      notes: "What's new ↗",
+      notes: "What's new",
     },
     licenses: {
       name: "Licenses & third-party notices",

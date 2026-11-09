@@ -193,7 +193,7 @@ export function SettingsSide({ tab, query, onQuery, onTab, onBack, username, acc
       <input type="search" placeholder=${t("settings.side.search")} aria-label=${t("settings.side.search")} value=${query} onInput=${(e) => onQuery(e.target.value)}
         onKeyDown=${(e) => e.key === "Escape" && !e.isComposing && e.keyCode !== 229 && query && (e.stopPropagation(), onQuery(""))} />
     </label>
-    <nav class="side-list side-nav" aria-label=${t("settings.side.nav")}>
+    <nav class="side-list" aria-label=${t("settings.side.nav")}>
       ${TABS.map(([id, label, icon]) => {
         const on = !searching && id === tab;
         return html`<button type="button" key=${id} class=${`nav-item${on ? " sel" : ""}`} aria-current=${on ? "page" : undefined}

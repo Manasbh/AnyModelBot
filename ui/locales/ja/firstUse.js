@@ -2,6 +2,7 @@ export default {
   "login": "ログイン / 登録",
   "accountHint": "Modelflare アカウントで AnyModelBot にログイン",
   "signupHint": "アカウントがない場合は次の画面で登録できます",
+  "signupGift": "新規登録で Bot クレジット $1 をプレゼント",
   "noKey": "API キーを設定せずに使いますか？",
   "useAccount": "Modelflare アカウントでログイン",
   "modelSettings": "モデル設定",

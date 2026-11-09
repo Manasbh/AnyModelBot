@@ -55,7 +55,8 @@ import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./tools/media/index.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./tools/search.js";
 import { ConnectionService } from "./tools/accounts/connections.js";
-import { UpdateChecker, type DesktopUpdates } from "./updates/check.js";
+import { UpdateChecker, isNewer, type DesktopUpdates } from "./updates/check.js";
+import { readLocalChangelog } from "./changelog.js";
 import { COMPACT_ENDPOINT, serverCompactionEnabled, type CompactEndpoint } from "./agent/server-compaction.js";
 import type { BotSettings } from "./agent/settings.js";
 import { UserSkills } from "./skills/service.js";
@@ -115,6 +116,9 @@ export interface ModelflareStatus {
   baseUrl: string;
   gateway: string;
 }
+
+/** 看过哪一版的"更新了什么"（版本号） */
+const WHATS_NEW_SEEN = "whatsNew.seen";
 
 // 版本号在 version.ts（web、诊断不用为了它依赖整个 App）；这里接着导出，旧的 import 照旧能用
 export { appVersion };
@@ -238,7 +242,10 @@ export class App {
       agent: config.agent.mode,
       log: logFilePath(),
     });
+    const freshData = !fs.existsSync(path.join(config.dataDir, "anymodel.db"));
     this.store = new Store(path.join(config.dataDir, "anymodel.db"));
+    // "更新了什么"：全新安装第一次启动不弹，直接记成当前版本；升级上来的（库已经在）还没有记录时弹一次这一版
+    if (freshData && !this.store.getKV(WHATS_NEW_SEEN) && appVersion()) this.store.setKV(WHATS_NEW_SEEN, appVersion());
     this.userSkills = new UserSkills(config.dataDir, this.store);
     this.outbox = new Outbox(this.store);
     this.delivery = new Delivery({ store: this.store, outbox: this.outbox, timeZone: opts.timeZone, ...opts.deliveryLimits });
@@ -806,6 +813,21 @@ export class App {
   /** 更新只能在前台对话和后台任务都空闲时重启。 */
   busyForUpdate(): boolean {
     return this.runtime.busyBots().length > 0 || !!this.web?.busy() || this.store.listRuns({ states: ["running", "settling"], limit: 1 }).length > 0;
+  }
+
+  /**
+   * "更新了什么"弹窗：这一版没看过（看过的比它旧，或升级上来还没有记录）、而且更新日志里有这一版时弹一次。
+   * seen：上次看过的版本，弹窗把它之后的版本都算作新内容；空 = 不知道（从没有这个功能的版本升上来），只算这一版。
+   */
+  whatsNew(): { show: boolean; current: string; seen: string } {
+    const current = appVersion();
+    const seen = this.store.getKV(WHATS_NEW_SEEN) ?? "";
+    const unseen = !!current && seen !== current && (!seen || isNewer(current, seen));
+    return { show: unseen && readLocalChangelog("zh-CN").some((e) => e.version === current), current, seen };
+  }
+
+  markWhatsNewSeen(): void {
+    if (appVersion()) this.store.setKV(WHATS_NEW_SEEN, appVersion());
   }
 
   get username(): string {

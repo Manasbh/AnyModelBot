@@ -116,8 +116,10 @@ export function channelsRoutes(ctx: WebContext): Route {
       if (sub === "weixin/login" && m === "GET") return send(res, 200, app.channels.get(id)?.weixinLogin?.snapshot ?? { state: "idle" });
       if (sub === "weixin/verify" && m === "POST") {
         const b = await readJson(req);
-        app.channels.get(id)?.weixinLogin?.submitVerifyCode(String(b.code ?? ""));
-        return send(res, 200, { ok: true });
+        // 回最新的登录状态：交上去之后界面马上显示"正在验证"（没在等验证码时不收，状态不变）
+        const login = app.channels.get(id)?.weixinLogin;
+        login?.submitVerifyCode(String(b.code ?? ""));
+        return send(res, 200, login?.snapshot ?? { state: "idle" });
       }
       if (sub === "weixin/cancel" && m === "POST") {
         app.channels.get(id)?.weixinLogin?.cancel();

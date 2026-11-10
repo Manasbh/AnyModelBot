@@ -11,7 +11,7 @@
   </picture>
 </h1>
 
-<p align="center"><b>Your own AI bot, on your own computer. Any model, pay per use.</b></p>
+<p align="center"><b>A team of AI bots on your own computer. Any model, pay per use.</b></p>
 
 <p align="center">
   <a href="https://anymodel.bot/en/">Website</a> |
@@ -48,29 +48,23 @@
 
 # 🤖 AnyModelBot
 
-AnyModelBot is a local-first AI agent app for Windows, macOS and Linux. A bot is a persona with its own default model, workspace and memory. Chat with it in the app, or reach it from WeChat, Feishu, Telegram, Slack or Discord. Let it read and write files, run commands and operate your desktop, with an approval prompt whenever it steps outside its workspace.
+AnyModelBot is a team of AI bots for Windows, macOS, and Linux, running on your computer. Each bot has its own persona, default model, workspace, and memory. You can chat in the app, or connect WeChat, Feishu, Telegram, Slack, or Discord. It can read and write files, run commands, and operate the desktop after you grant permission; it asks before writing outside its workspace.
 
-Your conversations, memory, files and API keys live on your device. Models come from [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) (one account, any model, priced per token) or straight from OpenAI, Anthropic, Google and others with your own official API keys. AnyModelBot itself has no subscription.
+Conversations, memory, files, and API keys stay on your device. Models can come from [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) (sign in, pay as you go) or from your own official API keys, sent directly to the provider. AnyModelBot itself has no subscription fee.
 
-Like xAI's Grok Bot, OpenAI's dots and Anthropic's Claude Duet, it is an always-on personal AI agent: it works in the background and checks in when a decision is yours. The difference: AnyModelBot is open source (MIT), runs on your own computer or server, works with any model (GPT, Claude, Gemini, Grok and more) and is pay-per-use, with no single vendor's subscription ([full comparison](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet)).
+Ready to use after install: background tasks, scheduled rules, and items waiting for your OK are built in.
 
-It is a Super Agent out of the box: background tasks, scheduled rules and Needs you need no extra setup. The design draws on DeepSeek's [super-agent prototype](https://github.com/deepseek-ai/dsh-superagent-prototype), and the agent runs on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) ([the full story, in Chinese](./docs/blog/superagent.md)).
-
-📥 [Download](#-download) · 🌠 [Screenshots](#-screenshots) · 🌟 [Features](#-key-features) · 🆚 [Compare](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet) · 🔐 [Privacy](#-how-it-works--privacy)
+📥 [Download](#-download-and-run) · 🌠 [Screenshots](#-screenshots) · 🌟 [Features](#-key-features) · 🆚 [Compare](#-anymodelbot-vs-grok-bot-openai-dots-and-claude-duet) · 🔐 [Privacy](#-how-it-works--privacy)
 
 ⭐ Like AnyModelBot? Star the repo to follow new releases.
 
 ---
 
 <a href="https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme">
-  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare banner: a stable, lower-cost LLM, image and video AI gateway; GPT discount group at 0.015x and Claude discount group at 0.03x; cache hit-rate guarantees of 65% · 75% · 85% on OpenAI groups, with shortfalls credited">
+  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare banner: sign up for Modelflare">
 </a>
 
-The easiest way to get models is **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**: one account, with no separate key to request from each provider (to go straight to a provider, see [Any model](#-any-model-through-modelflare-or-official-apis)). full-strength, stable models with nothing watered down, and global SOTA models at a lower cost. Modelflare is run by Havenbyte LLC, a US company, and has 200,000+ registered developers. One API key opens 70+ text, image and video models from 13 providers, including GPT, Claude, Gemini, Grok, DeepSeek, Kimi and GLM, over OpenAI, Anthropic, Gemini and other common API formats. Requests are routed across providers with automatic fallback, every request is recorded with its usage and cost, and the price list is public and billed per token.
-
-**Cache compensation** is a highlight: the price-first, stable and premium OpenAI groups guarantee daily cache hit rates of 65%, 75% and 85%. When eligible requests fall short, Modelflare credits the difference.
-
-**Special offers**: a single top-up of a set amount unlocks the GPT discount group at a 0.015x price multiplier and the Claude discount group at 0.03x, made for personal projects, feature testing and light use. These are limited-time offers, with thresholds and rules on Modelflare's site. Sign up through [this link](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme) to join.
+The easiest way to get models is **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**: sign in and use models, with no separate key to request from each provider (to go straight to a provider, see [Any model](#-any-model-through-modelflare-or-official-apis)). Available models, prices, and current offers are on [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) and the [price list](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme).
 
 **Bot credits**: new accounts get Bot credits when they sign up, and Modelflare subscriptions add Bot credits worth 10% of the plan; see Modelflare's site for the current terms. Bot credits are usable only in AnyModelBot. Requests from the app use them first, and the bottom-left corner shows how much is left.
 
@@ -89,7 +83,7 @@ The easiest way to get models is **[Modelflare](https://modelflare.dev/?utm_sour
 
 ---
 
-# 📥 Download
+# 📥 Download and run
 
 Pick your platform. Every release page lists all installers and a `SHA256SUMS` file.
 
@@ -150,10 +144,10 @@ These screenshots show the Simplified Chinese interface. The app also supports E
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/agent-dark.webp">
-  <img src="docs/assets/screenshots/agent-light.webp" alt="Agent screen: a step-by-step activity list for a file task and an approval card asking to write outside the workspace" width="100%">
+  <img src="docs/assets/screenshots/agent-light.webp" alt="Bot screen: a step-by-step activity list for a file task and an approval card asking to write outside the workspace" width="100%">
 </picture>
 
-<p align="center"><i>Agent work is visible step by step. Anything outside the workspace waits for your approval.</i></p>
+<p align="center"><i>What the bot does is visible step by step. Anything outside the workspace waits for your approval.</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/models-dark.webp">
@@ -189,12 +183,12 @@ These screenshots show the Simplified Chinese interface. The app also supports E
 
 A bot is more than a chat window: it has a persona, a default model, its own workspace and its own memory.
 
-- **Make as many bots as you need**, each with its own persona, model, workspace and avatar.
-- **You decide who it is.** A persona is just text, and templates are only a starting point. The six avatars change how a bot looks, not what it can do.
+- **As many as you need**, each with its own persona, model, workspace and avatar.
+- **You define each bot.** A persona is just text, and templates are only a starting point. The six avatars change how a bot looks, not what it can do.
 - **Real file work.** Bots read and write files, run commands in a sandbox, and send the results back to the chat as files.
-- **Three permission presets per bot.** *Read-only*, *Workspace* (the default: write inside the bot's own folder, ask before anything outside) and *Full access* (no sandbox; recursive deletes still ask first).
+- **Three permission presets per bot.** *Read-only*, *Workspace* (the default: write inside the bot's own folder; it asks before writing outside its workspace) and *Full access* (no sandbox; even with full access, it asks before deleting a whole folder).
 - **Import skills.** In **Bot settings → Skills**, import a ZIP containing `SKILL.md` (one skill per ZIP, up to 20 MB), then preview and add it. View, enable, disable or delete skills; import the same name again to confirm replacement. Changes take effect after current work finishes. [Skill guide](./docs/skills_en.md).
-- **Approval cards, not surprises.** Out-of-bounds actions stop and wait for your answer.
+- **Approval cards, not surprises.** Actions that write outside the workspace stop and wait for your answer.
 - **Told after a restart.** A message still in progress when the app quit or crashed is flagged in its conversation at the next start, so you can send it again; nothing is redone on its own.
 - **Group chats.** Create a group and add a few bots. Whoever you @ answers; with no @, the bot that answered last carries on. Bots can also @ another member to hand off. Each bot keeps its own model, workspace and memory, and costs are tracked per bot.
 - **Search chat history.** Search all messages saved on your device from the sidebar, filter by bot, conversation, channel or date, and jump to the original message. `Ctrl/Cmd+Shift+F` opens global search; `Ctrl/Cmd+F` searches the current chat. Searches do not call a model. Before you type, the search dialog lists recent chats by date.
@@ -210,10 +204,10 @@ If you don't want to write a persona, use a ready-made bot from Discover. Each h
 
 Official bots include their UIs, samples, personas and skills in the installer. First preview and installation need no bot package downloads. Updates ship with app releases and preserve existing project data. Model calls and online research still need a network connection. Each bot is a desktop workspace: your work is listed on the left and the content is on the right, New starts a short guided form, the top bar switches to the full chat, and the input box has the model picker.
 
-- **Company Research:** Local company diligence with parallel research, curation, and sourced reports
-- **PPT Master:** Turn documents or topics into editable PPTX decks, or edit decks you have
-- **Film Studio:** Short videos and dramas: scripts, assets, storyboards, voices and finished films
-- **US Stock Research:** Research US-listed companies from SEC filings, with every number traceable
+- **Company Research:** Company research on your computer, with sourced briefings and PDF reports.
+- **PPT Master:** Turn documents or topics into editable slides, or edit decks you already have.
+- **Film Studio:** Short videos and serials: script, storyboard, voice, editing, and final cut.
+- **US Stock Research:** Research US-listed companies from SEC filings, with every number traceable.
 
 Film Studio requires AnyModelBot 0.1.23 or later, Python 3.10+ and FFmpeg (including ffprobe) on your device. AI images and videos use Modelflare and are billed by usage; projects and media stay on your device.
 
@@ -230,7 +224,7 @@ See the [bots page on our website](https://anymodel.bot/en/bots) for details.
 - **Pause anytime.** One switch in bot settings › Proactive messages pauses background work; chat carries on.
 - **Cleans up after itself.** Tasks and run logs are kept for 30 days. A task folder unused for 30 days is deleted without asking; the task details show the date, and Keep holds on to it. Run logs export as Markdown.
 
-The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent.md).
+The runtime is built on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), and the design draws on DeepSeek's [super-agent prototype](https://github.com/deepseek-ai/dsh-superagent-prototype). The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent.md).
 
 ## 🖥️ Operates your computer, and makes images and video
 
@@ -252,7 +246,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 - **One picker for everything.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and more, each with context length, capability tags and a reference price.
 - **Switch per conversation** or set a default per bot. Background chores such as tidying memory and context hand-offs can use a separate model of their own.
 - **Three API domains.** Choose `modelflare.dev`, `origin.modelflare.dev` or `cf.modelflare.dev` and compare their response times in Settings; AnyModelBot never switches automatically.
-- **Pay per use.** Wallet balance, low-balance reminders, daily usage and per-bot budget keys are built in. AnyModelBot has no subscription.
+- **Pay per use.** Wallet balance, low-balance reminders, daily usage and per-bot budget keys are built in. AnyModelBot itself has no subscription fee.
 
 <p align="center">
   <img src="docs/assets/features/first-run.gif" alt="First launch: click Sign in to Modelflare, approve in the browser, return to the app with models listed, and send a first message" width="100%">
@@ -264,7 +258,7 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 
 ## 🧠 Memory, and reachable from anywhere
 
-- **Memory that carries over.** Bots keep Markdown memory at three levels (team, bot and group) and filter out anything that looks like a secret.
+- **Memory that carries over.** Each bot, group, and team has its own memory, kept as Markdown and kept separate. Content that looks like passwords or keys isn't saved.
 - **Long chats stay usable.** A context steward compacts or starts a fresh segment with a hand-off summary before the window fills up.
 - **Accounts shared by all bots.** Add WeChat, Feishu, Telegram, Slack, Discord and Notion accounts once in Settings. Every bot shares them, and each service can have several accounts with aliases. Send `/bot name` once in a chat app to talk to a different bot, or let a bot read your Notion and Feishu messages.
 - **WeChat and Feishu.** Scan a QR code to connect WeChat, or connect a Feishu bot with streaming reply cards. WeChat also carries images and files.
@@ -298,13 +292,13 @@ The full story, in Chinese: [AnyModelBot 超级智能体](./docs/blog/superagent
 
 # 🆚 AnyModelBot vs Grok Bot, OpenAI dots and Claude Duet
 
-In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](https://openai.com/index/introducing-dots/) and Anthropic's Claude Duet made the always-on personal AI agent the thing to watch: it keeps an eye on things, works in the background and comes to you when a decision is yours. AnyModelBot does the same kind of job a different way: open source, on your own device, with any model.
+In the second half of 2026, xAI's [Grok Bot](https://x.ai/bot), OpenAI's [dots](https://openai.com/index/introducing-dots/) and Anthropic's Claude Duet launched one after another. They also work for you in the background, and check in when a decision is yours. AnyModelBot does the same kind of work, in a different way: it is open source, runs on your own device, and works with a wide range of models.
 
 | | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
 | :--- | :--- | :--- | :--- | :--- |
 | Open source | ✅ MIT | — | — | — |
-| Where the agent runs | Your own computer or server | xAI's cloud computer | OpenAI's cloud computer | Anthropic's cloud |
-| Models | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM and 70+ more (through Modelflare or official APIs) | Mainly xAI's Grok models | OpenAI's models | Claude (Opus 5.5) |
+| Where it runs | Your own computer or server | xAI's cloud computer | OpenAI's cloud computer | Anthropic's cloud |
+| Models | GPT, Claude, Gemini, Grok and more (through Modelflare or official APIs) | Mainly xAI's Grok models | OpenAI's models | Claude (Opus 5.5) |
 | Cost | Free app, models billed per token | Subscription | ChatGPT Pro / Business Premium subscription | Claude Pro / Max subscription |
 | Where you reach it | Desktop app (Windows, macOS, Linux), Docker, WeChat, Feishu, Telegram, Slack, Discord | Desktop app, iPhone | ChatGPT, Slack, Teams | iOS, Android, claude.ai |
 | Availability | Download it now | Beta | Select markets | Research preview, US waitlist |

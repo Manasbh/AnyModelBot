@@ -11,7 +11,7 @@
   </picture>
 </h1>
 
-<p align="center"><b>跑在你自己电脑上的 AI 机器人。任意模型，按量付费。</b></p>
+<p align="center"><b>跑在你自己电脑上的 AI 机器人团队。任意模型，按量付费。</b></p>
 
 <p align="center">
   <a href="https://anymodel.bot/">官网</a> |
@@ -48,29 +48,23 @@
 
 # 🤖 AnyModelBot
 
-AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS 和 Linux。一个机器人就是一个人设，带着自己的默认模型、工作区和记忆。你可以在应用里和它聊天，也可以在微信、飞书、Telegram、Slack、Discord 里找它。它能读写文件、执行命令、操作你的桌面，一旦要越出自己的工作区，就会先问你。
+AnyModelBot 是跑在 Windows / macOS / Linux 上的 AI 机器人团队。每个机器人有自己的人设、默认模型、工作区和记忆；可在应用内聊天，也可接入微信、飞书、Telegram、Slack、Discord。它能读写文件、执行命令、在授权后操作桌面；要写到工作区以外，会先问你。
 
-对话、记忆、文件和 API Key 都留在你的设备上。模型可以来自 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)（一个账户，任意模型，按 token 计费），也可以填你自己的官方 API Key，直连 OpenAI、Anthropic、Google 等厂商。AnyModelBot 本身没有订阅。
+对话、记忆、文件和 API Key 留在你的设备上。模型可走 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)（登录后按用量付费），或使用自己的官方 API Key 直连厂商。AnyModelBot 本身没有订阅费。
 
-和 xAI 的 Grok Bot、OpenAI 的 dots、Anthropic 的 Claude Duet 一样，它是一个常驻的个人 AI 智能体：在后台替你干活，需要你拍板时再来问你。不同的是，AnyModelBot 开源（MIT），跑在你自己的电脑或服务器上，GPT、Claude、Gemini、Grok 等任意模型都能用，按量付费，不绑定某一家的订阅（[详细对比](#-对比-grok-bot--openai-dots--claude-duet)）。
+装好即可用：后台任务、定时规则和待你确认的事项都已内置。
 
-装好就是一个开箱即用的 Super Agent：后台任务、定时规则和「需要你」都不用另外配置。它的设计参考了 DeepSeek 的 [Super Agent 原型](https://github.com/deepseek-ai/dsh-superagent-prototype)，智能体运行在 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 上（[详细介绍](./docs/blog/superagent.md)）。
-
-📥 [下载](#-下载) · 🌠 [截图](#-截图) · 🌟 [核心功能](#-核心功能) · 🆚 [对比](#-对比-grok-bot--openai-dots--claude-duet) · 🔐 [工作原理与隐私](#-工作原理与隐私)
+📥 [下载](#-下载与运行) · 🌠 [截图](#-截图) · 🌟 [核心功能](#-核心功能) · 🆚 [对比](#-对比-grok-bot--openai-dots--claude-duet) · 🔐 [工作原理与隐私](#-工作原理与隐私)
 
 ⭐ 喜欢 AnyModelBot？点个 Star，第一时间收到新版本。
 
 ---
 
 <a href="https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme">
-  <img src="docs/assets/modelflare/modelflare-banner-zh.webp" width="100%" alt="Modelflare 横幅：满血、稳定不掺水，低成本享受全球 SOTA 模型；GPT 特惠分组 0.015 倍、Claude 特惠分组 0.03 倍；OpenAI 分组缓存命中率保障 65% · 75% · 85%，未达标补偿差额">
+  <img src="docs/assets/modelflare/modelflare-banner-zh.webp" width="100%" alt="Modelflare 横幅：点击注册 Modelflare">
 </a>
 
-最省事的用法是 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**：一个账户就够，不用分别申请各家的 Key（想直连厂商，见[任意模型](#-任意模型通过-modelflare-或官方-api)）。满血、稳定不掺水，低成本享受全球 SOTA 模型。Modelflare 由美国公司 Havenbyte LLC 运营，已有 20 万+ 注册开发者。一个 API Key 就能调用 13 家供应商的 70+ 个文本、图片和视频模型，GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 都在里面，兼容 OpenAI、Anthropic、Gemini 等常用接口协议。请求会在多个供应商之间路由并自动回退，每一次请求都记录用量和费用，价格表公开，按 token 计费。
-
-**缓存补偿**是一大亮点：OpenAI 的价格优先、稳定、高级三个分组，分别保证每天 65%、75%、85% 的缓存命中率；符合条件的请求没达到目标，Modelflare 会补偿差额。
-
-**特惠活动**：单笔充值达到指定金额，就能解锁 0.015 倍价格倍率的 GPT 特惠分组和 0.03 倍的 Claude 特惠分组，适合个人开发、功能验证和轻量使用。这是限时活动，门槛和规则以 Modelflare 页面为准，通过[专属链接](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme)注册即可参与。
+最省事的用法是 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**：登录即可使用模型，不用分别申请各家的 Key（想直连厂商，见[任意模型](#-任意模型通过-modelflare-或官方-api)）。可用模型、价格和当前活动以 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) 和 [价格表](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme) 为准。
 
 **Bot 额度**：新用户注册即送 Bot 额度，订阅 Modelflare 套餐另送套餐额度 10% 的 Bot 额度，具体以 Modelflare 页面为准。Bot 额度只能在 AnyModelBot 里使用，应用里的请求会先用它，剩余多少在左下角就能看到。
 
@@ -89,7 +83,7 @@ AnyModelBot 是一个本地优先的 AI 智能体应用，支持 Windows、macOS
 
 ---
 
-# 📥 下载
+# 📥 下载与运行
 
 选择你的平台。每个 Release 页面都列出全部安装包和 `SHA256SUMS` 校验文件。
 
@@ -150,10 +144,10 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/agent-dark.webp">
-  <img src="docs/assets/screenshots/agent-light.webp" alt="智能体界面：文件任务的逐步活动列表，以及一张请求写入工作区之外的审批卡片" width="100%">
+  <img src="docs/assets/screenshots/agent-light.webp" alt="机器人界面：文件任务的逐步活动列表，以及一张请求写入工作区之外的审批卡片" width="100%">
 </picture>
 
-<p align="center"><i>智能体做了什么，一步一步看得见。工作区之外的操作要等你批准。</i></p>
+<p align="center"><i>机器人做了什么，一步一步看得见。工作区之外的操作要等你批准。</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/models-dark.webp">
@@ -189,12 +183,12 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 机器人不只是一个聊天窗口：它有自己的人设、默认模型、工作区和记忆。
 
-- **想建几个就建几个**，每个都有自己的人设、模型、工作区和头像。
-- **它是谁由你写。** 人设就是一段话，模板只是起点，每个字都能改；六个头像只管长相，不决定它能做什么。
+- **需要几个就有几个**，每个都有自己的人设、模型、工作区和头像。
+- **每个机器人由你来定义。** 人设就是一段话，模板只是起点，每个字都能改；六个头像只管长相，不决定它能做什么。
 - **真正的文件操作。** 机器人能读写文件、在沙箱里执行命令，并把结果作为文件发回聊天。
-- **每个机器人三档权限。** *只读*、*工作区*（默认：只能写自己的文件夹，越界先问你）、*完全权限*（不进沙箱；递归删除仍会先问）。
+- **每个机器人三档权限。** *只读*、*工作区*（默认：只能写自己的文件夹；要写到工作区以外，得先经过你点头）、*完全权限*（不进沙箱；删除整个文件夹前仍会先问）。
 - **导入技能。** 在「机器人设置 → 技能」导入包含 `SKILL.md` 的 ZIP（每包一个技能，最大 20 MB），预览后添加。支持查看、启用、停用、删除；再次导入同名技能可确认替换，改动在当前工作结束后生效。 [使用说明](./docs/skills.md)。
-- **审批卡片，没有意外。** 越界的操作会停下来，等你回答。
+- **审批卡片，没有意外。** 要写到工作区以外的操作会停下来，等你回答。
 - **重启了也会告诉你。** 应用退出或崩溃时还没处理完的消息，下次启动会在原对话里说一声，请你重新发送，不会自动重做。
 - **群聊。** 建一个群，拉几个机器人进来。@ 谁谁回答，没 @ 时上一个回答的接着答；机器人也能 @ 别的成员请它接手。每个机器人用自己的模型、工作区和记忆，花费分开算。
 - **聊天记录搜索。** 侧栏可搜索本机保存的全部消息，按机器人、会话、渠道和日期筛选，点击结果定位原消息。`Ctrl/Cmd+Shift+F` 打开全局搜索，`Ctrl/Cmd+F` 查找当前聊天；搜索不调用模型。没输入时，搜索弹窗按日期列出最近的对话。
@@ -206,14 +200,14 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 ## 🧩 现成的 Bot
 
-不想自己写人设，可以直接用发现页里备好的 Bot。每个都有自己的界面，打开时先看示例，发第一句话才会安装。
+不想自己写人设，可以直接用发现页里的现成机器人。每个都有自己的界面，打开时先看示例，发第一句话才会安装。
 
 官方 Bot 的界面、示例、人设和技能均随安装包内置，首次打开和安装不再下载 Bot 包；更新跟随应用版本发布，已有项目数据保留。模型调用和联网研究仍需要网络。每个 Bot 都是一个桌面工作台：左边是作品列表、右边是内容，「新建」用向导点选几项就能开始；顶栏可以切换到完整的对话，底部输入框也能选模型。
 
-- **尽调助手：** 本机公司尽调：四路研究、策展、简报与可溯源报告/PDF
-- **PPT 大师：** 把文档或主题做成可编辑的 PPTX，也能做模板、改现有的 PPT
-- **影视创作室：** 短视频与分集短剧：剧本、资产、分镜、配音、剪辑与成片
-- **美股研报：** 查美股财报和申报文件，写出每个数字都能追溯的研究报告
+- **尽调助手：** 在你的电脑上做公司尽调，生成可追溯的简报和 PDF。
+- **PPT 大师：** 把文档或主题做成可编辑的 PPT，也能改现有的演示文稿。
+- **影视创作室：** 做短视频和分集短剧，从剧本、分镜到配音、剪辑和成片。
+- **美股研报：** 查阅美股财报和申报文件，写出数据可追溯的研究报告。
 
 影视创作室需要 AnyModelBot 0.1.23 及以上版本、本机 Python 3.10+ 和 FFmpeg（含 ffprobe）。AI 图片和视频通过 Modelflare 按用量计费；项目与素材保存在你的设备上。
 
@@ -230,7 +224,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 - **随时暂停。** 机器人设置 › 主动消息里一个开关暂停后台工作，聊天照常。
 - **用完会清理。** 任务和运行记录留 30 天；任务文件夹 30 天没动过会自动删除，不来问你，任务详情里写着哪天删，想留就点保留。运行记录能导出成 Markdown。
 
-完整介绍见[《AnyModelBot 超级智能体》](./docs/blog/superagent.md)。
+运行时基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)，设计参考了 DeepSeek 的 [Super Agent 原型](https://github.com/deepseek-ai/dsh-superagent-prototype)。完整介绍见[《AnyModelBot 超级智能体》](./docs/blog/superagent.md)。
 
 ## 🖥️ 操作你的电脑，生成图片和视频
 
@@ -252,7 +246,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 - **一个选择器，覆盖所有模型。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等，每个都标出上下文长度、能力和参考价。
 - **按对话切换**，也可以给每个机器人设默认模型；记忆整理、上下文交接这类后台小任务，还能单独指定一个模型。
 - **三个 API 域名。** `modelflare.dev`、`origin.modelflare.dev` 和 `cf.modelflare.dev` 均可选择；可在设置中测速，AnyModelBot 不会自动切换。
-- **按量付费。** 钱包余额、低余额提醒、每日用量、每个机器人的预算 Key 都内置。AnyModelBot 没有订阅。
+- **按量付费。** 钱包余额、低余额提醒、每日用量、每个机器人的预算 Key 都内置。AnyModelBot 本身没有订阅费。
 
 <p align="center">
   <img src="docs/assets/features/first-run.gif" alt="首次启动：点「登录 Modelflare」，在浏览器里授权，回到应用后模型已列出，发出第一条消息" width="100%">
@@ -264,7 +258,7 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 ## 🧠 有记忆，随处可达
 
-- **记忆会延续。** 机器人用 Markdown 保存三层记忆（团队、机器人、群），会过滤看起来像密钥的内容。
+- **记忆会延续。** 机器人、群、团队各有自己的记忆，以 Markdown 保存，互不混用；看起来像密码、密钥的内容不会被记住。
 - **长对话也能用下去。** 上下文快满之前，上下文管家会压缩，或开一个新段并带上交接摘要。
 - **账号全局共用。** 微信、飞书、Telegram、Slack、Discord、Notion 的账号在设置里加一次，所有机器人共用，每个服务可以加多个、起别名。在聊天软件里发一次 `/bot 名字` 就换一个机器人聊，也可以让机器人读你的 Notion 和飞书消息。
 - **微信和飞书。** 微信扫码连接，飞书机器人支持流式回复卡片；微信还能收发图片和文件。
@@ -298,13 +292,13 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 # 🆚 对比 Grok Bot / OpenAI dots / Claude Duet
 
-2026 年下半年，xAI 的 [Grok Bot](https://x.ai/bot)、OpenAI 的 [dots](https://openai.com/index/introducing-dots/) 和 Anthropic 的 Claude Duet 接连发布，"常驻的个人 AI 智能体"成了热门：它替你盯着事情、在后台干活，需要你决定时再来找你。AnyModelBot 做的是同一类事，换了一种做法：开源、跑在你自己的设备上、任意模型都能用。
+2026 年下半年，xAI 的 [Grok Bot](https://x.ai/bot)、OpenAI 的 [dots](https://openai.com/index/introducing-dots/) 和 Anthropic 的 Claude Duet 接连发布。它们也是常驻后台、替你干活的 AI，需要你拍板时再来问你。AnyModelBot 做的是同一类事，换了一种做法：开源、跑在你自己的设备上、任意模型都能用。
 
 | | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
 | :--- | :--- | :--- | :--- | :--- |
 | 开源 | ✅ MIT | — | — | — |
-| 智能体跑在哪 | 你自己的电脑或服务器 | xAI 的云端电脑 | OpenAI 的云端电脑 | Anthropic 的云端 |
-| 能用的模型 | GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM 等 70+ 个（经 Modelflare 或官方 API） | 以 xAI 的 Grok 模型为主 | OpenAI 的模型 | Claude（Opus 5.5） |
+| 运行位置 | 你自己的电脑或服务器 | xAI 的云端电脑 | OpenAI 的云端电脑 | Anthropic 的云端 |
+| 能用的模型 | GPT、Claude、Gemini、Grok 等（经 Modelflare 或官方 API） | 以 xAI 的 Grok 模型为主 | OpenAI 的模型 | Claude（Opus 5.5） |
 | 费用 | 应用免费，模型按 token 计费 | 订阅 | ChatGPT Pro / Business Premium 订阅 | Claude Pro / Max 订阅 |
 | 在哪找它 | 桌面应用（Windows、macOS、Linux）、Docker、微信、飞书、Telegram、Slack、Discord | 桌面应用、iPhone | ChatGPT、Slack、Teams | iOS、Android、claude.ai |
 | 现在能用吗 | 直接下载 | 测试版 | 部分地区开放 | 研究预览，美国候补名单 |

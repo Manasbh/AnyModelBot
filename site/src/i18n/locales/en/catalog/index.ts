@@ -13,7 +13,7 @@ export default {
   "cta": "Download AnyModelBot",
   "strip": {
     "title": "Or start with a ready-made bot",
-    "lead": "Research companies, make presentations or create short videos and episodic dramas. Find bots with their own interfaces in Discover.",
+    "lead": "Research, slides, or short videos — pick one in Discover.",
     "all": "See all bots"
   },
   "minimumVersion": "Requires AnyModelBot {version} or later.",

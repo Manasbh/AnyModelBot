@@ -29,6 +29,8 @@ const mfPage = (lang: Lang, path: string) => mf(`https://modelflare.dev${lang ==
 export const MF = {
   home: (lang: Lang) => mfPage(lang, ""),
   pricing: (lang: Lang) => mfPage(lang, "/pricing"),
+  /** 登录页：/<语言>/sign-in 先设好界面语言再登录，没有账号的人可以从这里转去注册 */
+  signIn: (lang: Lang) => mf(`https://modelflare.dev/${lang}/sign-in`),
   docs: mf("https://docs.modelflare.dev/"),
   /**
    * 合作伙伴申请：进 Modelflare 控制台里的 AnyModelBot 合作页。

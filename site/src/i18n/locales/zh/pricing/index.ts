@@ -1,6 +1,6 @@
 export default {
   "eyebrow": "价格 · 按量付费",
-  "h2mark": "没有月费",
+  "h2mark": "没有订阅费",
   "h2rest": "。用多少，付多少。",
   "lead": "AnyModelBot 免费开源，没有订阅、没有档位。模型用量由 Modelflare 按 token 计费，价格表完全公开。",
   "source": "价格取自 modelflare.dev/pricing，数据抓取于 {fetchedAt}（UTC+8），版本 {pricingVersion}。",
@@ -31,7 +31,7 @@ export default {
       "cta": "查看完整价格表 ↗"
     },
     "month": {
-      "tag": "每月大概多少",
+      "tag": "日常用量估算",
       "unit": "/ 月",
       "note": "示例用量：每天 50 条消息，每条 3,000 输入 + 600 输出 tokens，{model}。",
       "points": [
@@ -52,8 +52,8 @@ export default {
     "rows": [
       [
         "怎么收费",
-        "用多少付多少，没有月费",
-        "先付月费，档位决定可用量"
+        "用多少付多少，没有订阅费",
+        "先付订阅费，档位决定可用量"
       ],
       [
         "用不完的部分",
@@ -71,7 +71,7 @@ export default {
         "常以“相对额度”的倍数表述"
       ]
     ],
-    "note": "「订阅制档位」指以月费分档的这一类产品的通常做法，不指任何具体产品，也不代表其实际价格。"
+    "note": "「订阅制档位」指以订阅费分档的这一类产品的通常做法，不指任何具体产品，也不代表其实际价格。"
   },
   "table": {
     "more": "查看全部 {textCount} 个文本模型的价格 →",

@@ -1,8 +1,8 @@
 import type { Dict } from "../../../zh";
 export default {
   lang: "ja",
-  title: "AnyModelBot — 自分のデバイスで動く、好きなモデルの AI アシスタント",
+  title: "AnyModelBot — あなたのパソコンで動く AI ボットのチーム。好きなモデルを従量課金で",
   description:
-    "自分のパソコンやサーバーで動く、オープンソースの AI アシスタント。名前も性格もモデルも自由に選べます。会話、記憶、ファイル、キーは手元に保存。Modelflare のキー1つで GPT、Claude、Gemini などを使えます。アプリは無料、モデルは従量課金。デスクトップ、Docker、Slack、Telegram、Discord に対応しています。",
+    "自分のパソコンで AI ボットのチームを動かせる、オープンソースのデスクトップアプリ。ボットごとにモデル、記憶、ワークスペースを持てます。Modelflare にログインするか、自分の API キーを使い、Slack、Telegram、Discord にも接続できます。アプリは無料、モデルは従量課金です。",
   ogImage: "/og/og-ja.png",
 } satisfies Dict["meta"];

@@ -11,7 +11,7 @@
   </picture>
 </h1>
 
-<p align="center"><b>내 컴퓨터에서 함께하는 나만의 AI 봇. 어떤 모델이든, 사용한 만큼만.</b></p>
+<p align="center"><b>내 컴퓨터에서 실행하는 AI 봇 팀. 어떤 모델이든, 사용한 만큼만.</b></p>
 
 <p align="center">
   <a href="https://anymodel.bot/ko/">웹사이트</a> |
@@ -48,29 +48,23 @@
 
 # 🤖 AnyModelBot
 
-AnyModelBot은 Windows, macOS, Linux에서 실행하는 로컬 우선 AI 에이전트 앱입니다. 봇마다 역할, 기본 모델, 작업 공간, 기억을 따로 갖습니다. 앱에서 대화하거나 WeChat, Feishu, Telegram, Slack, Discord에서 불러 보세요. 파일 읽기와 쓰기, 명령 실행, 데스크톱 조작을 맡길 수 있으며 작업 공간을 벗어날 때는 승인을 요청합니다.
+AnyModelBot은 Windows, macOS, Linux의 내 컴퓨터에서 실행하는 AI 봇 팀입니다. 봇마다 역할, 기본 모델, 작업 공간, 기억을 따로 갖습니다. 앱에서 대화하거나 WeChat, Feishu, Telegram, Slack, Discord에 연결할 수 있습니다. 파일을 읽고 쓰고 명령을 실행하며, 권한을 주면 데스크톱도 조작합니다. 작업 공간 밖에 쓸 때는 먼저 물어봅니다.
 
-대화, 기억, 파일, API 키는 내 기기에 저장됩니다. 모델은 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)(하나의 계정으로 원하는 모델을 사용하고 토큰 단위로 결제)를 통해 쓰거나, 내 공식 API 키로 OpenAI, Anthropic, Google 등에 직접 연결해 쓸 수 있습니다. AnyModelBot 자체에는 구독료가 없습니다.
+대화, 기억, 파일, API 키는 내 기기에 남습니다. 모델은 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)(로그인 후 사용한 만큼 결제)를 통해 쓰거나, 내 공식 API 키로 제공업체에 직접 연결해 쓸 수 있습니다. AnyModelBot 자체에는 구독료가 없습니다.
 
-xAI의 Grok Bot, OpenAI의 dots, Anthropic의 Claude Duet처럼 백그라운드에서 일하고 사용자의 결정이 필요할 때 찾아오는 상시 작동 개인 AI 에이전트입니다. AnyModelBot은 MIT 오픈 소스이며 내 컴퓨터나 서버에서 실행하고, GPT·Claude·Gemini·Grok 등 다양한 모델을 사용하며, 특정 업체의 구독 없이 사용량에 따라 결제한다는 점이 다릅니다([전체 비교](#-anymodelbot과-grok-bot-openai-dots-claude-duet-비교)).
+설치하면 바로 쓸 수 있습니다. 백그라운드 작업, 예약 규칙, 내 확인을 기다리는 항목이 기본으로 들어 있습니다.
 
-별도 설정 없이 Super Agent로 사용할 수 있습니다. 백그라운드 작업, 예약 규칙, ‘내 확인 필요’ 기능이 기본 제공됩니다. 설계는 DeepSeek의 [super-agent 프로토타입](https://github.com/deepseek-ai/dsh-superagent-prototype)에서 영감을 받았으며 에이전트는 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)로 실행합니다([자세한 소개, 중국어](./docs/blog/superagent.md)).
-
-📥 [다운로드](#-다운로드) · 🌠 [스크린샷](#-스크린샷) · 🌟 [기능](#-주요-기능) · 🆚 [비교](#-anymodelbot과-grok-bot-openai-dots-claude-duet-비교) · 🔐 [개인정보](#-작동-방식과-개인정보)
+📥 [다운로드](#-다운로드-및-실행) · 🌠 [스크린샷](#-스크린샷) · 🌟 [기능](#-주요-기능) · 🆚 [비교](#-anymodelbot과-grok-bot-openai-dots-claude-duet-비교) · 🔐 [개인정보](#-작동-방식과-개인정보)
 
 ⭐ AnyModelBot이 마음에 들면 저장소에 스타를 눌러 새 릴리스를 확인하세요.
 
 ---
 
 <a href="https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme">
-  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare: 안정적이고 저렴한 LLM·이미지·동영상 AI 게이트웨이. GPT 할인 그룹 0.015배, Claude 할인 그룹 0.03배. OpenAI 그룹 캐시 적중률 65%·75%·85% 보장 및 미달분 보상">
+  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare 배너: Modelflare 가입하기">
 </a>
 
-가장 간편한 방법은 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**입니다. 계정 하나면 충분하고 제공업체마다 키를 따로 발급받을 필요가 없습니다(제공업체에 직접 연결하려면 [원하는 모델](#-modelflare-또는-공식-api로-원하는-모델을-사용합니다) 참고). 성능을 낮추지 않은 안정적인 모델과 세계적인 최신 모델을 더 낮은 비용으로 이용할 수 있습니다. Modelflare는 미국 법인 Havenbyte LLC가 운영하며 등록 개발자가 20만 명 이상입니다. 하나의 API 키로 GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등 13개 제공업체의 텍스트·이미지·동영상 모델 70개 이상을 OpenAI, Anthropic, Gemini 등의 일반적인 API 형식으로 이용합니다. 요청은 여러 제공업체로 라우팅되며 실패 시 자동으로 대체 경로를 사용합니다. 모든 요청의 사용량과 비용이 기록되고 가격표는 공개되며 토큰 단위로 과금합니다.
-
-주요 혜택은 **캐시 보상**입니다. OpenAI의 가격 우선, 안정형, 프리미엄 그룹은 각각 일일 캐시 적중률 65%, 75%, 85%를 보장합니다. 조건에 맞는 요청의 적중률이 기준에 미달하면 차액을 크레딧으로 보상합니다.
-
-**특별 혜택**: 정해진 금액을 한 번에 충전하면 가격 배수 0.015배의 GPT 할인 그룹과 0.03배의 Claude 할인 그룹을 사용할 수 있습니다. 개인 프로젝트, 기능 테스트, 가벼운 사용에 적합합니다. 기간 한정 혜택이며 충전 기준과 규정은 Modelflare 사이트를 따릅니다. [이 링크](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme)에서 가입하세요.
+가장 간편한 방법은 **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)**입니다. 로그인하면 바로 모델을 쓸 수 있고 제공업체마다 키를 따로 발급받을 필요가 없습니다(제공업체에 직접 연결하려면 [원하는 모델](#-modelflare-또는-공식-api로-원하는-모델을-사용합니다) 참고). 사용할 수 있는 모델, 가격, 진행 중인 혜택은 [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)와 [가격표](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme)에서 확인하세요.
 
 **Bot 크레딧**: 신규 가입 시 Bot 크레딧을 드리고, Modelflare 구독 시 플랜 크레딧의 10%를 Bot 크레딧으로 추가로 드립니다. 자세한 조건은 Modelflare 사이트를 따릅니다. Bot 크레딧은 AnyModelBot에서만 사용할 수 있고 앱의 요청에 먼저 사용되며, 남은 양은 왼쪽 아래에서 확인합니다.
 
@@ -89,7 +83,7 @@ xAI의 Grok Bot, OpenAI의 dots, Anthropic의 Claude Duet처럼 백그라운드�
 
 ---
 
-# 📥 다운로드
+# 📥 다운로드 및 실행
 
 플랫폼을 선택하세요. 각 릴리스 페이지에서 모든 설치 파일과 `SHA256SUMS` 파일을 제공합니다.
 
@@ -150,10 +144,10 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/agent-dark.webp">
-  <img src="docs/assets/screenshots/agent-light.webp" alt="에이전트 화면: 파일 작업의 단계별 내역과 작업 공간 외부 쓰기를 요청하는 승인 카드" width="100%">
+  <img src="docs/assets/screenshots/agent-light.webp" alt="봇 화면: 파일 작업의 단계별 내역과 작업 공간 외부 쓰기를 요청하는 승인 카드" width="100%">
 </picture>
 
-<p align="center"><i>에이전트의 작업이 단계별로 보입니다. 작업 공간 밖의 작업은 승인을 기다립니다.</i></p>
+<p align="center"><i>봇의 작업이 단계별로 보입니다. 작업 공간 밖의 작업은 승인을 기다립니다.</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/models-dark.webp">
@@ -190,11 +184,11 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 봇은 대화창 그 이상입니다. 역할, 기본 모델, 전용 작업 공간, 기억을 갖습니다.
 
 - **필요한 만큼 봇을 만드세요.** 역할, 모델, 작업 공간, 아바타를 각각 설정할 수 있습니다.
-- **어떤 봇일지는 직접 정합니다.** 역할은 텍스트로 작성하며 템플릿은 출발점입니다. 여섯 아바타는 외형만 바꾸고 기능에는 영향을 주지 않습니다.
+- **봇 하나하나를 내가 정합니다.** 역할은 텍스트로 작성하며 템플릿은 출발점입니다. 여섯 아바타는 외형만 바꾸고 기능에는 영향을 주지 않습니다.
 - **실제 파일 작업.** 파일을 읽고 쓰며 샌드박스에서 명령을 실행하고 결과 파일을 대화로 전달합니다.
-- **봇별 세 가지 권한.** *읽기 전용*, *작업 공간 쓰기*(기본값: 봇 폴더 안에서는 쓰기 가능, 외부 작업 전에는 확인), *전체 접근*(샌드박스 없음, 재귀 삭제는 확인)을 선택합니다.
+- **봇별 세 가지 권한.** *읽기 전용*, *작업 공간 쓰기*(기본값: 봇 폴더 안에서만 쓰고, 작업 공간 밖에 쓸 때는 먼저 확인), *전체 접근*(샌드박스 없음, 폴더를 통째로 삭제하기 전에는 확인)을 선택합니다.
 - **스킬 가져오기.** 「봇 설정 → 스킬」에서 `SKILL.md`가 포함된 ZIP(패키지당 스킬 1개, 최대 20 MB)을 미리 확인하고 추가합니다. 보기, 활성화, 비활성화, 삭제를 지원하며 같은 이름으로 다시 가져오면 확인 후 교체합니다. 변경 사항은 진행 중인 작업이 끝난 후 적용됩니다. [스킬 사용 안내](./docs/skills_ko.md).
-- **승인 카드로 확인.** 허용 범위를 벗어나는 작업은 멈추고 답변을 기다립니다.
+- **승인 카드로 확인.** 작업 공간 밖에 쓰는 작업은 멈추고 답변을 기다립니다.
 - **다시 시작 후 안내.** 앱 종료나 충돌 당시 처리 중이던 메시지는 다음 실행 시 해당 대화에 표시됩니다. 직접 다시 보낼 수 있으며 앱이 임의로 재실행하지 않습니다.
 - **그룹 대화.** 그룹을 만들고 봇을 여러 개 추가하세요. @로 지정한 봇이 답하고, 지정하지 않으면 마지막으로 답한 봇이 계속합니다. 봇도 다른 구성원을 @하여 작업을 넘길 수 있습니다. 각 봇의 모델, 작업 공간, 기억은 독립적이며 비용도 따로 추적합니다.
 - **대화 기록 검색.** 사이드바에서 기기에 저장된 모든 메시지를 검색하고 봇, 대화, 채널, 날짜로 필터링하여 원래 메시지로 이동할 수 있습니다. `Ctrl/Cmd+Shift+F`는 전체 검색, `Ctrl/Cmd+F`는 현재 대화 검색입니다. 검색에는 모델 호출이 없습니다. 입력하기 전에는 검색 대화상자에 최근 대화를 날짜별로 보여 줍니다.
@@ -210,10 +204,10 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 
 공식 봇의 화면, 예시, 역할 지침과 스킬은 설치 파일에 포함되어 있어 처음 열거나 설치할 때 봇 패키지를 내려받지 않습니다. 업데이트는 앱 버전과 함께 배포되며 기존 프로젝트 데이터는 유지됩니다. 모델 호출과 온라인 조사에는 네트워크가 필요합니다. 모든 봇은 데스크톱 작업 공간으로, 왼쪽에 작업 목록, 오른쪽에 내용이 있습니다. ‘새로 만들기’는 안내형 양식으로 시작하고, 상단 바에서 전체 대화로 전환하며, 입력창에서 모델도 고를 수 있습니다.
 
-- **기업 리서치:** 내 기기에서 기업 실사: 네 방향 조사, 선별, 브리핑, 출처 있는 보고서와 PDF
-- **PPT 마스터:** 문서나 주제를 편집 가능한 PPTX로 만들고, 템플릿 제작과 기존 PPT 수정도 합니다
-- **영상 스튜디오:** 숏폼과 드라마의 대본, 자산, 스토리보드, 음성, 완성 영상
-- **미국 주식 리서치:** 미국 상장사의 재무제표와 SEC 공시를 조사해 모든 숫자를 추적할 수 있는 보고서를 작성
+- **기업 리서치:** 내 컴퓨터에서 기업을 실사하고 출처가 있는 브리핑과 PDF를 만듭니다.
+- **PPT 마스터:** 문서나 주제를 편집 가능한 슬라이드로 만들고, 기존 발표 자료도 수정합니다.
+- **영상 스튜디오:** 숏폼과 시리즈 드라마를 대본, 스토리보드부터 음성, 편집, 완성까지 만듭니다.
+- **미국 주식 리서치:** 미국 상장사의 재무제표와 SEC 공시를 조사해 수치를 추적할 수 있는 보고서를 작성합니다.
 
 영상 스튜디오는 AnyModelBot 0.1.23 이상과 기기에 설치된 Python 3.10+, FFmpeg(ffprobe 포함)가 필요합니다. AI 이미지와 영상은 Modelflare에서 사용량에 따라 과금되며, 프로젝트와 미디어는 내 기기에 저장됩니다.
 
@@ -230,7 +224,7 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 - **언제든 일시 중지.** 봇 설정 › 먼저 보내는 메시지의 스위치 하나로 백그라운드 작업을 멈춥니다. 대화는 계속됩니다.
 - **자동 정리.** 작업과 실행 기록은 30일간 보관합니다. 30일간 사용하지 않은 작업 폴더는 별도 확인 없이 삭제됩니다. 작업 상세에서 날짜를 확인하고 ‘보관’으로 유지할 수 있습니다. 실행 기록은 Markdown으로 내보냅니다.
 
-자세한 소개(중국어): [AnyModelBot 슈퍼 에이전트](./docs/blog/superagent.md).
+런타임은 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)를 기반으로 하며, 설계는 DeepSeek의 [super-agent 프로토타입](https://github.com/deepseek-ai/dsh-superagent-prototype)을 참고했습니다. 자세한 소개(중국어): [AnyModelBot 슈퍼 에이전트](./docs/blog/superagent.md).
 
 ## 🖥️ 컴퓨터를 조작하고 이미지와 동영상을 만듭니다
 
@@ -252,7 +246,7 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 - **하나의 선택기.** GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등을 컨텍스트 길이, 기능 태그, 참고 가격과 함께 확인합니다.
 - **대화별 모델 변경 또는 봇별 기본값 설정.** 기억 정리와 컨텍스트 인계 같은 백그라운드 작업에는 별도 모델을 사용할 수 있습니다.
 - **세 API 도메인.** `modelflare.dev`, `origin.modelflare.dev`, `cf.modelflare.dev` 중 선택하고 설정에서 응답 시간을 비교하세요. AnyModelBot은 자동으로 전환하지 않습니다.
-- **사용한 만큼 결제.** 지갑 잔액, 잔액 부족 알림, 일별 사용량, 봇별 예산 키를 제공합니다. AnyModelBot에는 구독료가 없습니다.
+- **사용한 만큼 결제.** 지갑 잔액, 잔액 부족 알림, 일별 사용량, 봇별 예산 키를 제공합니다. AnyModelBot 자체에는 구독료가 없습니다.
 
 <p align="center">
   <img src="docs/assets/features/first-run.gif" alt="첫 실행: Modelflare 로그인 클릭, 브라우저에서 승인, 앱으로 돌아와 모델 목록 확인 및 첫 메시지 전송" width="100%">
@@ -264,7 +258,7 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 
 ## 🧠 기억을 이어 가고 어디서든 연결됩니다
 
-- **대화가 바뀌어도 이어지는 기억.** 봇은 팀, 봇, 그룹의 세 수준으로 Markdown 기억을 관리하고 비밀 정보로 보이는 내용은 걸러냅니다.
+- **대화가 바뀌어도 이어지는 기억.** 봇, 그룹, 팀이 각자의 기억을 Markdown으로 가지며 서로 섞이지 않습니다. 비밀번호나 키로 보이는 내용은 기억하지 않습니다.
 - **긴 대화도 계속 편하게.** 컨텍스트 관리자가 한도에 도달하기 전에 압축하거나 인계 요약과 함께 새 구간을 시작합니다.
 - **모든 봇이 계정 공유.** 설정에서 WeChat, Feishu, Telegram, Slack, Discord, Notion 계정을 한 번 추가하면 모든 봇이 공유합니다. 서비스마다 여러 계정과 별칭을 사용할 수 있습니다. 채팅 앱에서 `/bot name`을 한 번 보내 다른 봇으로 전환하거나 봇에게 Notion과 Feishu 메시지를 읽게 하세요.
 - **WeChat과 Feishu.** QR 코드로 WeChat을 연결하거나 실시간 응답 카드를 지원하는 Feishu 봇을 연결하세요. WeChat에서도 이미지와 파일을 주고받을 수 있습니다.
@@ -298,13 +292,13 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 
 # 🆚 AnyModelBot과 Grok Bot, OpenAI dots, Claude Duet 비교
 
-2026년 하반기 xAI의 [Grok Bot](https://x.ai/bot), OpenAI의 [dots](https://openai.com/index/introducing-dots/), Anthropic의 Claude Duet으로 상시 작동 개인 AI 에이전트가 주목받았습니다. 상황을 지켜보고 백그라운드에서 일하며 결정이 필요하면 사용자에게 묻습니다. AnyModelBot도 같은 종류의 일을 오픈 소스로, 내 기기에서, 원하는 모델로 수행합니다.
+2026년 하반기에 xAI의 [Grok Bot](https://x.ai/bot), OpenAI의 [dots](https://openai.com/index/introducing-dots/), Anthropic의 Claude Duet이 잇따라 출시되었습니다. 모두 백그라운드에서 나를 대신해 일하고, 결정이 필요할 때 물어보는 AI입니다. AnyModelBot도 같은 종류의 일을 다른 방식으로 합니다. 오픈 소스이고, 내 기기에서 실행하며, 다양한 모델을 사용할 수 있습니다.
 
 | | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
 | :--- | :--- | :--- | :--- | :--- |
 | 오픈 소스 | ✅ MIT | — | — | — |
-| 에이전트 실행 위치 | 내 컴퓨터 또는 서버 | xAI 클라우드 컴퓨터 | OpenAI 클라우드 컴퓨터 | Anthropic 클라우드 |
-| 모델 | GPT, Claude, Gemini, Grok, DeepSeek, Kimi, GLM 등 70개 이상(Modelflare 또는 공식 API 경유) | 주로 xAI Grok 모델 | OpenAI 모델 | Claude(Opus 5.5) |
+| 실행 위치 | 내 컴퓨터 또는 서버 | xAI 클라우드 컴퓨터 | OpenAI 클라우드 컴퓨터 | Anthropic 클라우드 |
+| 모델 | GPT, Claude, Gemini, Grok 등(Modelflare 또는 공식 API 경유) | 주로 xAI Grok 모델 | OpenAI 모델 | Claude(Opus 5.5) |
 | 비용 | 앱 무료, 모델은 토큰 단위 과금 | 구독 | ChatGPT Pro / Business Premium 구독 | Claude Pro / Max 구독 |
 | 이용 경로 | 데스크톱 앱(Windows, macOS, Linux), Docker, WeChat, Feishu, Telegram, Slack, Discord | 데스크톱 앱, iPhone | ChatGPT, Slack, Teams | iOS, Android, claude.ai |
 | 제공 상태 | 지금 다운로드 가능 | 베타 | 일부 시장 | 연구 미리 보기, 미국 대기 명단 |

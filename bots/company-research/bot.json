@@ -10,11 +10,11 @@
     "ru": "Исследование компаний"
   },
   "summary": {
-    "zh-CN": "本机公司尽调：四路研究、策展、简报与可溯源报告/PDF",
-    "en": "Local company diligence with parallel research, curation, and sourced reports",
-    "ja": "手元のデバイスで企業を調査：4 方面のリサーチ、選別、要約、出典付きレポートと PDF",
-    "ko": "내 기기에서 기업 실사: 네 방향 조사, 선별, 브리핑, 출처 있는 보고서와 PDF",
-    "ru": "Изучает компании на вашем устройстве и пишет отчёт со ссылками на источники"
+    "zh-CN": "在你的电脑上做公司尽调，生成可追溯的简报和 PDF。",
+    "en": "Company research on your computer, with sourced briefings and PDF reports.",
+    "ja": "手元のパソコンで企業を調査し、出典付きの要約と PDF レポートを作成します。",
+    "ko": "내 컴퓨터에서 기업을 실사하고 출처가 있는 브리핑과 PDF를 만듭니다.",
+    "ru": "Изучает компании на вашем компьютере: сводки и PDF со ссылками на источники."
   },
   "about": {
     "zh-CN": [

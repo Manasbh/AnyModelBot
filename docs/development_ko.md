@@ -2,7 +2,7 @@
 
 [简体中文](./development.md) | [English](./development_en.md) | [日本語](./development_ja.md) | 한국어 | [Русский](./development_ru.md)
 
-소스에서 AnyModelBot을 실행하거나 패키징하고 기여하려는 분을 위한 안내입니다. 앱을 사용하기만 하려면 [릴리스](https://github.com/modelflare-ai/AnyModelBot/releases)에서 설치 파일을 받으세요. [README](../README_ko.md#-다운로드)를 참고하세요.
+소스에서 AnyModelBot을 실행하거나 패키징하고 기여하려는 분을 위한 안내입니다. 앱을 사용하기만 하려면 [릴리스](https://github.com/modelflare-ai/AnyModelBot/releases)에서 설치 파일을 받으세요. [README](../README_ko.md#-다운로드-및-실행)를 참고하세요.
 
 - 봇은 역할, 기본 모델, 기억으로 구성됩니다. 계정은 전역 설정(설정 › 연결)으로 관리하며 모든 봇이 공유합니다. 서비스별 계정 수는 자유롭게 추가할 수 있습니다. 한 사람이 개인적으로 사용하는 환경을 대상으로 합니다.
 - 모델은 Modelflare 계정 또는 내 공식 API 키로 사용합니다. [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)에서 제공합니다. 처음 실행할 때 로그인하거나 가입하면 모델 목록이 자동으로 나타납니다. 요청은 내장 [magpie](https://github.com/yetone/magpie) 게이트웨이를 거칩니다.

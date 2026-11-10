@@ -29,7 +29,7 @@ export default {
   },
   "copyright": "© 2026 AnyModelBot · MIT",
   "art": "Character art © the AnyModelBot project",
-  "tagline": "AI teammates that live on your machine. One key for every major model — swap brains any time.",
+  "tagline": "A team of AI bots that runs on your computer. Sign in with Modelflare — one key for the leading models.",
   "featured": "Featured on",
   "featuredMore": "Show all {count}",
   "featuredLess": "Show less",

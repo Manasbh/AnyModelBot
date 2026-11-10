@@ -1,7 +1,7 @@
 export default {
   "h2": "하나의 키로",
   "h2dim": "모든 모델을.",
-  "lead": "어떤 두뇌를 쓸지도 내 선택입니다. 봇마다 다른 모델을 지정하고 언제든 바꾸세요.",
+  "lead": "Modelflare에 로그인하면 이 키를 받을 수 있습니다. 봇마다 다른 모델을 쓰고 언제든 바꿀 수 있습니다.",
   "marqueeLabel": "Modelflare의 제공업체와 텍스트 모델",
   "scenarios": {
     "copy": "카피 작성",
@@ -14,7 +14,7 @@ export default {
     "research": "이 논문 세 편의 결론을 요약해 줘."
   },
   "answer": {
-    "copy": "‘내 컴퓨터에 사는 AI 동료.’ 두 가지 더 제안할까요?",
+    "copy": "‘내 컴퓨터에서 실행하는 AI 봇 팀.’ 두 가지 더 제안할까요?",
     "code": "반복문이 <=를 사용해 마지막에 arr[len]을 읽습니다. <로 바꾸세요.",
     "research": "세 논문 모두 데이터 품질이 규모보다 중요하다고 봅니다. 평가 방식에는 이견이 있습니다."
   },
@@ -24,5 +24,5 @@ export default {
   "keyOne": "하나의 키",
   "keyAll": "모델 {modelCount}개 · 제공업체 {vendorCount}곳",
   "priceLine": "{model} · 입력 {input} · 출력 {output} / 100만 토큰",
-  "cta": "Modelflare 키 발급 →"
+  "cta": "Modelflare 로그인 →"
 };

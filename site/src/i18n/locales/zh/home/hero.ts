@@ -1,9 +1,9 @@
 export default {
-  "h1a": "你的 AI 搭子",
+  "h1a": "你的 AI 机器人团队",
   "h1pre": "",
-  "h1mark": "住在你的电脑里",
+  "h1mark": "跑在自己的电脑上",
   "h1b": "",
-  "lead": "登录 Modelflare，就能用 GPT、Claude 等模型。\n整理文件、查资料、做可编辑的 PPT，都可以交给它。",
+  "lead": "登录 Modelflare，就能用 GPT、Claude 等模型。\n不同的事交给不同的机器人，也可以让它们一起做。",
   "demo": "看演示",
   "github": "在 GitHub 上查看，{stars} 颗星",
   "trust": [
@@ -13,7 +13,7 @@ export default {
     "Windows / macOS / Linux"
   ],
   "appUiNote": "",
-  "eyebrow": "它是谁，由你来写",
+  "eyebrow": "每个机器人，由你来定义",
   "stage": {
     "task": "把下载里的发票整理进「报销」。",
     "invoice": "发票_03.pdf",

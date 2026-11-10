@@ -11,7 +11,7 @@
   </picture>
 </h1>
 
-<p align="center"><b>自分のパソコンで動く、自分だけの AI ボット。好きなモデルを、使った分だけ。</b></p>
+<p align="center"><b>自分のパソコンで動く AI ボットのチーム。好きなモデルを、使った分だけ。</b></p>
 
 <p align="center">
   <a href="https://anymodel.bot/ja/">公式サイト</a> |
@@ -48,29 +48,23 @@
 
 # 🤖 AnyModelBot
 
-AnyModelBot は Windows、macOS、Linux で動く、ローカルを中心とした AI エージェントアプリです。ボットごとに役割、既定のモデル、ワークスペース、記憶を持ちます。アプリのほか、WeChat、Feishu、Telegram、Slack、Discord からも話しかけられます。ファイルの読み書き、コマンド実行、デスクトップ操作を任せることができ、ワークスペースの外で操作するときは承認を求めます。
+AnyModelBot は、Windows、macOS、Linux のパソコンで動く AI ボットのチームです。ボットごとに役割、既定のモデル、ワークスペース、記憶を持ちます。アプリ内で会話できるほか、WeChat、Feishu、Telegram、Slack、Discord にも接続できます。ファイルの読み書きやコマンド実行に加え、許可すればデスクトップも操作します。ワークスペースの外に書き込むときは、先に確認します。
 
-会話、記憶、ファイル、API キーは自分の端末に保存します。モデルは [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)（一つのアカウントで好きなモデルをトークン単位の従量料金で利用）から、または自分の公式 API キーで OpenAI、Anthropic、Google などから直接利用できます。AnyModelBot 自体にサブスクリプション料金はありません。
+会話、記憶、ファイル、API キーは自分の端末に残ります。モデルは [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)（ログインして従量課金で利用）経由で使うか、自分の公式 API キーで提供元に直接接続できます。AnyModelBot 自体にサブスクリプション料金はありません。
 
-xAI の Grok Bot、OpenAI の dots、Anthropic の Claude Duet と同じく、バックグラウンドで働き、判断が必要になったら呼びかける常駐型の個人 AI エージェントです。AnyModelBot は MIT ライセンスのオープンソースで、自分のパソコンやサーバー上で動き、GPT、Claude、Gemini、Grok など好きなモデルを使えます。特定の事業者の定額契約に縛られず、使った分だけ支払います（[詳しい比較](#-anymodelbot-と-grok-botopenai-dotsclaude-duet-の比較)）。
+インストールすればすぐに使えます。バックグラウンドタスク、定期ルール、あなたの確認を待つ項目は標準で備えています。
 
-追加設定なしで Super Agent として使えます。バックグラウンドタスク、定期ルール、「あなたの対応待ち」を標準で備えています。設計は DeepSeek の [super-agent プロトタイプ](https://github.com/deepseek-ai/dsh-superagent-prototype) を参考にしており、エージェントは [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 上で動きます（[詳しい紹介・中国語](./docs/blog/superagent.md)）。
-
-📥 [ダウンロード](#-ダウンロード) · 🌠 [画面紹介](#-画面紹介) · 🌟 [主な機能](#-主な機能) · 🆚 [比較](#-anymodelbot-と-grok-botopenai-dotsclaude-duet-の比較) · 🔐 [プライバシー](#-仕組みとプライバシー)
+📥 [ダウンロード](#-ダウンロードと実行) · 🌠 [画面紹介](#-画面紹介) · 🌟 [主な機能](#-主な機能) · 🆚 [比較](#-anymodelbot-と-grok-botopenai-dotsclaude-duet-の比較) · 🔐 [プライバシー](#-仕組みとプライバシー)
 
 ⭐ AnyModelBot が気に入ったら、リポジトリにスターを付けて新しいリリースをチェックしてください。
 
 ---
 
 <a href="https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme">
-  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare：安定性と低価格を両立する LLM・画像・動画 AI ゲートウェイ。GPT 割引グループは 0.015 倍、Claude は 0.03 倍。OpenAI グループのキャッシュヒット率を 65%・75%・85% 保証し、不足分を補償">
+  <img src="docs/assets/modelflare/modelflare-banner-en.webp" width="100%" alt="Modelflare のバナー：Modelflare に登録">
 </a>
 
-いちばん手軽なのは **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)** です。アカウントは一つで済み、提供元ごとにキーを申請する必要はありません（提供元に直接接続する場合は[好きなモデルを](#-modelflare-または公式-api-で好きなモデルを)を参照）。性能を落とさない安定したモデルと世界最先端のモデルを、より低い費用で利用できます。Modelflare は米国企業 Havenbyte LLC が運営し、登録開発者は 20 万人以上です。一つの API キーで、GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM など 13 社のテキスト・画像・動画モデルを 70 種類以上利用できます。OpenAI、Anthropic、Gemini などの一般的な API 形式に対応しています。リクエストを複数の提供元へ振り分け、失敗時は自動的に別経路を試します。すべてのリクエストの使用量と費用を記録し、公開料金表に基づきトークン単位で請求します。
-
-特徴の一つが **キャッシュ補償** です。OpenAI の価格優先・安定・プレミアム各グループでは、日次キャッシュヒット率 65%・75%・85% を保証します。対象リクエストが基準に届かなかった場合、差額をクレジットで補償します。
-
-**期間限定の特典**：指定額を一度にチャージすると、料金倍率 0.015 倍の GPT 割引グループと 0.03 倍の Claude 割引グループが利用可能になります。個人プロジェクト、機能テスト、軽い用途向けです。必要額や適用条件は Modelflare のサイトで確認してください。[こちら](https://modelflare.dev/sign-up?utm_source=anymodelbot&utm_campaign=amb_readme) から登録できます。
+いちばん手軽なのは **[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)** です。ログインすればモデルを使え、提供元ごとにキーを申請する必要はありません（提供元に直接接続する場合は[好きなモデルを](#-modelflare-または公式-api-で好きなモデルを)を参照）。利用できるモデル、料金、実施中のキャンペーンは [Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme) と[料金表](https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme)でご確認ください。
 
 **Bot クレジット**：新規登録で Bot クレジットをプレゼントし、Modelflare のサブスクリプションではプランのクレジットの 10% を Bot クレジットとして追加します。最新の条件は Modelflare のサイトで確認してください。Bot クレジットは AnyModelBot でのみ使え、アプリからのリクエストで優先して使われます。残りは左下で確認できます。
 
@@ -89,7 +83,7 @@ xAI の Grok Bot、OpenAI の dots、Anthropic の Claude Duet と同じく、�
 
 ---
 
-# 📥 ダウンロード
+# 📥 ダウンロードと実行
 
 利用する環境を選んでください。各リリースページに全インストーラーと `SHA256SUMS` ファイルを掲載しています。
 
@@ -150,10 +144,10 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/agent-dark.webp">
-  <img src="docs/assets/screenshots/agent-light.webp" alt="エージェント画面：ファイル操作の手順一覧と、ワークスペース外への書き込みを求める承認カード" width="100%">
+  <img src="docs/assets/screenshots/agent-light.webp" alt="ボット画面：ファイル操作の手順一覧と、ワークスペース外への書き込みを求める承認カード" width="100%">
 </picture>
 
-<p align="center"><i>エージェントの作業を一つずつ確認できます。ワークスペース外の操作は承認を待ちます。</i></p>
+<p align="center"><i>ボットの作業を一つずつ確認できます。ワークスペース外の操作は承認を待ちます。</i></p>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/models-dark.webp">
@@ -190,11 +184,11 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 ボットは単なるチャット画面ではありません。役割、既定のモデル、専用のワークスペースと記憶を持ちます。
 
 - **必要な数だけ作成。** ボットごとに役割、モデル、ワークスペース、アバターを設定できます。
-- **どんな相手にするかは自由。** 役割は文章で指定し、テンプレートは出発点として使えます。6 種類のアバターは見た目だけを変え、機能には影響しません。
+- **ボットの一つひとつを、あなたが決める。** 役割は文章で指定し、テンプレートは出発点として使えます。6 種類のアバターは見た目だけを変え、機能には影響しません。
 - **ファイルを扱う実作業。** ファイルの読み書きやサンドボックス内でのコマンド実行を行い、成果物をファイルとして会話に返します。
-- **ボットごとに 3 段階の権限。** *読み取り専用*、*ワークスペースへの書き込み*（既定：自分のフォルダー内だけ変更し、外は確認）、*フルアクセス*（サンドボックスなし、再帰的な削除は確認）を選べます。
+- **ボットごとに 3 段階の権限。** *読み取り専用*、*ワークスペースへの書き込み*（既定：自分のフォルダー内だけ変更し、ワークスペースの外に書き込むときは先に確認）、*フルアクセス*（サンドボックスなし。フォルダーを丸ごと削除する前には確認）を選べます。
 - **スキルのインポート。** 「ボット設定 → スキル」で `SKILL.md` を含む ZIP（1 パッケージにつき 1 スキル、最大 20 MB）を選び、確認して追加します。表示、有効化、無効化、削除に対応し、同名のスキルを再インポートすると確認後に置き換えられます。変更は実行中の作業終了後に反映されます。 [スキルの使い方](./docs/skills_ja.md).
-- **承認カードで確認。** 範囲外の操作は止まり、回答を待ちます。
+- **承認カードで確認。** ワークスペースの外に書き込む操作は止まり、回答を待ちます。
 - **再起動後も状況が分かる。** 終了やクラッシュの際に処理中だったメッセージは、次の起動時に会話内で通知します。必要なら再送でき、自動でやり直すことはありません。
 - **グループチャット。** グループに複数のボットを追加できます。@ で指定したボットが答え、指定しなければ最後に回答したボットが続けます。ボットが別のメンバーを @ して引き継ぐこともできます。モデル、ワークスペース、記憶、費用はボットごとに分けて管理します。
 - **チャット履歴の検索。** サイドバーから端末に保存された全メッセージを検索し、Bot・会話・チャネル・期間で絞り込んで元のメッセージへ移動できます。`Ctrl/Cmd+Shift+F` で全体検索、`Ctrl/Cmd+F` で現在のチャットを検索。モデル呼び出しは不要です。入力前の検索ダイアログには、最近のチャットを日付ごとに表示します。
@@ -206,14 +200,14 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 
 ## 🧩 既製の Bot
 
-人設を書かなくても、「見つける」にある既製の Bot をすぐに使えます。Bot にはそれぞれ専用の画面があり、開いたときはサンプルを表示し、最初のメッセージを送ったときにインストールします。
+役割を自分で書かなくても、「見つける」にある既製の Bot をすぐに使えます。Bot にはそれぞれ専用の画面があり、開いたときはサンプルを表示し、最初のメッセージを送ったときにインストールします。
 
 公式 Bot の画面、サンプル、ペルソナ、スキルはインストーラーに同梱されています。初回表示やインストール時に Bot パッケージをダウンロードする必要はありません。更新はアプリとともに配信され、既存のプロジェクトデータは保持されます。モデル呼び出しやオンライン調査にはネット接続が必要です。どのボットもデスクトップのワークスペースで、左に作品の一覧、右に内容を表示します。「新規」はガイド付きフォームで始められ、上部のバーで会話全体に切り替えられます。入力欄ではモデルも選べます。
 
-- **企業リサーチ：** 手元のデバイスで企業を調査：4 方面のリサーチ、選別、要約、出典付きレポートと PDF
-- **PPT マスター：** 文書やテーマから編集可能な PPTX を作成。テンプレート作成や既存の PPT の編集も
-- **映像スタジオ：** 短編動画・連続ドラマの脚本、素材、絵コンテ、音声、完成映像
-- **米国株リサーチ：** 米国上場企業の決算と SEC 提出書類を調べ、すべての数字をたどれるレポートを作成
+- **企業リサーチ：** 手元のパソコンで企業を調査し、出典付きの要約と PDF レポートを作成します。
+- **PPT マスター：** 文書やテーマから編集可能なスライドを作成。既存のプレゼン資料も編集できます。
+- **映像スタジオ：** 短編動画と連続ドラマを、脚本・絵コンテから音声・編集・完成まで制作します。
+- **米国株リサーチ：** 米国上場企業の決算と SEC 提出書類を調べ、数字の出典をたどれるレポートを作成します。
 
 映像スタジオには AnyModelBot 0.1.23 以降と、端末上の Python 3.10+、FFmpeg（ffprobe を含む）が必要です。AI 画像・動画は Modelflare の従量課金で生成し、プロジェクトと素材は端末に保存します。
 
@@ -230,7 +224,7 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 - **いつでも一時停止。** ボット設定 › ボットからのメッセージのスイッチで、会話を続けたままバックグラウンド作業を止められます。
 - **自動整理。** タスクと実行履歴は 30 日間保持します。30 日間使われていないタスクフォルダーは確認なしで削除します。詳細に予定日を表示し、「保持」で残せます。履歴は Markdown で書き出せます。
 
-詳しい紹介（中国語）：[AnyModelBot スーパーエージェント](./docs/blog/superagent.md)。
+ランタイムは [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) を基盤とし、設計は DeepSeek の [super-agent プロトタイプ](https://github.com/deepseek-ai/dsh-superagent-prototype) を参考にしています。詳しい紹介（中国語）：[AnyModelBot スーパーエージェント](./docs/blog/superagent.md)。
 
 ## 🖥️ パソコンを操作し、画像や動画を作る
 
@@ -252,7 +246,7 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 - **選択画面は一つ。** GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM などを、コンテキスト長、機能タグ、参考価格とともに表示します。
 - **会話ごとに切り替え、ボットごとに既定値を設定。** 記憶の整理やコンテキストの引き継ぎには別のモデルも使えます。
 - **3 つの API ドメイン。** `modelflare.dev`、`origin.modelflare.dev`、`cf.modelflare.dev` から選び、設定で応答時間を比較できます。AnyModelBot が自動で切り替えることはありません。
-- **従量料金。** ウォレット残高、残高不足の通知、日別使用量、ボット別の予算キーを備えています。AnyModelBot の定額契約は不要です。
+- **従量料金。** ウォレット残高、残高不足の通知、日別使用量、ボット別の予算キーを備えています。AnyModelBot 自体にサブスクリプション料金はありません。
 
 <p align="center">
   <img src="docs/assets/features/first-run.gif" alt="初回起動：Modelflare にログインしてブラウザーで承認し、アプリに戻ってモデル一覧から最初のメッセージを送る" width="100%">
@@ -264,7 +258,7 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 
 ## 🧠 記憶を引き継ぎ、どこからでもつながる
 
-- **会話をまたぐ記憶。** チーム、ボット、グループの 3 層に Markdown で記憶し、秘密情報らしい内容は除外します。
+- **会話をまたぐ記憶。** ボット、グループ、チームがそれぞれ自分の記憶を Markdown で持ち、混ざることはありません。パスワードやキーらしい内容は記憶しません。
 - **長い会話も続けやすく。** コンテキスト管理が上限に近づく前に圧縮するか、引き継ぎ要約を作って新しい区間を始めます。
 - **すべてのボットでアカウントを共有。** WeChat、Feishu、Telegram、Slack、Discord、Notion のアカウントは設定で一度追加すれば共有できます。サービスごとに別名付きで複数登録でき、チャットで `/bot name` を一度送るだけでボットが切り替わります。Notion や Feishu のメッセージを読ませることもできます。
 - **WeChat と Feishu。** WeChat は QR コードで接続します。Feishu は返信が逐次表示されるカードに対応し、WeChat でも画像とファイルを扱えます。
@@ -298,13 +292,13 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 
 # 🆚 AnyModelBot と Grok Bot、OpenAI dots、Claude Duet の比較
 
-2026 年後半、xAI の [Grok Bot](https://x.ai/bot)、OpenAI の [dots](https://openai.com/index/introducing-dots/)、Anthropic の Claude Duet により、常駐型の個人 AI エージェントが注目されるようになりました。状況を見守り、裏で働き、判断が必要になったら尋ねます。AnyModelBot も同じ種類の仕事を、オープンソースで、自分の端末で、好きなモデルを使って行います。
+2026 年後半、xAI の [Grok Bot](https://x.ai/bot)、OpenAI の [dots](https://openai.com/index/introducing-dots/)、Anthropic の Claude Duet が相次いで登場しました。どれも、バックグラウンドであなたの代わりに仕事を進め、判断が必要なときに確認してくれる AI です。AnyModelBot も同じ種類の仕事を、別のやり方で行います。オープンソースで、自分の端末で動き、幅広いモデルを使えます。
 
 | | AnyModelBot | Grok Bot | OpenAI dots | Claude Duet |
 | :--- | :--- | :--- | :--- | :--- |
 | オープンソース | ✅ MIT | — | — | — |
 | 実行場所 | 自分のパソコンまたはサーバー | xAI のクラウドコンピューター | OpenAI のクラウドコンピューター | Anthropic のクラウド |
-| モデル | GPT、Claude、Gemini、Grok、DeepSeek、Kimi、GLM など 70 種類以上（Modelflare または公式 API 経由） | 主に xAI の Grok | OpenAI のモデル | Claude（Opus 5.5） |
+| モデル | GPT、Claude、Gemini、Grok など（Modelflare または公式 API 経由） | 主に xAI の Grok | OpenAI のモデル | Claude（Opus 5.5） |
 | 費用 | アプリ無料、モデルはトークン単位 | 定額契約 | ChatGPT Pro / Business Premium 契約 | Claude Pro / Max 契約 |
 | 利用手段 | デスクトップ（Windows、macOS、Linux）、Docker、WeChat、Feishu、Telegram、Slack、Discord | デスクトップ、iPhone | ChatGPT、Slack、Teams | iOS、Android、claude.ai |
 | 提供状況 | 今すぐダウンロード可能 | ベータ | 一部地域 | 研究プレビュー、米国の待機リスト |

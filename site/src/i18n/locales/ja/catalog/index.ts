@@ -13,7 +13,7 @@ export default {
   "cta": "AnyModelBot をダウンロード",
   "strip": {
     "title": "既製の Bot から始めることもできます",
-    "lead": "企業調査、プレゼンテーション、短編動画や連続ドラマの制作に。「見つける」から専用画面を持つ Bot を選べます。",
+    "lead": "調査、スライド、短編動画に。「見つける」から選べます。",
     "all": "すべての Bot を見る"
   },
   "minimumVersion": "AnyModelBot {version} 以降が必要です。",

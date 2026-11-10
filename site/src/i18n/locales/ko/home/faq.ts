@@ -14,7 +14,7 @@ export default {
     },
     {
       "q": "Grok Bot, OpenAI dots, Claude Duet과 무엇이 다른가요?",
-      "a": "모두 백그라운드에서 일하고 사용자의 결정이 필요하면 물어보는 상시 작동 개인 AI 에이전트입니다. AnyModelBot은 MIT 오픈 소스이며 내 컴퓨터나 서버에서 실행한다는 점이 다릅니다. GPT, Claude, Gemini, Grok 등을 지원하며 앱은 무료이고 모델은 사용한 만큼 결제합니다. 특정 업체의 구독에 묶이지 않습니다. GitHub README에 전체 비교표가 있습니다. Grok Bot, dots, Claude Duet은 각각 xAI, OpenAI, Anthropic의 제품이며 AnyModelBot과는 제휴 관계가 없습니다."
+      "a": "모두 백그라운드에서 나를 대신해 일하고, 결정이 필요할 때 물어보는 AI입니다. AnyModelBot은 MIT 오픈 소스이며 내 컴퓨터나 서버에서 실행한다는 점이 다릅니다. GPT, Claude, Gemini, Grok 등을 지원하며 앱은 무료이고 모델은 사용한 만큼 결제합니다. 특정 업체의 구독에 묶이지 않습니다. GitHub README에 전체 비교표가 있습니다. Grok Bot, dots, Claude Duet은 각각 xAI, OpenAI, Anthropic의 제품이며 AnyModelBot과는 제휴 관계가 없습니다."
     },
     {
       "q": "여섯 캐릭터는 어떤 차이가 있나요?",
@@ -41,7 +41,7 @@ export default {
       "a": "네. 접근을 허용하면 됩니다. 설정 › 연결에서 원하는 만큼 계정을 추가한 뒤 번호나 별칭으로 봇에게 요청하세요. 봇은 페이지를 읽고 수정할 수 있지만 삭제할 수는 없습니다. 읽기 전용 봇은 읽기만 가능합니다."
     },
     {
-      "q": "Modelflare 계정이 없어요.",
+      "q": "Modelflare 계정이 없으면 어떻게 하나요?",
       "a": "처음 실행할 때 Modelflare 로그인 / 회원가입을 누르고 브라우저에서 가입하세요. 돌아오면 자동으로 연결되므로 키를 복사할 필요가 없습니다. Docker나 원격 서버에서는 로그인 후의 링크를 붙여 넣으세요. 세 가지 API 도메인을 사용할 수 있으며 설정에서 응답 시간을 비교하고 선택할 수 있습니다. 계정 없이도 쓸 수 있습니다. ‘내 API 키 사용’을 누르고 OpenAI, Anthropic, Google Gemini, DeepSeek 등의 공식 키를 입력하면 모델 요청이 제공업체로 바로 전송됩니다."
     },
     {

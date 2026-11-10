@@ -1,7 +1,7 @@
 export default {
   "h2": "One key.",
   "h2dim": "Every model.",
-  "lead": "The brain is your call too: each bot can run a different model, and you can swap any time.",
+  "lead": "Sign in with Modelflare to get this key. Each bot can use a different model, and you can switch any time.",
   "marqueeLabel": "Vendors and text models on Modelflare",
   "scenarios": {
     "copy": "Write copy",
@@ -14,7 +14,7 @@ export default {
     "research": "Summarise the conclusions of these three papers."
   },
   "answer": {
-    "copy": "“AI teammates that live on your machine.” — want two more options?",
+    "copy": "“A team of AI bots that runs on your computer.” — want two more options?",
     "code": "The loop uses <=, so the last pass reads arr[len]. Switch it to <.",
     "research": "All three find data quality beats scale; they disagree on evaluation."
   },
@@ -24,5 +24,5 @@ export default {
   "keyOne": "One key",
   "keyAll": "{modelCount} models · {vendorCount} vendors",
   "priceLine": "{model} · input {input} · output {output} / 1M tokens",
-  "cta": "Get a Modelflare key →"
+  "cta": "Sign in with Modelflare →"
 };

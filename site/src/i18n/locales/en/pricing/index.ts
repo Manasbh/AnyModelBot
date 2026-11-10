@@ -1,6 +1,6 @@
 export default {
   "eyebrow": "PRICING · PAY PER USE",
-  "h2mark": "No monthly fee",
+  "h2mark": "No subscription",
   "h2rest": ". Pay only for what you use.",
   "lead": "AnyModelBot is free and open source — no subscription, no tiers. Model usage is billed by Modelflare per token, and the price list is fully public.",
   "source": "Prices come from modelflare.dev/pricing, fetched {fetchedAt} (UTC+8), version {pricingVersion}.",
@@ -31,7 +31,7 @@ export default {
       "cta": "See the full price list ↗"
     },
     "month": {
-      "tag": "What a month costs",
+      "tag": "Estimated monthly usage",
       "unit": "/ month",
       "note": "Example: 50 messages/day, 3,000 input + 600 output tokens each, {model}.",
       "points": [
@@ -52,8 +52,8 @@ export default {
     "rows": [
       [
         "How it's billed",
-        "Pay for what you use, no monthly fee",
-        "Pay a monthly fee; the tier sets how much you can use"
+        "Pay for what you use, no subscription",
+        "Pay a subscription fee; the tier sets how much you can use"
       ],
       [
         "Unused portion",
@@ -71,7 +71,7 @@ export default {
         "Often stated as relative multiples of an allowance"
       ]
     ],
-    "note": "“Subscription tiers” describes the common approach of monthly-tier products, not any specific product or its actual prices."
+    "note": "“Subscription tiers” describes the common approach of subscription-fee products, not any specific product or its actual prices."
   },
   "table": {
     "more": "See prices for all {textCount} text models →",

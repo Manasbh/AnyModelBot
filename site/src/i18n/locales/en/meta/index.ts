@@ -1,6 +1,6 @@
 export default {
   "lang": "en",
-  "title": "AnyModelBot — Local AI bots, any model, pay per use",
-  "description": "An open-source, local-first alternative to Grok Bot, OpenAI dots and Claude Duet. Run AI bots on your own computer or server, with the name, persona and model up to you. Chats, memory, files and keys stay on your device; one Modelflare key unlocks GPT, Claude, Gemini and more. The app is free and you pay per use, with a public price list. Desktop, Docker, Slack, Telegram and Discord.",
+  "title": "AnyModelBot — A team of AI bots on your computer, any model, pay per use",
+  "description": "An open-source desktop app for running a team of AI bots on your computer. Each bot can use its own model, memory, and workspace. Sign in with Modelflare or use your own API key, and connect to Slack, Telegram, or Discord. The app is free; model usage is pay-as-you-go.",
   "ogImage": "/og/og-en.png"
 };

@@ -1,7 +1,7 @@
 export default {
   "h2": "常见问题。",
   "h2dim": "答得直接，不绕弯。",
-  "ask": "有什么想问的？点开就有答案。",
+  "ask": "有问题？点开就有答案。",
   "more": "没找到答案？去文档里翻翻",
   "items": [
     {
@@ -14,7 +14,7 @@ export default {
     },
     {
       "q": "和 Grok Bot、OpenAI dots、Claude Duet 有什么不同？",
-      "a": "它们是同一类常驻的个人 AI 智能体，在后台替你干活，需要你拍板时再来问你。不同的是，AnyModelBot 开源（MIT），跑在你自己的电脑或服务器上；GPT、Claude、Gemini、Grok 等模型都能用，App 免费，模型按用量付费，不绑定某一家的订阅。GitHub 上的 README 有详细对比表。Grok Bot、dots、Claude Duet 分别是 xAI、OpenAI、Anthropic 的产品，AnyModelBot 与它们没有关联。"
+      "a": "它们也是常驻后台、替你干活的 AI，需要你拍板时再来问你。不同的是，AnyModelBot 开源（MIT），跑在你自己的电脑或服务器上；GPT、Claude、Gemini、Grok 等模型都能用，App 免费，模型按用量付费，不绑定某一家的订阅。GitHub 上的 README 有详细对比表。Grok Bot、dots、Claude Duet 分别是 xAI、OpenAI、Anthropic 的产品，AnyModelBot 与它们没有关联。"
     },
     {
       "q": "六个角色有什么区别？分别负责什么？",
@@ -30,7 +30,7 @@ export default {
     },
     {
       "q": "能在手机上用吗？",
-      "a": "暂无独立 App；用微信或飞书和它聊。"
+      "a": "目前没有独立 App，可以用微信或飞书和它聊。"
     },
     {
       "q": "一个微信账号能和好几个机器人聊吗？",
@@ -41,7 +41,7 @@ export default {
       "a": "能，你授权之后才可以。在 设置 › 连接 里添加账号，可以加多个，然后对任何机器人说“看我第二个飞书的消息”。Notion 能读能写，不能删除页面；飞书只读。只读权限的机器人只能读。"
     },
     {
-      "q": "我没有 Modelflare 账号？",
+      "q": "没有 Modelflare 账号怎么办？",
       "a": "首次启动点「登录 / 注册 Modelflare」，在浏览器里注册一个就行，回到 App 会自动连好，不用复制 Key。Docker 或远程部署登录后，把链接贴回应用即可。三个 API 域名均可使用，可在设置中测速并自行选择。也可以不注册：点「使用自己的 API Key」，填 OpenAI、Anthropic、Google Gemini、DeepSeek 等厂商的官方 Key，模型请求直连厂商。"
     },
     {

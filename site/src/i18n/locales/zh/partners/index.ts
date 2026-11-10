@@ -1,6 +1,6 @@
 export default {
   "pageTitle": "推广 AnyModelBot，拿持续佣金",
-  "pageDescription": "电脑里的 AI 搭子，一个 Key 用上主流模型。推荐给朋友，持续拿佣金。",
+  "pageDescription": "跑在你电脑上的 AI 机器人团队，一个 Key 用上主流模型。推荐给朋友，持续拿佣金。",
   "footer": "合作伙伴",
   "eyebrow": "合作伙伴计划",
   "h1": "推广 AnyModelBot，",

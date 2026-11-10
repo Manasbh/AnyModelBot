@@ -2,7 +2,7 @@
 
 简体中文 | [English](./development_en.md) | [日本語](./development_ja.md) | [한국어](./development_ko.md) | [Русский](./development_ru.md)
 
-这份文档给想从源码运行、打包或参与开发的人看。普通用户直接从 [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) 下载安装包即可，见 [README](../README.md#-下载)。
+这份文档给想从源码运行、打包或参与开发的人看。普通用户直接从 [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) 下载安装包即可，见 [README](../README.md#-下载与运行)。
 
 - 一个机器人 = 人设 + 默认模型 + 记忆。账号是全局的（设置 › 连接），所有机器人共用，同一个服务可以加多个。定位：自用、单用户。
 - 模型来自 Modelflare 账户或用户自己的官方 API Key。[Modelflare](https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme)：首次启动登录（或注册）Modelflare 账户，模型自动列出。请求经过内置的 [magpie](https://github.com/yetone/magpie) 网关转发。

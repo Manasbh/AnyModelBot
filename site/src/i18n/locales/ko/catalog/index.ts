@@ -13,7 +13,7 @@ export default {
   "cta": "AnyModelBot 내려받기",
   "strip": {
     "title": "준비된 봇으로 바로 시작할 수도 있습니다",
-    "lead": "기업을 조사하고 프레젠테이션이나 숏폼·시리즈 드라마를 만드세요. 「둘러보기」에서 전용 화면을 갖춘 봇을 선택할 수 있습니다.",
+    "lead": "조사, 슬라이드, 숏폼 영상까지. 「둘러보기」에서 골라 쓰세요.",
     "all": "모든 봇 보기"
   },
   "minimumVersion": "AnyModelBot {version} 이상이 필요합니다.",

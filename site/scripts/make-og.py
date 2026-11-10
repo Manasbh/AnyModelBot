@@ -16,11 +16,11 @@ MONO = os.path.join(SITE, "node_modules/geist/dist/fonts/geist-mono/GeistMono-Me
 BOTS = ["主-蓝色", "黄色小萌", "绿草", "红魔", "紫钻", "橙色探险者"]
 
 COPY = {
-    "zh": {"h1": ["你的 AI 搭子，", "住在你自己的电脑里。"], "mark": "住在你自己的电脑里", "sub": "任意模型，每台设备，数据留在你电脑上。", "chips": ["对话存本机", "按量付费 · App 免费", "MIT 开源"]},
-    "en": {"h1": ["AI teammates that", "live on your machine."], "mark": "live on your machine", "sub": "Any model. Every device. Your data, your machine.", "chips": ["Chats stay local", "Pay per use · App is free", "MIT open source"]},
-    "ja": {"h1": ["あなたの AI パートナーを、", "あなたのパソコンに。"], "mark": "あなたのパソコンに", "sub": "好きなモデルで。チャットは手元に保存。", "chips": ["チャットは本機に保存", "アプリ無料・従量課金", "MIT オープンソース"]},
-    "ko": {"h1": ["내 컴퓨터에서 함께하는", "나만의 AI 어시스턴트."], "mark": "나만의 AI 어시스턴트", "sub": "원하는 모델로. 대화는 내 기기에 저장.", "chips": ["대화는 내 기기에", "앱 무료 · 사용량 과금", "MIT 오픈 소스"]},
-    "ru": {"h1": ["Ваш ИИ-помощник", "на вашем компьютере."], "mark": "на вашем компьютере", "sub": "Любая модель. Разговоры хранятся у вас.", "chips": ["История у вас", "Приложение бесплатно", "Открытый код · MIT"]},
+    "zh": {"h1": ["你的 AI 机器人团队，", "跑在自己的电脑上。"], "mark": "跑在自己的电脑上", "sub": "任意模型，每台设备，数据留在你电脑上。", "chips": ["对话存本机", "按量付费 · App 免费", "MIT 开源"]},
+    "en": {"h1": ["Your team of AI bots,", "running on your computer."], "mark": "running on your computer", "sub": "Any model. Every device. Your data, your machine.", "chips": ["Chats stay local", "Pay per use · App is free", "MIT open source"]},
+    "ja": {"h1": ["あなたのパソコンで動く", "AI ボットのチーム。"], "mark": "AI ボットのチーム", "sub": "好きなモデルで。チャットは手元に保存。", "chips": ["チャットは本機に保存", "アプリ無料・従量課金", "MIT オープンソース"]},
+    "ko": {"h1": ["내 컴퓨터에서 실행하는", "나만의 AI 봇 팀."], "mark": "나만의 AI 봇 팀", "sub": "원하는 모델로. 대화는 내 기기에 저장.", "chips": ["대화는 내 기기에", "앱 무료 · 사용량 과금", "MIT 오픈 소스"]},
+    "ru": {"h1": ["Ваша команда ИИ-ботов", "на вашем компьютере."], "mark": "на вашем компьютере", "sub": "Любая модель. Разговоры хранятся у вас.", "chips": ["История у вас", "Приложение бесплатно", "Открытый код · MIT"]},
 }
 
 # Source fonts from google/fonts (SIL OFL), supplied at generation time. The website
@@ -80,6 +80,11 @@ def og(lang):
     head = font(CJK, 64, 600) if lang == "zh" else font(GEIST, 68)
     sub = font(CJK, 28, 400) if lang == "zh" else font(GEIST_R, 28)
     chip = font(CJK, 20, 400) if lang == "zh" else font(MONO, 18)
+    # 标题太长时缩小字号，别压到右边的机器人（x ≥ 760）
+    size = 64 if lang == "zh" else 68
+    while lang not in LOCAL_FONTS and max(d.textlength(line, font=head) for line in c["h1"]) > 680:
+        size -= 1
+        head = font(CJK, size, 600) if lang == "zh" else font(GEIST, size)
     if lang in LOCAL_FONTS:
         face = LOCAL_FONTS[lang]
         if not os.path.isfile(face):
@@ -146,7 +151,7 @@ def wechat_home():
     m = mark(480)
     im.alpha_composite(m, ((S - m.width) // 2, 122))
     d = ImageDraw.Draw(im)
-    d.text((S / 2, 660), "你的 AI 搭子", font=font(CJK, 180, 800), fill=TEXT, anchor="ma")
+    d.text((S / 2, 660), "AI 机器人团队", font=font(CJK, 160, 800), fill=TEXT, anchor="ma")
     d.text((S / 2, 940), "AnyModelBot", font=font(CJK, 96, 700), fill=LIME, anchor="ma")
     out = os.path.join(PUB, "og", "wechat-home.png")
     im.resize((600, 600), Image.LANCZOS).convert("RGB").save(out, optimize=True)

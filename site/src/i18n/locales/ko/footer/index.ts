@@ -29,7 +29,7 @@ export default {
   },
   "copyright": "© 2026 AnyModelBot · MIT",
   "art": "캐릭터 아트 © AnyModelBot 프로젝트",
-  "tagline": "내 컴퓨터에 사는 AI 동료. 하나의 키로 주요 모델을 모두 사용하고 언제든 두뇌를 바꾸세요.",
+  "tagline": "내 컴퓨터에서 실행하는 AI 봇 팀. Modelflare에 로그인하면 하나의 키로 주요 모델을 모두 사용할 수 있습니다.",
   "featured": "소개된 곳",
   "featuredMore": "{count}개 모두 표시",
   "featuredLess": "접기",

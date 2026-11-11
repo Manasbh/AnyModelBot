@@ -199,7 +199,8 @@ npm run fetch:pricing  # 只更新价格快照（失败即退出码 1）
 npm run fetch:github   # 只更新 GitHub 星数（取不到就沿用上一个值）
 npm run releases       # 从 GITHUB_URL 的最新 Release 生成 src/data/releases.json（下载直达 GitHub）
 npm run releases:dir   # 改为从 DOWNLOADS_DIR 里的安装包生成（自己提供下载时用）
-npm run og             # 重新生成 favicon / App 图标 / 各语言 OG 图（Python + Pillow；Noto Sans SC/JP/KR）
+npm run og             # 重新生成各语言 OG 图（Python + Pillow；Noto Sans SC/JP/KR）
+python3 ../scripts/build-app-icons.py site   # 重新生成 favicon / 主屏 / 清单图标（和桌面 App 同一个图标，原图在 anymodelbot_design/icon/）
 # 可单独生成：AMB_OG_FONT_JA=/path/NotoSansJP.ttf AMB_OG_FONT_KO=/path/NotoSansKR.ttf npm run og -- ja ko ru
 npm run bots:avif      # 从原图重新编码机器人精灵图的 AVIF 版（精灵图更新后跑；Python + numpy + Pillow）
 npx tsx scripts/vendor-logos.ts <icons 目录>   # 从 @lobehub/icons-static-svg 重新生成厂商标志（新厂商时跑，用法见脚本开头）

@@ -1,6 +1,7 @@
-# 生成静态图形资源：favicon / App 图标（Eyes 标记，静态居中）与 OG 分享图（zh / en，1200×630）。
+# 生成静态图形资源：各语言的 OG 分享图（1200×630）。
 # 产物提交到 public/；改了文案或标记后手动运行：python3 scripts/make-og.py（需要 Pillow 与 Noto Sans SC）。
 # 中文首页的微信分享方图单独生成：python3 scripts/make-og.py wechat-home
+# favicon / App 图标和桌面 App 是同一个毛绒机器人图标，不在这里画：在仓库根目录运行 python3 scripts/build-app-icons.py site。
 import os
 import sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -54,20 +55,6 @@ def font(path, size, weight=None):
         except Exception:
             pass
     return f
-
-
-def icons():
-    for name, size in [("favicon-32.png", 32), ("apple-touch-icon.png", 180), ("icon-192.png", 192), ("icon-512.png", 512)]:
-        bg = Image.new("RGBA", (size, size), (0, 0, 0, 0) if name.startswith("favicon") else BG + (255,))
-        m = mark(size if name.startswith("favicon") else int(size * 0.78))
-        bg.alpha_composite(m, ((size - m.width) // 2, (size - m.height) // 2))
-        bg.save(os.path.join(PUB, name), optimize=True)
-    # maskable：内容在中心 80% 安全区内
-    size = 512
-    bg = Image.new("RGBA", (size, size), BG + (255,))
-    m = mark(int(size * 0.62))
-    bg.alpha_composite(m, ((size - m.width) // 2, (size - m.height) // 2))
-    bg.save(os.path.join(PUB, "icon-maskable-512.png"), optimize=True)
 
 
 def og(lang):
@@ -164,10 +151,7 @@ if __name__ == "__main__":
     if sys.argv[1:] == ["wechat-home"]:
         wechat_home()
         sys.exit(0)
-    # Specify languages to regenerate only those sharing cards, leaving icons intact.
     selected = sys.argv[1:] or list(COPY)
-    if not sys.argv[1:]:
-        icons()
     for lang in selected:
         if lang not in COPY:
             raise SystemExit(f"Unknown language: {lang}; choose {', '.join(COPY)}")

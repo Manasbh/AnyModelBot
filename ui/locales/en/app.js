@@ -31,7 +31,7 @@ export default {
     themeDark: "Theme: Dark",
     themeDarkKeys: "theme dark night appearance",
     lang: "Language: {name}",
-    langKeys: "language english chinese japanese korean russian 中文 日本語 한국어 Русский",
+    langKeys: "language english chinese japanese korean russian spanish portuguese 中文 日本語 한국어 Русский Español Português",
     switchBot: "Switch to “{name}”",
   },
   lowBalance: "Your Modelflare balance is down to ${amount}",

@@ -1,8 +1,19 @@
 # 更新日志
 
-简体中文 | [English](./CHANGELOG_en.md) | [日本語](./CHANGELOG_ja.md) | [한국어](./CHANGELOG_ko.md) | [Русский](./CHANGELOG_ru.md)
+简体中文 | [English](./CHANGELOG_en.md) | [日本語](./CHANGELOG_ja.md) | [한국어](./CHANGELOG_ko.md) | [Русский](./CHANGELOG_ru.md) | [Español](./CHANGELOG_es.md) | [Português (Brasil)](./CHANGELOG_pt.md)
 
 这里只写用户能感受到的变化。更早的版本见 [GitHub 发布页](https://github.com/modelflare-ai/AnyModelBot/releases)。
+
+## 0.1.32 - 2026-11-11
+
+### 新增
+
+- **西班牙语和葡萄牙语（巴西）：** 应用新增两种界面语言，在「设置 → 常规 → 语言」里选；系统语言是西班牙语或葡萄牙语时自动使用。界面、托盘菜单、机器人发出的系统消息和「更新了什么」都已翻译。
+- **官方 Bot 也有西语和葡语版：** PPT 大师、影视创作室、尽调助手和美股研报的名字、介绍、示例问题、工作台界面和示例内容都有西班牙语和葡萄牙语版本。
+
+### 改进与修复
+
+- 美股研报的图表能读懂用逗号作小数点的数字（如 12,5%），关键指标的涨跌按界面语言的数字格式显示。
 
 ## 0.1.31 - 2026-11-11
 

@@ -199,7 +199,7 @@ npm run fetch:pricing  # 只更新价格快照（失败即退出码 1）
 npm run fetch:github   # 只更新 GitHub 星数（取不到就沿用上一个值）
 npm run releases       # 从 GITHUB_URL 的最新 Release 生成 src/data/releases.json（下载直达 GitHub）
 npm run releases:dir   # 改为从 DOWNLOADS_DIR 里的安装包生成（自己提供下载时用）
-npm run og             # 重新生成 favicon / App 图标 / 五语言 OG 图（Python + Pillow；Noto Sans SC/JP/KR）
+npm run og             # 重新生成 favicon / App 图标 / 各语言 OG 图（Python + Pillow；Noto Sans SC/JP/KR）
 # 可单独生成：AMB_OG_FONT_JA=/path/NotoSansJP.ttf AMB_OG_FONT_KO=/path/NotoSansKR.ttf npm run og -- ja ko ru
 npm run bots:avif      # 从原图重新编码机器人精灵图的 AVIF 版（精灵图更新后跑；Python + numpy + Pillow）
 npx tsx scripts/vendor-logos.ts <icons 目录>   # 从 @lobehub/icons-static-svg 重新生成厂商标志（新厂商时跑，用法见脚本开头）
@@ -242,11 +242,11 @@ docker compose -f site/deploy/compose.yml --env-file site/deploy/.env up -d --no
 
 ## 数据从哪来
 
-- **现成的 Bot**：首页的 `CatalogStrip` 和 `/bots` 共用 `src/data/catalog-bots.json`，由 `npm run sync` 从 `../bots/*/bot.json` 同步名称、简介、说明、示例提问和最低应用版本。影视创作室的入口为 `/bots#printfilm`，其他语言沿用各自的路径前缀。新增或修改 Bot 时，同步更新五种语言 README 的 Bot 列表；依赖和使用条件写在 `src/i18n/locales/<语言>/catalog/index.ts` 的 `requirements` 中。Bot 配置和下架列表变更也会触发官网 CI 检查。
+- **现成的 Bot**：首页的 `CatalogStrip` 和 `/bots` 共用 `src/data/catalog-bots.json`，由 `npm run sync` 从 `../bots/*/bot.json` 同步名称、简介、说明、示例提问和最低应用版本。影视创作室的入口为 `/bots#printfilm`，其他语言沿用各自的路径前缀。新增或修改 Bot 时，同步更新各语言 README 的 Bot 列表；依赖和使用条件写在 `src/i18n/locales/<语言>/catalog/index.ts` 的 `requirements` 中。Bot 配置和下架列表变更也会触发官网 CI 检查。
 - **价格**：构建时请求 `https://modelflare.dev/api/pricing`，用 `src/lib/pricing.ts` 算出默认线路价、分档、条件价线路和官方价（规则与 modelflare.dev/pricing 前端一致：有 `official_input_price` 用它，否则用基础价），写入 `src/data/pricing.snapshot.json`。抓取失败或数据异常时沿用快照，页面显示快照日期。
 - **GitHub 星数**：线上的 builder 每 2 分钟向 GitHub 取一次，写到 `/srv/site/live/stars.json`，不用重新构建；页面打开时取站内的 `/stars.json`（`src/scripts/stars.ts`，缓存 1 分钟），所以数字最多晚 3 分钟左右。`scripts/fetch-github-stars.ts` 在 `npm run build` 时另取一次写进 `src/data/github.json`，作为页面的初始值和 `/stars.json` 取不到时的备用值；取不到就沿用上一个值，不影响构建。不在浏览器里请求 GitHub：不把访客 IP 发给第三方。
 - **机器人**：`scripts/sync-from-app.ts` 从 `../ui/design/bots/*.webp` 复制精灵图、从 `../THIRD_PARTY_NOTICES.md` 同步许可（Docker 构建上下文里没有应用目录，用已提交的副本）；几何（`src/lib/bots.ts`）与 `../ui/components/avatar.js` 的 `BOT_CHARS` 不一致时会警告。头像样式 `src/styles/bots.css` 移植自 `../ui/design/components/avatar.css`。
   - 精灵图另有同分辨率的 AVIF 版（`public/bots/*.avif`，约为 WebP 的一半），支持的浏览器经 `image-set()` 优先用它，其他照旧用 WebP。AVIF 必须从原图编码（`npm run bots:avif`：重跑 `../scripts/build-bot-avatars.py --png` 拿无损精灵图，q58 的画质按 PSNR 不低于 WebP q86），不能拿 WebP 再转。生成时把对应 WebP 的哈希记在 `src/data/bots-avif.json`；WebP 更新了而 AVIF 没重做，`check-images` 会失败。
   - 精灵图分档：`<角色>.webp` 每格 448，另有 `<角色>@224 / @112 / @56` 的 WebP 和 AVIF。`BotFace.astro` 按 2 倍屏挑最小的够用的一档（`src/lib/bots.ts` 的 `SPRITE_TIERS`，和 App 一致），小头像不再由浏览器从 448 实时缩小。
-- **演示**：Hero 的"看演示"弹窗播放真实录屏（`src/components/DemoVideo.astro`，五种语言各一个 MP4，构建时从 `docs/assets/demo/` 同步到 `public/demo/`）。点开就播、关掉就停，没点的人不下载；减少动态效果时不自动播放。"它能动手"仍是动画（`src/scripts/tour.ts`）。旧的动画导览 `src/components/DemoTour.astro` 已不再渲染。
+- **演示**：Hero 的"看演示"弹窗播放真实录屏（`src/components/DemoVideo.astro`，每种语言各一个 MP4，构建时从 `docs/assets/demo/` 同步到 `public/demo/`）。点开就播、关掉就停，没点的人不下载；减少动态效果时不自动播放。"它能动手"仍是动画（`src/scripts/tour.ts`）。旧的动画导览 `src/components/DemoTour.astro` 已不再渲染。
 - **文案**：`src/i18n/locales/<语言>/`，页面里不写死文案。首页使用 `home.hero.*`、`home.features.*` 等多级键；各语言入口文件只组装模块。新增译文由维护者逐条撰写和本土化，不使用翻译接口。`manifest.json` 的 `ready` 标识控制正式语言入口，生产构建检查全部目标语言的原始词典，不能用回退文案冒充翻译完成。例外是两种语言内容本来就不同的：聊天渠道（`src/data/channels.ts`）和公告（`src/data/announcements.ts`），各写各的，禁词扫描同样覆盖 `src/data`。

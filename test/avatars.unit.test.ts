@@ -65,7 +65,7 @@ describe("头像角色", () => {
     }
   });
 
-  it("专家和专属形象的名字、领域、介绍和分组标题，五种语言都取得到", () => {
+  it("专家和专属形象的名字、领域、介绍和分组标题，每种语言都取得到", () => {
     for (const lang of ui.LANGS) {
       ui.setLangPref(lang);
       for (const g of ["expert", "own", "base"]) expect(ui.t(`avatar.groups.${g}`), lang).not.toBe(`avatar.groups.${g}`);

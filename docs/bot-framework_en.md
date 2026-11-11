@@ -85,7 +85,7 @@ A Discover card opens with a cover image: `cover/light.png` and `cover/dark.png`
 | `permissions` | See below |
 | `skills` | Imported skills: `name`, `source`, `sha256` (from `amb-bot hash`), `author`, `license`, `url`. Your own skills aren't listed |
 
-Text fields are `{ "zh-CN": …, "en": … }`, both required. The framework requires these two; `ja`, `ko` and `ru` fall back to `en`. Bots listed in this repository need all five languages, including text, UI and sample data, and `test/bot-catalog-site.unit.test.ts` checks this.
+Text fields are `{ "zh-CN": …, "en": … }`, both required. The framework requires these two; `ja`, `ko`, `ru`, `es` and `pt` fall back to `en`. Bots listed in this repository need all seven languages, including text, UI and sample data, and `test/bot-catalog-site.unit.test.ts` checks this.
 
 ### Permissions
 
@@ -252,7 +252,7 @@ Eval tasks go in `evals/tasks.json`: `{ id, prompt, changed?, contains?, notCont
 
 ## Publishing and takedowns
 
-Official bots ship with the app. `npm run build` runs `build:catalog`, checks every bot under `bots/`, and writes UI, samples in five languages, personas, skills and available thumbnails to `dist/catalog/`. Electron's `dist/**` packaging rule and the Docker image include these resources. No catalog signing key is needed. First preview and installation read local bundles, verify their SHA-256 hashes, and extract them into the data directory. An old remote index cache cannot override the bundled catalog.
+Official bots ship with the app. `npm run build` runs `build:catalog`, checks every bot under `bots/`, and writes UI, samples in every language, personas, skills and available thumbnails to `dist/catalog/`. Electron's `dist/**` packaging rule and the Docker image include these resources. No catalog signing key is needed. First preview and installation read local bundles, verify their SHA-256 hashes, and extract them into the data directory. An old remote index cache cannot override the bundled catalog.
 
 `npm start`, `npm run dev` and `npm run init` generate the bundled catalog first. Before invoking `tsx src/main.ts` directly, run `npm run build:catalog`. Official additions, updates and takedowns ship with app releases. The GitHub Release workflow uses the packaged executable to verify that every bundled bot loads and installs with network requests disabled.
 

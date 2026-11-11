@@ -1,8 +1,19 @@
 # Changelog
 
-[简体中文](./CHANGELOG.md) | English | [日本語](./CHANGELOG_ja.md) | [한국어](./CHANGELOG_ko.md) | [Русский](./CHANGELOG_ru.md)
+[简体中文](./CHANGELOG.md) | English | [日本語](./CHANGELOG_ja.md) | [한국어](./CHANGELOG_ko.md) | [Русский](./CHANGELOG_ru.md) | [Español](./CHANGELOG_es.md) | [Português (Brasil)](./CHANGELOG_pt.md)
 
 This covers changes you'll notice in the app. For older versions, see the [GitHub releases](https://github.com/modelflare-ai/AnyModelBot/releases).
+
+## 0.1.32 - 2026-11-11
+
+### New
+
+- **Spanish and Portuguese (Brazil):** Two new interface languages. Pick one in Settings → General → Language; if your system language is Spanish or Portuguese, the app uses it automatically. The interface, the tray menu, system messages from bots and What's new are all translated.
+- **Official bots in Spanish and Portuguese:** PPT Master, Film Studio, Company Research and US Stock Research have Spanish and Portuguese names, descriptions, starters, workspace interfaces and samples.
+
+### Improvements and fixes
+
+- US Stock Research charts read numbers that use a comma as the decimal mark (such as 12,5%), and changes in the key figures follow the number format of the interface language.
 
 ## 0.1.31 - 2026-11-11
 

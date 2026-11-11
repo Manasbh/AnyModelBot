@@ -21,6 +21,8 @@ COPY = {
     "ja": {"h1": ["あなたのパソコンで動く", "AI ボットのチーム。"], "mark": "AI ボットのチーム", "sub": "好きなモデルで。チャットは手元に保存。", "chips": ["チャットは本機に保存", "アプリ無料・従量課金", "MIT オープンソース"]},
     "ko": {"h1": ["내 컴퓨터에서 실행하는", "나만의 AI 봇 팀."], "mark": "나만의 AI 봇 팀", "sub": "원하는 모델로. 대화는 내 기기에 저장.", "chips": ["대화는 내 기기에", "앱 무료 · 사용량 과금", "MIT 오픈 소스"]},
     "ru": {"h1": ["Ваша команда ИИ-ботов", "на вашем компьютере."], "mark": "на вашем компьютере", "sub": "Любая модель. Разговоры хранятся у вас.", "chips": ["История у вас", "Приложение бесплатно", "Открытый код · MIT"]},
+    "es": {"h1": ["Tu equipo de bots de IA,", "en tu computadora."], "mark": "en tu computadora", "sub": "Cualquier modelo y dispositivo. Tus datos, contigo.", "chips": ["Chats en local", "Pago por uso · App gratis", "Código abierto MIT"]},
+    "pt": {"h1": ["Sua equipe de bots de IA,", "no seu computador."], "mark": "no seu computador", "sub": "Qualquer modelo e aparelho. Seus dados com você.", "chips": ["Chats locais", "Pague pelo uso · App grátis", "Código aberto MIT"]},
 }
 
 # Source fonts from google/fonts (SIL OFL), supplied at generation time. The website

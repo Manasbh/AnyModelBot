@@ -21,6 +21,8 @@
   <a href="./README_ja.md">日本語</a> |
   <a href="./README_ko.md">한국어</a> |
   <a href="./README_ru.md">Русский</a> |
+  <a href="./README_es.md">Español</a> |
+  <a href="./README_pt.md">Português (Brasil)</a> |
   <a href="https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme">Modelflare</a> |
   <a href="https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme">价格</a> |
   <a href="./docs/development.md">开发文档</a> |
@@ -350,7 +352,7 @@ Modelflare 会保留请求日志；保留什么、保留多久，见它的[信�
 - [x] **定时任务**：让机器人按时间表自己干活（已上线，就是上面的规则）。
 - [x] **应用内群聊**：在应用里建群，拉多个机器人一起聊。
 - [ ] **聊天渠道里的群聊**：目前各聊天渠道只处理一对一对话。
-- [x] **多语言界面**：支持简体中文、英语、日语、韩语和俄语，可在设置中切换。
+- [x] **多语言界面**：支持简体中文、英语、日语、韩语、俄语、西班牙语和葡萄牙语（巴西），可在设置中切换。
 - [ ] **macOS 电脑操作**：在更多真机上验证 direct 模式，让它脱离 Beta。
 - [ ] **邮箱、日历和事件触发**：接入邮箱和日历账号，规则除了按时间跑，也能在事情发生时马上跑（比如收到某人的邮件、快开会时）。由外部内容触发的运行权限更低，防止别人写的内容给机器人下指令。
 - [ ] **常驻运行、备份和迁移**：电脑关机时规则不会跑。让普通用户也能一键部署到自己的服务器，把对话、记忆和账号搬过去，也能备份和恢复。

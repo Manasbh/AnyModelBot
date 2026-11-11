@@ -21,6 +21,8 @@
   <a href="./README_ja.md">日本語</a> |
   <a href="./README_ko.md">한국어</a> |
   <a href="./README_ru.md">Русский</a> |
+  <a href="./README_es.md">Español</a> |
+  <a href="./README_pt.md">Português (Brasil)</a> |
   <a href="https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme">Modelflare</a> |
   <a href="https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme">Pricing</a> |
   <a href="./docs/development_en.md">Development</a> |
@@ -133,7 +135,7 @@ Requirements for building from source: Node.js 22.13+ and Go 1.26.8+. To build t
 
 # 🌠 Screenshots
 
-These screenshots show the Simplified Chinese interface. The app also supports English, Japanese, Korean and Russian; switch in Settings.
+These screenshots show the Simplified Chinese interface. The app also supports English, Japanese, Korean, Russian, Spanish and Portuguese (Brazil); switch in Settings.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/chat-dark.webp">
@@ -350,7 +352,7 @@ Directions we are exploring. They are not promises, and the order is not a sched
 - [x] **Scheduled tasks**: let a bot run work on a timer (shipped as rules, above).
 - [x] **In-app group chats**: create a group in the app and chat with several bots at once.
 - [ ] **Group chats on chat channels**: chat channels handle one-to-one chats today.
-- [x] **Multilingual interface**: the app supports Simplified Chinese, English, Japanese, Korean and Russian; switch in Settings.
+- [x] **Multilingual interface**: the app supports Simplified Chinese, English, Japanese, Korean, Russian, Spanish and Portuguese (Brazil); switch in Settings.
 - [ ] **macOS computer use**: verify direct mode on more real machines and move it out of Beta.
 - [ ] **Email, calendar and event triggers**: connect email and calendar accounts, and let rules run the moment something happens (a message from a certain person, a meeting about to start), not only on a timer. Runs triggered by outside content get lower permissions, so text written by someone else can't give your bot orders.
 - [ ] **Always-on hosting, backup and migration**: rules don't run while your computer is off. Make it possible for anyone to deploy to their own server in one click, move their chats, memory and accounts over, and back up and restore.

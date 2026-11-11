@@ -85,7 +85,7 @@ bots/<id>/
 | `permissions` | 见下表 |
 | `skills` | 引入的技能：`name`、`source`、`sha256`（`amb-bot hash` 算）、`author`、`license`、`url`。自己写的不用列 |
 
-文案字段都写成 `{ "zh-CN": …, "en": … }`。框架要求这两种，`ja`、`ko`、`ru` 缺了退回 `en`。这个仓库里上架的 Bot 五种语言都要有，文案、界面和示例数据都算，`test/bot-catalog-site.unit.test.ts` 会检查。
+文案字段都写成 `{ "zh-CN": …, "en": … }`。框架要求这两种，`ja`、`ko`、`ru`、`es`、`pt` 缺了退回 `en`。这个仓库里上架的 Bot 七种语言都要有，文案、界面和示例数据都算，`test/bot-catalog-site.unit.test.ts` 会检查。
 
 ### 权限
 
@@ -252,7 +252,7 @@ npm run bot -- check bots/<id> --full   # 可选：再跑渲染和真实模型�
 
 ## 发布和下架
 
-官方 Bot 随 App 一起发布。`npm run build` 自动运行 `build:catalog`，检查 `bots/` 下的全部 Bot，把界面、五种语言的示例数据、人设、技能和可用缩略图打到 `dist/catalog/`。Electron 的 `dist/**` 打包规则和 Docker 镜像都会包含这些资源，不需要目录签名私钥。首次预览和安装只从内置包读取，按 sha256 校验后解压到数据目录；旧的线上目录缓存不会覆盖内置目录。
+官方 Bot 随 App 一起发布。`npm run build` 自动运行 `build:catalog`，检查 `bots/` 下的全部 Bot，把界面、各语言的示例数据、人设、技能和可用缩略图打到 `dist/catalog/`。Electron 的 `dist/**` 打包规则和 Docker 镜像都会包含这些资源，不需要目录签名私钥。首次预览和安装只从内置包读取，按 sha256 校验后解压到数据目录；旧的线上目录缓存不会覆盖内置目录。
 
 `npm start`、`npm run dev` 和 `npm run init` 会先生成内置目录；直接运行 `tsx src/main.ts` 前，先执行 `npm run build:catalog`。官方 Bot 的上新、升级和下架跟随 App 版本发布。GitHub Release 工作流会用打包后的可执行文件验证所有内置 Bot 能在禁止网络请求的条件下加载和安装。
 

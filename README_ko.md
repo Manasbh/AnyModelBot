@@ -21,6 +21,8 @@
   <a href="./README_ja.md">日本語</a> |
   한국어 |
   <a href="./README_ru.md">Русский</a> |
+  <a href="./README_es.md">Español</a> |
+  <a href="./README_pt.md">Português (Brasil)</a> |
   <a href="https://modelflare.dev/?utm_source=anymodelbot&utm_campaign=amb_readme">Modelflare</a> |
   <a href="https://modelflare.dev/pricing?utm_source=anymodelbot&utm_campaign=amb_readme">요금</a> |
   <a href="./docs/development_ko.md">개발</a> |
@@ -133,7 +135,7 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 
 # 🌠 스크린샷
 
-아래 스크린샷은 중국어 간체 화면입니다. 앱은 영어, 일본어, 한국어, 러시아어도 지원하며 설정에서 변경할 수 있습니다.
+아래 스크린샷은 중국어 간체 화면입니다. 앱은 영어, 일본어, 한국어, 러시아어, 스페인어, 포르투갈어(브라질)도 지원하며 설정에서 변경할 수 있습니다.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/chat-dark.webp">
@@ -350,7 +352,7 @@ Modelflare는 요청 로그를 보관합니다. 보관 항목과 기간은 [신�
 - [x] **예약 작업**: 봇이 정해진 시간에 작업 실행(위에서 설명한 규칙으로 출시).
 - [x] **앱 내 그룹 대화**: 그룹을 만들고 여러 봇과 동시에 대화.
 - [ ] **채팅 채널의 그룹 대화**: 현재 채팅 채널은 일대일 대화만 지원.
-- [x] **다국어 화면**: 중국어 간체, 영어, 일본어, 한국어, 러시아어를 지원하며 설정에서 변경.
+- [x] **다국어 화면**: 중국어 간체, 영어, 일본어, 한국어, 러시아어, 스페인어, 포르투갈어(브라질)를 지원하며 설정에서 변경.
 - [ ] **macOS 컴퓨터 사용**: 더 많은 실제 기기에서 직접 실행 모드를 검증하고 베타 종료.
 - [ ] **이메일, 캘린더, 이벤트 트리거**: 이메일과 캘린더 계정을 연결하고 특정 발신자의 메시지나 곧 시작하는 회의처럼 이벤트가 발생하면 규칙 실행. 외부 콘텐츠가 유발한 실행에는 더 낮은 권한을 적용해 타인의 글이 봇에 명령을 내리지 못하도록 제한.
 - [ ] **상시 호스팅, 백업, 이전**: 컴퓨터가 꺼져 있으면 규칙이 실행되지 않음. 누구나 자신의 서버에 한 번에 배포하고 대화·기억·계정을 이전하며 백업·복원할 수 있도록 개선.

@@ -1,6 +1,6 @@
 # 开发文档
 
-简体中文 | [English](./development_en.md) | [日本語](./development_ja.md) | [한국어](./development_ko.md) | [Русский](./development_ru.md)
+简体中文 | [English](./development_en.md) | [日本語](./development_ja.md) | [한국어](./development_ko.md) | [Русский](./development_ru.md) | [Español](./development_es.md) | [Português (Brasil)](./development_pt.md)
 
 这份文档给想从源码运行、打包或参与开发的人看。普通用户直接从 [Releases](https://github.com/modelflare-ai/AnyModelBot/releases) 下载安装包即可，见 [README](../README.md#-下载与运行)。
 
@@ -79,9 +79,9 @@ npm run test:dsh-bundle  # 用 Electron 跑真实 DSH 集成测试，加载打�
 - 界面只监听 127.0.0.1，且每次启动生成随机访问令牌，其他本机程序无法直接调用管理接口。
 - 退出时先停渠道、再停 magpie；若上次被强杀残留 magpie 进程，下次启动会自动清理（Linux/macOS）。
 
-发布：在 `CHANGELOG.md`、`CHANGELOG_en.md`、`CHANGELOG_ja.md`、`CHANGELOG_ko.md` 和 `CHANGELOG_ru.md` 写好这个版本的更新日志（用户能感受到的变化，不写网站和内部改动。官网英文页不显示提到微信、飞书的行），改 `package.json` 的版本号并提交，推送 `v<版本>` 标签。这个版本没写更新日志时，发布流程开始就会失败；写了就作为 GitHub Release 的说明，官网更新日志页也显示它。应用里的「更新了什么」弹窗读的也是它：`CHANGELOG*.md` 随安装包和 Docker 镜像打包（`src/changelog.ts`），还没安装的新版本在用户点开时从那个版本标签下读取。`.github/workflows/release.yml` 会在六种系统 / 架构上各自打包，并把安装包和 `SHA256SUMS` 发到 GitHub Release。签名与公证所需的仓库密钥见该文件开头的注释。同一个标签还会触发 `.github/workflows/docker.yml`，把 x64 + arm64 镜像发布到 `ghcr.io/modelflare-ai/anymodel-bot`（`<版本>` 和 `latest` 两个标签）。 标签发版时 macOS 包必须带 Developer ID 签名并完成公证，打包后会对 .app 和 DMG 里的 .app 做 `spctl` 等校验，不通过就失败。正式包关闭开发者工具；需要调试包时用 `npm run dist:debug`，或在手动运行 Release 时勾选 `debug_build`（文件名带 `-debug-`，标签上不允许，`scripts/check-build-flavor.mjs` 会核对打包结果）。
+发布：在 `CHANGELOG.md`、`CHANGELOG_en.md`、`CHANGELOG_ja.md`、`CHANGELOG_ko.md`、`CHANGELOG_ru.md`、`CHANGELOG_es.md` 和 `CHANGELOG_pt.md` 写好这个版本的更新日志（用户能感受到的变化，不写网站和内部改动。官网英文页不显示提到微信、飞书的行），改 `package.json` 的版本号并提交，推送 `v<版本>` 标签。这个版本没写更新日志时，发布流程开始就会失败；写了就作为 GitHub Release 的说明，官网更新日志页也显示它。应用里的「更新了什么」弹窗读的也是它：`CHANGELOG*.md` 随安装包和 Docker 镜像打包（`src/changelog.ts`），还没安装的新版本在用户点开时从那个版本标签下读取。`.github/workflows/release.yml` 会在六种系统 / 架构上各自打包，并把安装包和 `SHA256SUMS` 发到 GitHub Release。签名与公证所需的仓库密钥见该文件开头的注释。同一个标签还会触发 `.github/workflows/docker.yml`，把 x64 + arm64 镜像发布到 `ghcr.io/modelflare-ai/anymodel-bot`（`<版本>` 和 `latest` 两个标签）。 标签发版时 macOS 包必须带 Developer ID 签名并完成公证，打包后会对 .app 和 DMG 里的 .app 做 `spctl` 等校验，不通过就失败。正式包关闭开发者工具；需要调试包时用 `npm run dist:debug`，或在手动运行 Release 时勾选 `debug_build`（文件名带 `-debug-`，标签上不允许，`scripts/check-build-flavor.mjs` 会核对打包结果）。
 
-每次发版必须同步官网、相关文档和五种语言的 README。先运行 `npm --prefix site run sync` 同步官网内容；GitHub Release 和 Docker 发布后，按[官网部署说明](../site/README.md)更新线上官网，确认 `/download`、`/changelog` 和 `/bots` 的版本、下载链接与说明一致。只有线上官网也同步完成，才算本次发布完成。
+每次发版必须同步官网、相关文档和各语言的 README。先运行 `npm --prefix site run sync` 同步官网内容；GitHub Release 和 Docker 发布后，按[官网部署说明](../site/README.md)更新线上官网，确认 `/download`、`/changelog` 和 `/bots` 的版本、下载链接与说明一致。只有线上官网也同步完成，才算本次发布完成。
 
 应用内更新从 0.1.29 开始提供，使用 `electron-updater`，只在已打包的 macOS、Windows 和 Linux AppImage 中启用。`ui.autoDownloadUpdates` 默认 `true`，在「设置 → 常规」修改；下载完成只通知，不会在普通退出时安装，点击重启前会检查活动对话和后台任务。0.1.28 及以前的用户需手动安装一次包含更新器的版本。GitHub 构建为 macOS 同时生成 DMG 和更新用 ZIP，并发布按架构区分的 `latest-${arch}` 更新清单及 blockmap；所有文件上传完成后才公开 Release。CLI、Docker 和未打包的开发运行仍手动更新。
 
@@ -153,7 +153,7 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 群聊（`src/core/groups.ts`、`ui/screens/group.js`）：有两个以上机器人时，＋ 菜单里可以建群。每个成员在群里有自己的会话 `<机器人>:web:group:<群>`，模型、权限、记忆、审批、花费都和单聊走同一条路；用户的话存在会话 `group:<群>`，时间线由这些消息按 id 合并。@ 谁谁答（`@所有人` 全员），没 @ 时上一个回答的接着答；机器人回复里 @ 别的成员就接力，一条用户消息最多接力 6 次。同一个群一次只有一个机器人在答。
 - 对话页：顶部悬浮的机器人名称胶囊打开信息面板（`⌘/Ctrl+⇧+I`：默认由它回复的渠道账号、待审批、任务和规则、记忆、最近会话，⚙ 进机器人设置）；回复流式显示（Markdown、代码块一键复制），可随时停止（`Esc`）；审批与提问以卡片形式出现在对话里；向上翻阅时不会被拉回底部。
 - 命令面板 `⌘/Ctrl+K`；外观（跟随系统 / 浅色 / 深色）在 设置 → 常规。
-- 语言：简体中文 / English / 日本語 / 한국어 / Русский，设置 → 常规 → 语言（引导页右上角、命令面板里也能切），默认跟随系统（系统语言不在已支持语言中时用英文）。偏好存在 config.json 的 `ui.lang`，托盘菜单、服务端报错和状态文字、机器人发到微信 / 飞书的系统消息（`/help`、审批提示等）都跟着它；命令行 / Docker 下"跟随系统"看 `AMB_LANG`，再看 `LC_ALL` / `LC_MESSAGES` / `LANG`，都没有时用简体中文。日志、发给模型的提示词和用户自己起的机器人名不翻译。
+- 语言：简体中文 / English / 日本語 / 한국어 / Русский / Español / Português (Brasil)，设置 → 常规 → 语言（引导页右上角、命令面板里也能切），默认跟随系统（系统语言不在已支持语言中时用英文）。偏好存在 config.json 的 `ui.lang`，托盘菜单、服务端报错和状态文字、机器人发到微信 / 飞书的系统消息（`/help`、审批提示等）都跟着它；命令行 / Docker 下"跟随系统"看 `AMB_LANG`，再看 `LC_ALL` / `LC_MESSAGES` / `LANG`，都没有时用简体中文。日志、发给模型的提示词和用户自己起的机器人名不翻译。
   - 界面文案在 `ui/locales/<语言>/<命名空间>.js`，代码里写 `t("命名空间.键", { 参数 })`（`ui/lib/i18n.js`）；服务端在 `src/i18n/messages/<命名空间>.ts`，键有类型检查。每个界面请求带 `x-amb-lang`，服务端在这个请求里用同一种语言回话。
   - 新增文案须补齐本次发布的所有目标语言；`node scripts/i18n-check.mjs [文件…]` 检查界面代码里有没有漏掉的中文、用到的键在不在、全部语言词典是否对齐（`npm test` 里的 `test/i18n.unit.test.ts` 也会查）。确需留在代码里的中文（字体名、匹配中文输入的正则）在那一行写 `// i18n-ignore`。
 - 上手清单（新手引导）：对话空状态里是 6 步清单——打招呼、换模型、接到微信、让它动手、让它记住你、生成一张图。最后一步在引导里只放预置演示，不管账户有没有图片 / 视频模型都一样：和真的默认流程一样直接生成、图片显示在对话里，但不发给机器人、不调用模型、不扣费，图是客户端自带的 `ui/assets/guide-demo.svg`。目的是教会怎么操作，不替用户花钱；之后真的让它画图、收到图片也会算完成这一步。点「发送这句」直接试，点「带我去」或侧栏左下角的清单入口，会有一张引导卡片指着要点的地方（那里亮一圈）。做完自动打勾：对话里有了回复、换了模型、收到文件 / 图片、渠道连上、记忆写入；进度存在 config.json 的 `ui.guide`（接口 `/amb/api/guide`），老用户已经做过的步骤会自动算完成。清单可以收起到左下角或「不再显示」，设置 → 常规 → 上手清单 可以重新开始。 打招呼要有一条真正的回复（出错提示不算），渠道要真的连上（只填了配置不算）；「连接常用聊天工具」这一步可以选微信、飞书、Telegram、Slack、Discord，界面语言只决定推荐哪个。明确说「记住……」时回合后的记忆整理会马上做，不用等 90 秒。进度按用户分开存（登录了 Modelflare 按账户，存在 KV 的 `guide.owner.*`；没登录时仍写 config.json 的 `ui.guide`），全部做完是一个里程碑，之后自动收起、不再出现；自动弹出的引导卡片在输入框有草稿或任务运行时先不出来。
@@ -167,7 +167,7 @@ docker exec amb cat /data/ui-token     # 打开 http://<主机>:3600/?token=<令
 - 官网：`site/src/i18n/locales/<语言>/`，例如 `home/hero.ts` 对应 `home.hero.*`。页面从词典读取文案。
 - `ui/locales/manifest.json` 登记目标语言及 `ready` 状态；官网保存同内容的 `site/src/i18n/manifest.json`，检查会验证两份一致。未完成的语言保持 `ready: false`，不加入正式菜单和搜索引擎语言标记。
 - `npm run i18n:status` 查看逐语言、逐模块进度；`npm run i18n:check` 检查全部目标语言的原始词典及关联文档。缺键、空译文、多余键、参数损坏或缺少复数形式都会阻止发布；开发时的英文回退不算完成。
-- 俄语复数使用 `one / few / many / other`；日语、韩语使用 `other`。只本地化显示方式，不更改货币、时区和金额。
+- 俄语复数使用 `one / few / many / other`；西班牙语、葡萄牙语使用 `one / many / other`（`many` 只用于百万级的整数，写法同 `other`）；日语、韩语使用 `other`。只本地化显示方式，不更改货币、时区和金额。
 - 官网 `npm run build` 检查全部目标语言和同步的文档、分享图片；`build:draft` 仅供本地预览，不能替代发布检查。
 
 ## 人设与提示词

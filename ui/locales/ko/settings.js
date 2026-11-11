@@ -4,7 +4,7 @@ export default {
     "appearance": "화면 설정",
     "modelflare": "모델",
     "computer": "컴퓨터 사용",
-    "connections": "연결",
+    "connections": "채팅 채널",
     "privacy": "개인정보 및 보안",
     "network": "네트워크 및 접근",
     "data": "데이터",
@@ -29,6 +29,9 @@ export default {
     "viaToken": "토큰",
     "viaOAuth": "인증됨",
     "needsReauth": "인증이 만료되었습니다. 다시 인증해 주세요",
+    "dataMoved": "Notion, Feishu 등의 데이터 계정은 ‘앱 연결’로 옮겨졌습니다.",
+    "dataMovedKeys": "데이터 계정 notion feishu 앱 연결 앱 mcp",
+    "openApps": "앱 연결 열기",
     "reauthorize": "다시 인증",
     "rename": "이름 변경",
     "remove": "삭제",
@@ -411,8 +414,8 @@ export default {
     },
     "accountStorage": {
       "name": "계정 인증 정보",
-      "sub": "Modelflare 로그인 정보는 데이터 폴더에만 저장되며 데스크톱에서는 시스템 키체인으로 암호화합니다. 화면에는 계정 이름만 전달됩니다",
-      "keys": "보안 로그인 키체인 인증 정보"
+      "sub": "Modelflare 로그인 정보는 데이터 폴더에만 저장되며 현재 사용자만 읽을 수 있습니다. 화면에는 계정 이름만 전달됩니다",
+      "keys": "보안 로그인 인증 정보"
     },
     "token": {
       "name": "접근 토큰",

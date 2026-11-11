@@ -260,9 +260,10 @@ The runtime is built on [DeepSeek Harness](https://github.com/deepseek-ai/deepse
 
 - **Memory that carries over.** Each bot, group, and team has its own memory, kept as Markdown and kept separate. Content that looks like passwords or keys isn't saved.
 - **Long chats stay usable.** A context steward compacts or starts a fresh segment with a hand-off summary before the window fills up.
-- **Accounts shared by all bots.** Add WeChat, Feishu, Telegram, Slack, Discord and Notion accounts once in Settings. Every bot shares them, and each service can have several accounts with aliases. Send `/bot name` once in a chat app to talk to a different bot, or let a bot read your Notion and Feishu messages.
+- **Accounts shared by all bots.** Add WeChat, Feishu, Telegram, Slack and Discord chat accounts once under Settings › Chat channels. Every bot shares them, and each channel can have several accounts with aliases. Send `/bot name` once in a chat app to talk to a different bot.
+- **Connect apps.** Connect apps in the avatar menu comes with connectors for Feishu, Tencent Docs, DingTalk, Amap, Yuque, Notion, GitHub, Linear, Atlassian and Canva, and you can add custom MCP connectors (remote servers or local commands). Connect once and every bot can use it by default; narrow it per bot and per tool. Read-only tools run right away, writes ask you first, and deletes or anything sent to other people always ask.
 - **WeChat and Feishu.** Scan a QR code to connect WeChat, or connect a Feishu bot with streaming reply cards. WeChat also carries images and files.
-- **Telegram, Slack and Discord.** Paste a token in Settings › Connections. No public address needed. Replies appear as they're written, and images and files work both ways. Direct messages only for now, and approvals and questions are answered by text.
+- **Telegram, Slack and Discord.** Paste a token in Settings › Chat channels. No public address needed. Replies appear as they're written, and images and files work both ways. Direct messages only for now, and approvals and questions are answered by text.
 - **Four ways to run it.** Desktop app, command line, Docker, or the local web console at `127.0.0.1:3600`.
 
 <p align="center">
@@ -321,7 +322,7 @@ AnyModelBot works in the background too: a task you hand over can finish in the 
 | Memory (Markdown files) | Screenshots, when you ask a bot to look at your screen with computer use |
 | Files in each bot's workspace | Messages you exchange over chat channels, which pass through those platforms |
 | Your API key and sign-in tokens | Your sign-in with Modelflare, which happens at modelflare.dev |
-| Settings | If you add Notion or Feishu accounts, bots read and write in those accounts, and what they read also goes into model requests |
+| Connect apps | After you connect apps (Feishu, Notion, GitHub and so on) or add a custom MCP connector, bots read and write their content, and what they read also goes into model requests |
 
 Modelflare keeps request logs; its [Trust Center](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) explains what is kept and for how long. We do not claim your data is beyond all risk: anything you send to a model leaves your device. The full inventory is in [docs/privacy_en.md](./docs/privacy_en.md).
 
@@ -339,7 +340,7 @@ Modelflare keeps request logs; its [Trust Center](https://modelflare.dev/trust?u
 | Agent runtime | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (MIT), run as a separate process |
 | Computer use | [Cua Driver](https://github.com/trycua/cua), bundled |
 | Channels | Feishu (long connection + streaming cards), WeChat (iLink), Telegram (long polling), Slack (Socket Mode), Discord (Gateway) |
-| Data accounts | Notion (REST API, official remote MCP), Feishu messages (user identity, read-only) |
+| Connect apps | Built-in connectors: Feishu, Tencent Docs, DingTalk, Amap, Yuque, Notion, GitHub, Linear, Atlassian, Canva; custom MCP: Streamable HTTP (SSE compatible), local commands |
 | Tests and CI | Vitest, GitHub Actions |
 
 # 📝 Roadmap

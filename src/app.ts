@@ -49,12 +49,14 @@ import {
 } from "./providers/modelflare.js";
 import { OFFICIAL_PROVIDERS, officialFailure, officialModelName, officialOf, officialPicks, officialProvider, officialProviderId, type OfficialFailure, type OfficialProvider } from "./providers/official.js";
 import { AccountManager } from "./account/manager.js";
-import { AccountVault, type SecretBox } from "./account/vault.js";
+import { AccountVault, type LegacySecretBox } from "./account/vault.js";
 import { gatewayModelInfo, loadModelInfo, type ModelInfo, type Rates } from "./account/model-info.js";
 import { loadQualitySnapshot } from "./account/model-quality.js";
 import { MediaService, pickDefault } from "./tools/media/index.js";
 import { SearchService, loadWebSearch, saveWebSearch, type SearchProvider, type WebSearchSettings, type WebSearchView } from "./tools/search.js";
 import { ConnectionService } from "./tools/accounts/connections.js";
+import { AppService } from "./tools/apps/service.js";
+import { SecretsFile } from "./tools/apps/secrets.js";
 import { UpdateChecker, isNewer, type DesktopUpdates } from "./updates/check.js";
 import { readLocalChangelog } from "./changelog.js";
 import { COMPACT_ENDPOINT, serverCompactionEnabled, type CompactEndpoint } from "./agent/server-compaction.js";
@@ -85,8 +87,8 @@ export interface DesktopHooks {
   openInBrowser(): void;
   /** 在系统浏览器里打开外部链接（Modelflare 登录、充值） */
   openExternal(url: string): void;
-  /** 系统钥匙串加密（Electron safeStorage）；不可用时缺省，账户凭据改靠文件权限保护 */
-  secretBox?: SecretBox;
+  /** 解密 0.1.30 及以前桌面版用系统钥匙串加密的账户文件（Electron safeStorage），只用于一次性迁移 */
+  legacySecretBox?: LegacySecretBox;
   /** 走 Chromium 网络栈的 fetch（Electron net.fetch：系统代理、系统证书）；下载内置 PowerShell 用，缺省时用 Node 的 fetch */
   fetch?: typeof fetch;
   /** 系统给这个地址用的代理（Electron resolveProxy：系统设置和 PAC），PAC 写法，如 "PROXY 127.0.0.1:7890" 或 "DIRECT" */
@@ -115,6 +117,13 @@ export interface ModelflareStatus {
   line: ModelflareLine;
   baseUrl: string;
   gateway: string;
+}
+
+/** 随安装包带的语雀 MCP（vendor/yuque-mcp，scripts/vendor-yuque-mcp.mjs 生成）：打包后在 resources/yuque-mcp，开发和 Docker 里在 vendor/ */
+function locateYuqueProgram(): string | undefined {
+  const res = (process as any).resourcesPath as string | undefined;
+  const candidates = [res ? path.join(res, "yuque-mcp", "yuque-mcp.mjs") : undefined, path.join(findAppRoot(), "vendor", "yuque-mcp", "yuque-mcp.mjs")];
+  return candidates.find((p): p is string => !!p && fs.existsSync(p));
 }
 
 /** 看过哪一版的"更新了什么"（版本号） */
@@ -197,6 +206,8 @@ export class App {
   private webSearch: WebSearchSettings;
   /** 已授权账号：全局一份，所有机器人共用（设置 › 连接） */
   readonly connections: ConnectionService;
+  /** 连接应用：内置应用连接器和自定义 MCP（tools/apps/service.ts） */
+  readonly apps: AppService;
   /** 新版本提示：只有桌面版启动检查（src/updates/check.ts） */
   readonly updates: UpdateChecker;
   /** 目录 Bot：目录同步和实例（docs/bot-framework.md）。目录为空时对现有功能没有影响 */
@@ -208,7 +219,7 @@ export class App {
   desktop: DesktopHooks | undefined;
   /** macOS 桌面版：电脑操作的系统权限（钩子由 Electron 主进程提供；其他运行方式一律放行） */
   readonly cuPermissions = new CuPermissions(() => this.desktop?.cuPermissions);
-  /** Modelflare 账户（登录、余额、预算）；start() 时创建，桌面外壳的钥匙串那时已就绪 */
+  /** Modelflare 账户（登录、余额、预算）；start() 时创建，桌面外壳的钩子那时已就绪 */
   account!: AccountManager;
   /** 故障排查页最近一次"测试模型 / 测试代理"的结果（复制诊断信息时带上） */
   lastDiagnostics: { model?: import("./diagnostics.js").ModelTestResult; agent?: import("./diagnostics.js").AgentTestResult } = {};
@@ -267,7 +278,11 @@ export class App {
     this.webSearch = loadWebSearch(this.store);
     // 桌面版搜索走 Chromium 的网络栈（系统代理、PAC、系统证书）；命令行 / Docker 用 Node 的 fetch
     this.search = new SearchService({ settings: () => this.webSearch, fetch: () => this.desktop?.fetch });
-    this.connections = new ConnectionService({ kv: this.store, fetch: () => this.desktop?.fetch });
+    // 连接应用的凭证放在数据库外面的一个文件里（权限 600，不用系统钥匙串，见 tools/apps/secrets.ts）；
+    // 以前写在数据库里的 Notion、飞书令牌在这里搬过去，用户不用重新授权
+    const secrets = SecretsFile.at(config.dataDir);
+    this.connections = new ConnectionService({ kv: this.store, fetch: () => this.desktop?.fetch, secrets });
+    this.apps = new AppService({ kv: this.store, secrets, connections: this.connections, fetch: () => this.desktop?.fetch, yuqueProgram: locateYuqueProgram });
     this.updates = new UpdateChecker({ current: appVersion(), fetch: () => this.desktop?.fetch });
     this.catalog = new BotCatalog({ dataDir: config.dataDir, appVersion: appVersion(), ...catalogConfig(), fetch: () => this.desktop?.fetch });
     this.botInstaller = new BotInstaller({
@@ -325,7 +340,7 @@ export class App {
         : undefined,
       mediaReady: () => !!this.magpie?.modelflareInfo().connected,
       search: this.search,
-      connections: this.connections,
+      apps: this.apps,
       onNotice: (text) => this.notice("warn", text),
     });
     this.attention = new Attention({ store: this.store });
@@ -505,12 +520,18 @@ export class App {
     return this.account;
   }
 
+  /** 发往 Modelflare 账户与校验接口的请求：桌面版用系统代理，命令行 / Docker 用 Node 的 fetch（认 NODE_USE_ENV_PROXY） */
+  private accountFetch: typeof fetch = (input, init) => (this.desktop?.fetch ?? fetch)(input, init);
+
   private createAccount(): AccountManager {
     const account = new AccountManager({
       issuer: modelflareIssuer(),
-      vault: AccountVault.at(this.config.dataDir, this.desktop?.secretBox),
+      vault: AccountVault.at(this.config.dataDir, this.desktop?.legacySecretBox),
       store: this.store,
       appLink: () => this.desktop?.appLink,
+      // 桌面版走 Chromium 的网络栈（系统代理、PAC）：浏览器靠系统代理完成了授权，应用进程直连却可能连不上，
+      // 换令牌时报 fetch failed。每次请求时取：desktop 在创建之后才挂上
+      fetchImpl: (input, init) => this.accountFetch(input, init),
       logo: () => {
         try {
           return fs.readFileSync(path.join(findAppRoot(), "assets", "icon.png"));
@@ -706,6 +727,7 @@ export class App {
       }
     }
     this.agent.start();
+    this.apps.start();
     this.ensureAccount();
     await this.retirePastedKey();
     this.seedDefaultBot();
@@ -741,7 +763,14 @@ export class App {
     }
     void this.prewarmAgent();
     if (this.desktop) (this.desktop.updates ?? this.updates).start();
-    this.catalog.on("changed", () => void this.botInstaller.applyTakedowns().catch((e) => log.warn("catalog takedown failed", { err: String(e) })));
+    this.catalog.on("changed", () => {
+      try {
+        this.botInstaller.followAvatars();
+      } catch (e) {
+        log.warn("catalog avatar follow failed", { err: String(e) });
+      }
+      void this.botInstaller.applyTakedowns().catch((e) => log.warn("catalog takedown failed", { err: String(e) }));
+    });
     this.catalog.start();
     // 用过的目录 Bot 空闲够久就退出进程，下一条消息再拉起
     this.catalogSweep = setInterval(() => void this.agent.sweepCatalogBots().catch(() => undefined), 60_000);
@@ -804,6 +833,7 @@ export class App {
     await this.outbox.stop();
     for (const id of [...this.channels.keys()]) await this.stopBot(id);
     await this.agent.stop();
+    await this.apps.stop();
     await this.magpie?.stop();
     this.store.close();
     this.lock?.release();
@@ -915,7 +945,7 @@ export class App {
   async connectModelflare(apiKey: string, line: ModelflareLine): Promise<VerifyResult> {
     if (!this.magpie) throw new Error(t("app.external_mode"));
     const baseUrl = modelflareBaseUrl(line);
-    const r = await verifyModelflareKey(baseUrl, apiKey.trim(), { line });
+    const r = await verifyModelflareKey(baseUrl, apiKey.trim(), { line, fetchImpl: this.accountFetch });
     if (!r.ok) return r;
     await this.magpie.connectModelflare(apiKey, baseUrl, this.allowedModelflareUrls(), this.requestHeaders(), r.chatModels);
     // Modelflare 账户算一种服务：重新登录、换账号签发的新设备 Key 都是同一个模型目录，不算换了服务

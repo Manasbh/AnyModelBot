@@ -1,6 +1,6 @@
 {
   "id": "us-stock-research",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minAppVersion": "0.1.20",
   "name": {
     "zh-CN": "美股研报",
@@ -43,7 +43,7 @@
       "Процесс вдохновлён открытым проектом Dexter, но его кода здесь нет и связи с ним нет. Это не инвестиционная рекомендация"
     ]
   },
-  "avatar": "finance",
+  "avatar": "ticker",
   "permissions": [
     "workspace-write",
     "network"

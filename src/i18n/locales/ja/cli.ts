@@ -1,7 +1,7 @@
 import type { TranslatedCatalog } from "../../index.js";
 export default {
   "entered": "（入力済み）",
-  "done": "設定が完了しました。npm start で起動できます。WeChat を使うには、画面の「設定 > 接続」で QR コードをスキャンするか、npm run weixin:login を実行してください。",
+  "done": "設定が完了しました。npm start で起動できます。WeChat を使うには、画面の「設定 > チャットチャネル」で QR コードをスキャンするか、npm run weixin:login を実行してください。",
   "title": "anymodel bot の初期設定（データディレクトリ：{dir}）",
   "noMagpie": "magpie の実行ファイルが見つかりません。先に npm run setup を実行してください",
   "alreadyConnected": "Modelflare は接続済みです（キー末尾：{tail}{account}）。既存の接続を使用します。",

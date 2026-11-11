@@ -1,7 +1,7 @@
 import type { TranslatedCatalog } from "../../index.js";
 export default {
   "revoked": "Modelflare 인증이 만료되었습니다. 다시 로그인해 주세요",
-  "unreachable": "Modelflare에 연결할 수 없습니다({reason})",
+  "unreachable": "Modelflare에 연결할 수 없습니다({reason}). 네트워크를 확인하세요. 프록시나 VPN을 사용 중이라면 시스템 프록시 또는 TUN 모드를 켜고 다시 시도하세요",
   "already_signed_in": "이미 Modelflare 계정에 로그인되어 있습니다",
   "no_new_key": "Modelflare에서 새 키를 반환하지 않았습니다",
   "login_incomplete": "로그인이 완료되지 않았습니다: {reason}",
@@ -13,7 +13,7 @@ export default {
   "bot_key_reissued": "‘{name}’ 봇의 예산 키가 삭제되어 ${limit} 예산으로 새 키를 발급했습니다(사용량은 0부터 계산됩니다)",
   "routing_invalid": "알 수 없는 가성비 옵션입니다",
   "routing_unsupported": "Modelflare는 아직 앱 키의 이 설정을 지원하지 않습니다",
-  "host_unreachable": "{host}에 연결할 수 없습니다({reason})",
+  "host_unreachable": "{host}에 연결할 수 없습니다({reason}). 네트워크를 확인하세요. 프록시나 VPN을 사용 중이라면 시스템 프록시 또는 TUN 모드를 켜고 다시 시도하세요",
   "discovery_failed": "로그인 설정을 읽지 못했습니다(HTTP {status})",
   "discovery_bad_endpoint": "로그인 설정의 {key}이(가) 올바르지 않습니다",
   "discovery_issuer_mismatch": "로그인 설정의 발급자가 일치하지 않습니다",

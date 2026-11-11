@@ -42,6 +42,7 @@
       var px = function (v) { return typeof v === "number" && v >= 120 && v <= 1200 ? Math.round(v) + "px" : ""; };
       if (px(p.sideW)) root.style.setProperty("--side-w-user", px(p.sideW));
       if (px(p.panelW)) root.style.setProperty("--panel-w-user", px(p.panelW));
+      if (typeof p.workW === "number" && p.workW >= 120 && p.workW <= 2400) root.style.setProperty("--work-w-user", Math.round(p.workW) + "px");
       if (/Windows/.test(navigator.userAgent)) root.classList.add("win");
       if (/Electron/.test(navigator.userAgent) && /Mac/.test(navigator.platform)) root.classList.add("mac-app");
       if (/Electron/.test(navigator.userAgent) && /Windows/.test(navigator.userAgent)) root.classList.add("win-app");
@@ -55,6 +56,7 @@
   <link rel="stylesheet" href="/amb/static/css/settings.css" />
   <link rel="stylesheet" href="/amb/static/css/guide.css" />
   <link rel="stylesheet" href="/amb/static/css/botapp.css" />
+  <link rel="stylesheet" href="/amb/static/css/apps.css" />
   <script type="importmap">
     { "imports": { "preact": "/amb/vendor/preact.mjs", "preact/hooks": "/amb/vendor/hooks.mjs", "htm": "/amb/vendor/htm.mjs" } }
   </script>

@@ -1,7 +1,7 @@
 import type { TranslatedCatalog } from "../../index.js";
 export default {
   revoked: "Срок авторизации Modelflare истёк. Войдите снова",
-  unreachable: "Не удалось подключиться к Modelflare ({reason})",
+  unreachable: "Не удалось подключиться к Modelflare ({reason}). Проверьте сеть. Если вы используете прокси или VPN, включите системный прокси или режим TUN и повторите попытку",
   already_signed_in: "Вход в аккаунт Modelflare уже выполнен",
   no_new_key: "Modelflare не вернул новый ключ",
   login_incomplete: "Вход не завершён: {reason}",
@@ -18,7 +18,7 @@ export default {
   routing_invalid: "Неизвестный вариант выгоды",
   routing_unsupported:
     "Modelflare пока не поддерживает эту настройку для ключей приложений",
-  host_unreachable: "Не удалось подключиться к {host} ({reason})",
+  host_unreachable: "Не удалось подключиться к {host} ({reason}). Проверьте сеть. Если вы используете прокси или VPN, включите системный прокси или режим TUN и повторите попытку",
   discovery_failed: "Не удалось прочитать конфигурацию входа (HTTP {status})",
   discovery_bad_endpoint: "Недопустимый {key} в конфигурации входа",
   discovery_issuer_mismatch: "Издатель в конфигурации входа не совпадает",

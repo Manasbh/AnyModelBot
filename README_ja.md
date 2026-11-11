@@ -260,9 +260,10 @@ npm start          # http://127.0.0.1:3600/ でローカルコンソールを起
 
 - **会話をまたぐ記憶。** ボット、グループ、チームがそれぞれ自分の記憶を Markdown で持ち、混ざることはありません。パスワードやキーらしい内容は記憶しません。
 - **長い会話も続けやすく。** コンテキスト管理が上限に近づく前に圧縮するか、引き継ぎ要約を作って新しい区間を始めます。
-- **すべてのボットでアカウントを共有。** WeChat、Feishu、Telegram、Slack、Discord、Notion のアカウントは設定で一度追加すれば共有できます。サービスごとに別名付きで複数登録でき、チャットで `/bot name` を一度送るだけでボットが切り替わります。Notion や Feishu のメッセージを読ませることもできます。
+- **すべてのボットでアカウントを共有。** WeChat、Feishu、Telegram、Slack、Discord のチャットアカウントは「設定 › チャットチャネル」で一度追加すれば、すべてのボットで共有できます。チャネルごとに別名付きで複数登録でき、チャットで `/bot name` を一度送るだけでボットが切り替わります。
+- **アプリを接続。** アバターメニューの「アプリを接続」には、Feishu、Tencent Docs、DingTalk、Amap、Yuque、Notion、GitHub、Linear、Atlassian、Canva のコネクタが内蔵されており、カスタム MCP（リモートサービスまたはローカルコマンド）も追加できます。一度接続すれば既定ですべてのボットが使え、ボットごと・ツールごとに絞り込めます。読み取りはそのまま実行し、書き込みは先に確認、削除と外部への送信は毎回確認します。
 - **WeChat と Feishu。** WeChat は QR コードで接続します。Feishu は返信が逐次表示されるカードに対応し、WeChat でも画像とファイルを扱えます。
-- **Telegram、Slack、Discord。** 設定 › 接続にトークンを貼り付けるだけで、公開アドレスは不要です。返信は逐次表示され、画像とファイルを双方向で送れます。現在はダイレクトメッセージのみで、承認や質問には文章で回答します。
+- **Telegram、Slack、Discord。** 設定 › チャットチャネルにトークンを貼り付けるだけで、公開アドレスは不要です。返信は逐次表示され、画像とファイルを双方向で送れます。現在はダイレクトメッセージのみで、承認や質問には文章で回答します。
 - **4 つの使い方。** デスクトップ、コマンドライン、Docker、`127.0.0.1:3600` のローカル Web コンソールから使えます。
 
 <p align="center">
@@ -321,7 +322,7 @@ AnyModelBot もバックグラウンドで働きます。依頼したタスク�
 | 記憶（Markdown） | 画面を見るよう依頼したときのスクリーンショット |
 | ボットごとの作業ファイル | 各プラットフォームを通るチャネルのメッセージ |
 | API キーとログイントークン | modelflare.dev 上で行うログイン |
-| 設定 | Notion・Feishu アカウントを追加した場合の読み書き。読み取った内容はモデルのリクエストにも含まれる |
+| アプリを接続 | アプリ（Feishu、Notion、GitHub など）を接続するか、カスタム MCP を追加した場合の読み書き。読み取った内容はモデルのリクエストにも含まれる |
 
 Modelflare はリクエストログを保持します。項目と期間は [トラストセンター](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme) に記載されています。データに一切のリスクがないとは主張しません。モデルに送った内容は端末の外に出ます。全項目は [プライバシー文書](./docs/privacy_ja.md) をご確認ください。
 
@@ -339,7 +340,7 @@ Modelflare はリクエストログを保持します。項目と期間は [ト�
 | エージェントランタイム | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（MIT）、別プロセスで実行 |
 | コンピューター操作 | 同梱の [Cua Driver](https://github.com/trycua/cua) |
 | チャネル | Feishu（持続接続と逐次更新カード）、WeChat（iLink）、Telegram（ロングポーリング）、Slack（Socket Mode）、Discord（Gateway） |
-| データアカウント | Notion（REST API・公式リモート MCP）、Feishu メッセージ（ユーザー権限・読み取り専用） |
+| アプリを接続 | 内蔵コネクタ：Feishu、Tencent Docs、DingTalk、Amap、Yuque、Notion、GitHub、Linear、Atlassian、Canva。カスタム MCP：Streamable HTTP（SSE 互換）、ローカルコマンド |
 | テストと CI | Vitest、GitHub Actions |
 
 # 📝 ロードマップ

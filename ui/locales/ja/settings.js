@@ -4,7 +4,7 @@ export default {
     "appearance": "外観",
     "modelflare": "モデル",
     "computer": "コンピューター操作",
-    "connections": "接続",
+    "connections": "チャットチャネル",
     "privacy": "プライバシーとセキュリティ",
     "network": "ネットワークとアクセス",
     "data": "データ",
@@ -29,6 +29,9 @@ export default {
     "viaToken": "トークン",
     "viaOAuth": "認可済み",
     "needsReauth": "認可の有効期限が切れました。再認可してください",
+    "dataMoved": "Notion や Feishu などのデータアカウントは「アプリを接続」に移動しました。",
+    "dataMovedKeys": "データアカウント notion feishu アプリを接続 アプリ mcp",
+    "openApps": "「アプリを接続」を開く",
     "reauthorize": "再認可",
     "rename": "名前を変更",
     "remove": "削除",
@@ -411,8 +414,8 @@ export default {
     },
     "accountStorage": {
       "name": "アカウント認証情報",
-      "sub": "Modelflare のログイン認証情報はデータフォルダーだけに保存されます。デスクトップ版ではシステムのキーチェーンで暗号化し、画面にはアカウント名だけを渡します",
-      "keys": "セキュリティ ログイン キーチェーン 認証情報"
+      "sub": "Modelflare のログイン認証情報はデータフォルダーだけに保存され、現在のユーザーだけが読み取れます。画面にはアカウント名だけを渡します",
+      "keys": "セキュリティ ログイン 認証情報"
     },
     "token": {
       "name": "アクセストークン",

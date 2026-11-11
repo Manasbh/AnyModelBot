@@ -260,9 +260,10 @@ npm start          # http://127.0.0.1:3600/에서 로컬 콘솔 실행
 
 - **대화가 바뀌어도 이어지는 기억.** 봇, 그룹, 팀이 각자의 기억을 Markdown으로 가지며 서로 섞이지 않습니다. 비밀번호나 키로 보이는 내용은 기억하지 않습니다.
 - **긴 대화도 계속 편하게.** 컨텍스트 관리자가 한도에 도달하기 전에 압축하거나 인계 요약과 함께 새 구간을 시작합니다.
-- **모든 봇이 계정 공유.** 설정에서 WeChat, Feishu, Telegram, Slack, Discord, Notion 계정을 한 번 추가하면 모든 봇이 공유합니다. 서비스마다 여러 계정과 별칭을 사용할 수 있습니다. 채팅 앱에서 `/bot name`을 한 번 보내 다른 봇으로 전환하거나 봇에게 Notion과 Feishu 메시지를 읽게 하세요.
+- **모든 봇이 계정 공유.** 설정 › 채팅 채널에서 WeChat, Feishu, Telegram, Slack, Discord 채팅 계정을 한 번 추가하면 모든 봇이 공유합니다. 채널마다 여러 계정과 별칭을 사용할 수 있습니다. 채팅 앱에서 `/bot name`을 한 번 보내 다른 봇으로 전환하세요.
+- **앱 연결.** 아바타 메뉴의 ‘앱 연결’에는 Feishu, Tencent Docs, DingTalk, Amap, Yuque, Notion, GitHub, Linear, Atlassian, Canva 커넥터가 들어 있고, 커스텀 MCP(원격 서비스 또는 로컬 명령)도 추가할 수 있습니다. 한 번 연결하면 기본적으로 모든 봇이 사용할 수 있으며 봇별·도구별로 좁힐 수 있습니다. 읽기는 바로 실행하고, 쓰기는 먼저 묻고, 삭제와 외부 전송은 매번 묻습니다.
 - **WeChat과 Feishu.** QR 코드로 WeChat을 연결하거나 실시간 응답 카드를 지원하는 Feishu 봇을 연결하세요. WeChat에서도 이미지와 파일을 주고받을 수 있습니다.
-- **Telegram, Slack, Discord.** 설정 › 연결에 토큰을 붙여 넣으세요. 공개 주소가 필요하지 않습니다. 답변은 작성되는 대로 표시되고 이미지와 파일을 양방향으로 지원합니다. 현재는 개인 메시지만 지원하며 승인과 질문에는 텍스트로 답합니다.
+- **Telegram, Slack, Discord.** 설정 › 채팅 채널에 토큰을 붙여 넣으세요. 공개 주소가 필요하지 않습니다. 답변은 작성되는 대로 표시되고 이미지와 파일을 양방향으로 지원합니다. 현재는 개인 메시지만 지원하며 승인과 질문에는 텍스트로 답합니다.
 - **네 가지 실행 방법.** 데스크톱 앱, 명령줄, Docker, `127.0.0.1:3600`의 로컬 웹 콘솔을 사용하세요.
 
 <p align="center">
@@ -321,7 +322,7 @@ AnyModelBot도 백그라운드에서 일합니다. 맡긴 작업을 마친 뒤 �
 | 기억(Markdown 파일) | 컴퓨터 사용으로 화면을 보도록 요청할 때의 스크린샷 |
 | 봇별 작업 공간 파일 | 각 플랫폼을 거치는 채팅 채널 메시지 |
 | API 키와 로그인 토큰 | modelflare.dev에서 진행하는 Modelflare 로그인 |
-| 설정 | Notion 또는 Feishu 계정을 추가하면 해당 계정에서 읽고 쓰는 내용. 읽은 내용은 모델 요청에도 포함 |
+| 앱 연결 | 앱(Feishu, Notion, GitHub 등)을 연결하거나 커스텀 MCP를 추가하면 봇이 그 내용을 읽고 씁니다. 읽은 내용은 모델 요청에도 포함 |
 
 Modelflare는 요청 로그를 보관합니다. 보관 항목과 기간은 [신뢰 센터](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)에서 설명합니다. 데이터에 위험이 전혀 없다고 주장하지 않습니다. 모델에 보내는 내용은 기기를 벗어납니다. 전체 목록은 [개인정보 문서](./docs/privacy_ko.md)를 확인하세요.
 
@@ -339,7 +340,7 @@ Modelflare는 요청 로그를 보관합니다. 보관 항목과 기간은 [신�
 | 에이전트 런타임 | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)(MIT), 별도 프로세스로 실행 |
 | 컴퓨터 사용 | 내장 [Cua Driver](https://github.com/trycua/cua) |
 | 채널 | Feishu(지속 연결 + 실시간 카드), WeChat(iLink), Telegram(롱 폴링), Slack(Socket Mode), Discord(Gateway) |
-| 데이터 계정 | Notion(REST API, 공식 원격 MCP), Feishu 메시지(사용자 권한, 읽기 전용) |
+| 앱 연결 | 기본 제공 커넥터: Feishu, Tencent Docs, DingTalk, Amap, Yuque, Notion, GitHub, Linear, Atlassian, Canva. 커스텀 MCP: Streamable HTTP(SSE 호환), 로컬 명령 |
 | 테스트 및 CI | Vitest, GitHub Actions |
 
 # 📝 로드맵

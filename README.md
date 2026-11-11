@@ -260,9 +260,10 @@ npm start          # 本地管理界面：http://127.0.0.1:3600/
 
 - **记忆会延续。** 机器人、群、团队各有自己的记忆，以 Markdown 保存，互不混用；看起来像密码、密钥的内容不会被记住。
 - **长对话也能用下去。** 上下文快满之前，上下文管家会压缩，或开一个新段并带上交接摘要。
-- **账号全局共用。** 微信、飞书、Telegram、Slack、Discord、Notion 的账号在设置里加一次，所有机器人共用，每个服务可以加多个、起别名。在聊天软件里发一次 `/bot 名字` 就换一个机器人聊，也可以让机器人读你的 Notion 和飞书消息。
+- **账号全局共用。** 微信、飞书、Telegram、Slack、Discord 的聊天账号在「设置 › 聊天渠道」里加一次，所有机器人共用，每个渠道可以加多个、起别名。在聊天软件里发一次 `/bot 名字` 就换一个机器人聊。
+- **连接应用。** 左下角头像菜单里的「连接应用」内置飞书、腾讯文档、钉钉、高德地图、语雀、Notion、GitHub、Linear、Atlassian、Canva 的连接器，也可以添加自定义 MCP（远程服务或本地命令）。连一次，默认所有机器人都能用，可以按机器人、按工具收窄。只读直接用，写入先问你，删除和对外发送每次都问。
 - **微信和飞书。** 微信扫码连接，飞书机器人支持流式回复卡片；微信还能收发图片和文件。
-- **Telegram、Slack、Discord。** 在 设置 › 连接 里填 token 连接，不需要公网地址；回复边写边显示，能收发图片和文件。目前只处理单聊，审批和提问回复文字。
+- **Telegram、Slack、Discord。** 在 设置 › 聊天渠道 里填 token 连接，不需要公网地址；回复边写边显示，能收发图片和文件。目前只处理单聊，审批和提问回复文字。
 - **四种运行方式。** 桌面版、命令行、Docker，以及 `127.0.0.1:3600` 的本地网页控制台。
 
 <p align="center">
@@ -321,7 +322,7 @@ AnyModelBot 同样能在后台干活：交代的任务可以在后台跑完，�
 | 记忆（Markdown 文件） | 你让机器人用电脑操作看屏幕时的屏幕截图 |
 | 每个机器人工作区里的文件 | 你通过聊天渠道收发的消息，会经过对应的平台 |
 | 你的 API Key 和登录令牌 | 你登录 Modelflare 的过程，发生在 modelflare.dev |
-| 设置 | 你添加 Notion 或飞书账号后，机器人会读写这些账号的内容，读到的内容也会进入模型请求 |
+| 连接应用 | 你连接应用（飞书、Notion、GitHub 等）或添加自定义 MCP 后，机器人会读写其中的内容，读到的内容也会进入模型请求 |
 
 Modelflare 会保留请求日志；保留什么、保留多久，见它的[信任中心](https://modelflare.dev/trust?utm_source=anymodelbot&utm_campaign=amb_readme)。我们不声称能做到万无一失：凡是你发给模型的内容，都会离开你的设备。完整清单见 [docs/privacy.md](./docs/privacy.md)。
 
@@ -339,7 +340,7 @@ Modelflare 会保留请求日志；保留什么、保留多久，见它的[信�
 | 智能体运行时 | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（MIT），作为独立进程运行 |
 | 电脑操作 | [Cua Driver](https://github.com/trycua/cua)，随应用打包 |
 | 渠道 | 飞书（长连接 + 流式卡片）、微信（iLink）、Telegram（长轮询）、Slack（Socket Mode）、Discord（Gateway） |
-| 数据账号 | Notion（REST API、官方远程 MCP）、飞书消息（用户身份，只读） |
+| 连接应用 | 内置连接器：飞书、腾讯文档、钉钉、高德地图、语雀、Notion、GitHub、Linear、Atlassian、Canva；自定义 MCP：Streamable HTTP（兼容 SSE）、本地命令 |
 | 测试与 CI | Vitest、GitHub Actions |
 
 # 📝 路线图

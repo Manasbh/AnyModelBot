@@ -1,9 +1,10 @@
-// 侧栏 280（参考 Grok Bot，宽度可以拖右边的分隔条调整）：顶部只有新建按钮，常驻搜索框，
+// 侧栏 280（参考 Grok Bot，宽度可以拖右边的分隔条调整）：顶部三个按钮（收起侧栏 | 搜索 | 新建，见 SideActions），
 // 机器人行（头像 + 名称 + 时间 + 一行预览；悬停出现"更多"，和右键是同一份菜单），左下角账户（点头像看余额，点齿轮打开设置）。
+// 侧栏收起后，同样三个按钮浮在主区左上角（SideRail）。
 // 新建在主区的新建页（screens/new-bot.js）；新建页打开时，机器人列表末尾（建好后它就在这）有一行占位，跟着显示头像和名字。
 // 机器人和群聊的增删：新行淡入并定位到它（新机器人的头像打个招呼），删掉的行淡出（design/motion.js 的 useListPresence）。
 // 群聊排在机器人后面（screens/group.js）；有两个以上机器人时，新建按钮是一个菜单（机器人 / 群聊）。
-// 搜索框下面是固定的导航（和设置导航同一种行）：「发现」，有事在等你时下面多一行「需要你 N」（没事时没有这一行）；
+// 顶部按钮下面是固定的导航（和设置导航同一种行）：「发现」，有事在等你时下面多一行「需要你 N」（没事时没有这一行）；
 // 导航之下才是可滚动的分组列表（lib/sections.js）：默认「我的」和「上新」，用户可以新建、改名、删除分组，拖分组标题上下排；
 // 机器人、群聊和目录 Bot 的行可以拖到别的分组（或用行菜单里的「移到分组」）。分组标题点一下折叠。
 // 有事在等的机器人，行的第二行换成最早那件事。
@@ -27,6 +28,7 @@ import { catalogSeen, tr } from "../lib/catalog.js";
 import { addSection, defaultLayout, deleteSection, keyOfBot, keyOfEntry, keyOfGroup, loadSideLayout, markSideLayoutPruned, moveItem, moveSection, place, prune, renameSection, saveSideLayout, sectionOf, sideFold, sideLayout, sideLayoutLoaded, sideLayoutPruned, toggleSideFold } from "../lib/sections.js";
 import { AccountLogin } from "./onboarding.js";
 import { previewText } from "../lib/errors.js";
+import { appsStore } from "../lib/apps.js";
 import { GroupAvatars } from "./group.js";
 
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -41,31 +43,44 @@ export function Balance({ account, note }) {
   </div>`;
 }
 
-/** Bot 额度的圆环：剩余百分比画成一段弧（12 点起顺时针），中性色；0% 时只剩底圈 */
+/**
+ * 账户行右边的圆环（参考截图）：有 Bot 额度时把剩余百分比画成一段弧（12 点起顺时针）；没有 Bot 额度时只画底圈。
+ * 中间一个小菱形是记号，和百分比无关。中性色。
+ */
 export function QuotaRing({ percent }) {
-  const r = 6;
+  const r = 7;
   const c = 2 * Math.PI * r;
-  const p = Math.min(100, Math.max(0, Number(percent) || 0));
-  return html`<svg class="quota-ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-    <circle class="quota-ring-track" cx="8" cy="8" r=${r} />
-    ${p > 0 && html`<circle class="quota-ring-arc" cx="8" cy="8" r=${r} stroke-dasharray=${`${((c * p) / 100).toFixed(2)} ${c.toFixed(2)}`} transform="rotate(-90 8 8)" />`}
+  const p = percent === null || percent === undefined ? 0 : Math.min(100, Math.max(0, Number(percent) || 0));
+  return html`<svg class="quota-ring" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+    <circle class="quota-ring-track" cx="9" cy="9" r=${r} />
+    ${p > 0 && html`<circle class="quota-ring-arc" cx="9" cy="9" r=${r} stroke-dasharray=${`${((c * p) / 100).toFixed(2)} ${c.toFixed(2)}`} transform="rotate(-90 9 9)" />`}
+    <rect class="quota-ring-mark" x="7.25" y="7.25" width="3.5" height="3.5" rx="0.75" transform="rotate(45 9 9)" />
   </svg>`;
 }
 
+/** 圆环上悬停显示的一句：有 Bot 额度时是剩余百分比，没有时是余额；余额低于提醒线时补一句 */
+export function quotaTip(account) {
+  const bot = account.error ? null : account.bot;
+  const balance = account.error ? t("firstUse.balanceUnavailable") : account.balanceUsd == null ? t("firstUse.balanceLoading") : usd(account.balanceUsd);
+  const tip = bot ? t("sidebar.quotaTip", { percent: bot.remainingPercent }) : t("sidebar.balanceTip", { amount: balance });
+  return account.lowBalance && !account.error ? `${tip} · ${t("firstUse.lowBalance")}` : tip;
+}
+
 /**
- * 点圆环弹出的卡片：顶上一行说明 Bot 额度只能在 AnyModelBot 里用；Bot 额度剩余百分比、账户余额（两位小数）；
- * 充值入口，下面一行小字说订阅套餐另送 Bot 额度。
- * 那一行叫"余额"不叫"充值额度"：账户余额里还有 Modelflare 的赠额，不全是充值的钱。
+ * 点圆环弹出的卡片（照截图排）：有 Bot 额度时顶上一行灰字"Bot 额度只能在 AnyModelBot 里使用"，细线下面是
+ * "Bot 额度 · 剩余 N%"和"余额 · $12.34"（两位小数），再一道细线，最下面是充值（有 Bot 额度时带一行订阅加赠的小字）。
+ * 没有 Bot 额度时只有余额和充值。那一行叫"余额"不叫"充值额度"：账户余额里还有 Modelflare 的赠额，不全是充值的钱。
  */
-export function BotQuotaCard({ account }) {
-  const bot = account.bot;
-  return html`<div class="account-menu quota-card">
-    <p class="quota-scope">${t("sidebar.botQuotaScope")}</p>
-    <div class="quota-row"><span>${t("sidebar.botQuota")}</span><span class="num">${t("sidebar.botLeft", { percent: bot.remainingPercent })}</span></div>
-    <div class="quota-row"><span>${t("sidebar.balance")}</span><span class="num">${usd(account.balanceUsd, 2)}</span></div>
-    ${account.lowBalance && html`<div class="quota-note"><span class="dot warn"></span>${t("sidebar.belowLine", { amount: usd(account.alerts?.lowBalanceUsd) })}</div>`}
+export function QuotaCard({ account }) {
+  const bot = account.error ? null : account.bot;
+  const balance = account.error ? t("firstUse.balanceUnavailable") : account.balanceUsd == null ? t("firstUse.balanceLoading") : usd(account.balanceUsd, 2);
+  return html`<div class="quota-card">
+    ${bot && html`<p class="quota-head">${t("sidebar.botQuotaScope")}</p><hr />`}
+    ${bot && html`<div class="quota-row"><span>${t("sidebar.botQuota")}</span><span class="num">${t("sidebar.botLeft", { percent: bot.remainingPercent })}</span></div>`}
+    <div class="quota-row"><span>${t("sidebar.balance")}</span><span class="num">${balance}</span></div>
+    ${account.lowBalance && !account.error && html`<div class="quota-note"><span class="dot warn"></span>${t("sidebar.belowLine", { amount: usd(account.alerts?.lowBalanceUsd) })}</div>`}
     <hr />
-    <a href=${account.topupUrl || MF_TOPUP} target="_blank" rel="noopener noreferrer"><span>${t("firstUse.topUp")}</span><span class="hint">${t("sidebar.subscribeBonus")}</span></a>
+    <a class="quota-action" href=${account.topupUrl || MF_TOPUP} target="_blank" rel="noopener noreferrer"><span>${t("firstUse.topUp")}</span>${bot && html`<span class="hint">${t("sidebar.subscribeBonus")}</span>`}</a>
   </div>`;
 }
 
@@ -73,14 +88,18 @@ export function BotQuotaCard({ account }) {
  * 左下角账户区（第 12、10、19 项）：
  * - 头像 + 昵称常驻，整行可点（悬停、打开时只有头像变深，不给整行铺底），向上展开菜单：设置、意见和反馈、检查更新、
  *   分隔线、退出登录（顺序固定）。设置只放在这个菜单里（还有 ⌘, 快捷键），账户行旁边不再单独摆齿轮。
- *   菜单贴着整个账户区往上开、和账户区一样宽，不盖住上面的余额条。
- * - 上面一条：登录了 Modelflare 时是余额 + 充值（低于提醒线时多一行"余额较低"，充值一直能点，不用先关掉提示）；
- *   用自己的 API Key、没登录 Modelflare 时是"登录 Modelflare"的独立入口，不显示不存在的余额。
+ *   菜单贴着整个账户区往上开、和账户区一样宽。
+ * - 登录了 Modelflare 时，账户行右边是一个圆环按钮（参考截图），侧栏里不再摆余额条：悬停显示"Bot 额度剩余 N%"
+ *   （没有 Bot 额度时是余额），点开额度卡片（打开时刷新一次）。余额低于提醒线时圆环上有个琥珀色小点。
+ * - 用自己的 API Key、没登录 Modelflare 时，账户行上面是"登录 Modelflare"的独立入口，没有圆环，不显示不存在的余额。
  * - 余额加载中 / 读取失败不显示成 0；名字缺失时显示"我的账号"，不拿内部生成的用户名冒充昵称。
- * - 有 Bot 额度的账户：余额那一条换成圆环 + "Bot 额度 剩余 N%"，点开是额度卡片（打开时刷新一次）。没有 Bot 额度
- *   （或连的是还不返回这个字段的服务端）时这一条和以前完全一样。
  */
 export function AccountButton({ account, onSettings, update, onUpdateChanged }) {
+  // 连接应用：侧栏和设置页的账户菜单都有这一项，直接改地址（main.js 的路由）；提醒点读共享的应用状态
+  const appsAttention = useStore(appsStore).attention;
+  const onApps = () => {
+    location.hash = "/apps";
+  };
   const [open, setOpen] = useState(false);
   const [login, setLogin] = useState(false);
   const [quota, setQuota] = useState(false);
@@ -146,52 +165,41 @@ export function AccountButton({ account, onSettings, update, onUpdateChanged }) 
       setLeaving(false);
     }
   };
-  const balance = !signedIn ? "" : account.error ? t("firstUse.balanceUnavailable") : account.balanceUsd == null ? t("firstUse.balanceLoading") : usd(account.balanceUsd);
-  const bot = signedIn && !account.error ? account.bot : null;
   const toggleQuota = () => {
     // 打开卡片时请后端读一次最新的额度（main.js 接这个事件）
     if (!quota) window.dispatchEvent(new Event("amb-account-refresh"));
     setQuota(!quota);
   };
+  const tip = signedIn ? quotaTip(account) : "";
   return html`<div class="account-stack" ref=${stackRef}>
-    ${signedIn
-      ? html`<div class=${`account-balance${account.lowBalance && !account.error ? " low" : ""}`} role="status">
-          ${bot
-            ? html`<button type="button" class="account-quota" ref=${quotaRef} aria-haspopup="dialog" aria-expanded=${quota} onClick=${toggleQuota}
-                aria-label=${t("sidebar.botQuotaOpen", { percent: bot.remainingPercent })} title=${t("sidebar.botQuotaOpen", { percent: bot.remainingPercent })}>
-                <${QuotaRing} percent=${bot.remainingPercent} />
-                <span class="account-balance-text"><span class="hint">${t("sidebar.botQuota")}</span><span class="num">${t("sidebar.botLeft", { percent: bot.remainingPercent })}</span></span>
-              </button>
-              ${account.lowBalance && html`<span class="dot warn" role="img" aria-label=${t("firstUse.lowBalance")} title=${t("firstUse.lowBalance")}></span>`}`
-            : html`<span class="account-balance-text">
-                ${account.lowBalance && !account.error
-                  ? html`<span class="account-low"><span class="dot warn"></span>${t("firstUse.lowBalance")}</span><span class="hint num">${balance}</span>`
-                  : html`<span class="hint">${t("sidebar.balance")}</span><span class="num">${balance}</span>`}
-              </span>`}
-          <a class="text account-topup" href=${account.topupUrl || MF_TOPUP} target="_blank" rel="noopener noreferrer">${t("firstUse.topUp")}</a>
-        </div>`
-      : account && account.state !== "unavailable" && html`<button type="button" class="account-login" ref=${loginRef} aria-expanded=${login} onClick=${() => setLogin((v) => !v)}>
-          <span class="account-login-title">${t("firstUse.signIn")}</span><span class="hint">${t("firstUse.signInSub")}</span></button>`}
+    ${!signedIn && account && account.state !== "unavailable" && html`<button type="button" class="account-login" ref=${loginRef} aria-expanded=${login} onClick=${() => setLogin((v) => !v)}>
+      <span class="account-login-title">${t("firstUse.signIn")}</span><span class="hint">${t("firstUse.signInSub")}</span></button>`}
     <div class="account-row">
       <button type="button" class=${`account${open ? " on" : ""}`} ref=${ref} title=${me} aria-label=${t("firstUse.accountMenu", { name: me })} aria-haspopup="menu" aria-expanded=${open} onClick=${() => setOpen((v) => !v)}>
         <span class="me" aria-hidden="true">${me.slice(0, 1).toUpperCase()}</span><span class="who">${me}</span>
         ${update?.available && html`<span class="dot new account-dot" title=${t("sidebar.update", { version: update.latest || "" })}></span>`}
+        ${!update?.available && appsAttention && html`<span class="dot warn account-dot" title=${t("apps.attention")}></span>`}
       </button>
+      ${signedIn && html`<button type="button" class="icon-btn account-ring" ref=${quotaRef} title=${tip} aria-label=${tip} aria-haspopup="dialog" aria-expanded=${quota} onClick=${toggleQuota}>
+        <${QuotaRing} percent=${account.error ? null : account.bot?.remainingPercent} />${account.lowBalance && !account.error && html`<span class="dot warn account-ring-dot"></span>`}
+      </button>`}
     </div>
     ${open && html`<${Popover} anchor=${stackRef.current} trigger=${ref.current} prefer="up" width=${stackRef.current?.offsetWidth || 280} label=${t("sidebar.account")} onClose=${() => setOpen(false)}>
       <div class="account-menu primary" role="menu">
         <button type="button" role="menuitem" onClick=${() => { setOpen(false); onSettings?.(); }}>
           <span>${t("sidebar.settings")}</span><kbd>${isMac ? "⌘," : "Ctrl+,"}</kbd></button>
+        <button type="button" role="menuitem" onClick=${() => { setOpen(false); onApps?.(); }}>
+          <span>${t("apps.menu")}</span>${appsAttention && html`<span class="dot warn" title=${t("apps.attention")}></span>`}</button>
         <a role="menuitem" href="https://github.com/modelflare-ai/AnyModelBot/issues/new/choose" target="_blank" rel="noopener noreferrer" onClick=${() => setOpen(false)}>
-          <span>${t("firstUse.feedback")}</span><span class="hint">${t("firstUse.feedbackNote")}</span></a>
+          <span>${t("firstUse.feedback")}</span></a>
         <button type="button" role="menuitem" disabled=${check === "checking" || updateWorking || (ready && update.busy)} title=${ready && update.busy ? t("updates.busy") : ""} onClick=${checkUpdate}>
           ${update?.available && html`<span class="dot new"></span>`}<span role="status">${checkLabel}</span></button>
         <hr />
         <button type="button" role="menuitem" class="danger" disabled=${leaving} onClick=${leave}>${t(signedIn ? "firstUse.logout" : "firstUse.backConfig")}</button>
       </div>
     <//>`}
-    ${quota && bot && html`<${Popover} anchor=${quotaRef.current} prefer="up" width=${260} label=${t("sidebar.botQuota")} onClose=${() => setQuota(false)}>
-      <${BotQuotaCard} account=${account} />
+    ${quota && signedIn && html`<${Popover} anchor=${quotaRef.current} prefer="up" align="right" width=${280} label=${t(account.bot && !account.error ? "sidebar.botQuota" : "sidebar.balance")} onClose=${() => setQuota(false)}>
+      <${QuotaCard} account=${account} />
     <//>`}
     ${login && html`<${Popover} anchor=${loginRef.current} prefer="up" width=${300} label=${t("firstUse.signIn")} onClose=${() => setLogin(false)}>
       <div class="account-pop"><p class="hint">${t("firstUse.signInKeep")}</p>
@@ -218,7 +226,35 @@ export function UpdateNotice({ update }) {
   </div>`;
 }
 
-export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onUpdateChanged, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupsLoaded = true, groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog, onOpenSearch }) {
+/**
+ * 顶部三个按钮，从左到右：收起侧栏 | 搜索 | 新建。分量从轻到重：
+ * - 收起是窗口的开关，图标最浅，单独靠左（macOS 紧挨红绿灯）；
+ * - 搜索（打开搜索聊天记录的弹窗）是普通的静默按钮；
+ * - 新建是这里唯一的主操作：常驻一层底、图标用正文色。和搜索一起靠右。
+ * 有两个以上机器人时，新建是一个菜单（机器人 / 群聊）。children 放在收起钮和搜索之间（侧栏里是 Windows 的应用名和撑开的空白）。
+ */
+function SideActions({ collapsed, bots, view, onToggleSide, onOpenSearch, onNew, onNewGroup, children }) {
+  const [newMenu, setNewMenu] = useState(null); // 新建菜单的锚点
+  const canGroup = !!bots && bots.length >= 2;
+  return html`
+    <${IconButton} icon="sidebar" iconSize="md" class="side-toggle" label=${t(collapsed ? "sidebar.expand" : "sidebar.collapse")} onClick=${onToggleSide} />
+    ${children}
+    <${IconButton} icon="search" iconSize="md" label=${t("sidebar.searchShortcut", { keys: isMac ? "⌘⇧F" : "Ctrl+Shift+F" })} aria-haspopup="dialog" onClick=${() => onOpenSearch?.()} />
+    <${IconButton} icon="plus" iconSize="md" class="side-new" label=${canGroup ? t("sidebar.newMenu") : t("sidebar.newShortcut")} on=${view === "new"} aria-haspopup=${canGroup ? "menu" : undefined} aria-expanded=${canGroup ? !!newMenu : undefined}
+      onClick=${(e) => { if (!canGroup) return onNew(); const el = e.currentTarget; setNewMenu((m) => (m ? null : el)); }} />
+    ${newMenu && html`<${Menu} anchor=${newMenu} align=${collapsed ? undefined : "right"} width=${180} label=${t("sidebar.newMenu")} onClose=${() => setNewMenu(null)}
+      items=${[
+        { label: t("sidebar.newBotItem"), onSelect: onNew },
+        { label: t("sidebar.newGroupItem"), onSelect: onNewGroup },
+      ]} />`}`;
+}
+
+/** 侧栏收起后：顶部三个按钮浮在主区左上角，收起钮停在原来的位置，点同一个地方就能展开 */
+export function SideRail(props) {
+  return html`<div class="side-rail anim-fade-in"><${SideActions} collapsed ...${props} /></div>`;
+}
+
+export function Sidebar({ bots, botsError, reloadBots, selectedId, view, previews, pending, working, needs = { n: 0, bots: {} }, username, account, update, onUpdateChanged, onNew, onSelect, onNeeds, onDeleted, onOpenSettings, onBotSettings, onGuide, groups = [], groupsLoaded = true, groupId, onNewGroup, onSelectGroup, onEditGroup, onDeletedGroup, catalog = [], catalogId, onDiscover, onOpenCatalog, onOpenSearch, collapsed, onToggleSide }) {
   const lang = useLang();
   const seen = useStore(catalogSeen);
   const fold = useStore(sideFold);
@@ -234,7 +270,6 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
   const secCancel = useRef(false); // 按了 Esc：输入框随后失焦时不保存
   const [drag, setDrag] = useState(null); // 正在拖的：{ type: "item", key } 或 { type: "section", id }
   const [drop, setDrop] = useState(null); // 落点：{ sec, key?, where: "before" | "after" | "into" }
-  const [newMenu, setNewMenu] = useState(null); // 新建菜单的锚点
   const [renaming, setRenaming] = useState("");
   const [renameText, setRenameText] = useState("");
   const root = useRef(null);
@@ -311,8 +346,7 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
   useEffect(() => {
     if (entered || view === "new") root.current?.querySelector(".thread-item.anim-fade-in, .thread.draft")?.scrollIntoView({ block: "nearest" });
   }, [entered, view === "new"]);
-  const canGroup = !!bots && bots.length >= 2;
-  // 搜索框下面固定的导航：「发现」（有目录 Bot 时）和「需要你」（有事时）。不跟着机器人列表滚动
+  // 顶部按钮下面固定的导航：「发现」（有目录 Bot 时）和「需要你」（有事时）。不跟着机器人列表滚动
   const hasNav = catalog.length > 0 || needs.n > 0;
   const discoverOn = view === "discover";
   // 只有一个分组、上面也没有导航时，不显示分组标题（和以前只有机器人列表时一样）
@@ -474,15 +508,14 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
     </div>`;
   };
 
-  return html`<aside class="side" ref=${root} aria-label=${t("sidebar.bots")}>
+  // 收起时侧栏滑出窗口（shell.css 的 .side-off），这期间和收起之后都不让它拿到焦点
+  return html`<aside class="side" ref=${root} aria-label=${t("sidebar.bots")} inert=${collapsed || undefined}>
     <div class="side-top">
-      <span class="side-brand"><img src="/amb/static/assets/favicon-64.png" alt="" /><span>AnyModelBot</span></span>
-      <${IconButton} icon="plus" iconSize="md" label=${canGroup ? t("sidebar.newMenu") : t("sidebar.newShortcut")} on=${view === "new"} aria-haspopup=${canGroup ? "menu" : undefined} aria-expanded=${canGroup ? !!newMenu : undefined}
-        onClick=${(e) => { if (!canGroup) return onNew(); const el = e.currentTarget; setNewMenu((m) => (m ? null : el)); }} />
+      <${SideActions} bots=${bots} view=${view} onToggleSide=${onToggleSide} onOpenSearch=${onOpenSearch} onNew=${onNew} onNewGroup=${onNewGroup}>
+        <span class="side-brand"><img src="/amb/static/assets/favicon-64.png" alt="" /><span>AnyModelBot</span></span>
+        <span class="grow"></span>
+      <//>
     </div>
-    <button type="button" class="side-search" data-global-search-entry aria-haspopup="dialog" aria-label=${t("search.title")} onClick=${() => onOpenSearch?.()}>
-      <${Icon} name="search" size="sm" /><span class="side-search-label">${t("search.placeholder")}</span><kbd>${isMac ? "⌘⇧F" : "Ctrl+Shift+F"}</kbd>
-    </button>
     ${hasNav && html`<div class="side-nav">
       ${catalog.length > 0 && html`<button type="button" class=${`nav-item${discoverOn ? " sel" : ""}`} aria-current=${discoverOn ? "page" : undefined} onClick=${onDiscover}>
         <${Icon} name="compass" size="md" /><span class="label">${t("botapp.sidebar.discover")}</span>${hasNew && html`<span class="thread-new-dot" title=${t("botapp.sidebar.new")}></span>`}
@@ -550,11 +583,6 @@ export function Sidebar({ bots, botsError, reloadBots, selectedId, view, preview
         { label: t("sidebar.section.moveItem"), onSelect: () => setMoveCtx({ ...groupCtx, key: keyOfGroup(groupCtx.group) }) },
         { sep: true },
         { label: t("sidebar.menu.delete"), danger: true, onSelect: () => delGroup(groupCtx.group) },
-      ]} />`}
-    ${newMenu && html`<${Menu} anchor=${newMenu} align="right" width=${180} label=${t("sidebar.newMenu")} onClose=${() => setNewMenu(null)}
-      items=${[
-        { label: t("sidebar.newBotItem"), onSelect: onNew },
-        { label: t("sidebar.newGroupItem"), onSelect: onNewGroup },
       ]} />`}
     ${secCtx && (() => {
       const s = secCtx.sec;

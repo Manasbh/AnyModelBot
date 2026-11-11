@@ -1,7 +1,7 @@
 import type { TranslatedCatalog } from "../../index.js";
 export default {
   "revoked": "Modelflare の認可が失効しました。再度ログインしてください",
-  "unreachable": "Modelflare に接続できません（{reason}）",
+  "unreachable": "Modelflare に接続できません（{reason}）。ネットワークを確認してください。プロキシや VPN を使用している場合は、システムプロキシまたは TUN モードを有効にして再試行してください",
   "already_signed_in": "Modelflare アカウントにログイン済みです",
   "no_new_key": "Modelflare から新しいキーが返されませんでした",
   "login_incomplete": "ログインが完了しませんでした：{reason}",
@@ -13,7 +13,7 @@ export default {
   "bot_key_reissued": "ボット「{name}」の予算用キーが削除されたため、予算 ${limit} で再発行しました。利用額はゼロから計算されます",
   "routing_invalid": "費用対効果の指定値が不明です",
   "routing_unsupported": "Modelflare はアプリ用キーのこの設定にまだ対応していません",
-  "host_unreachable": "{host} に接続できません（{reason}）",
+  "host_unreachable": "{host} に接続できません（{reason}）。ネットワークを確認してください。プロキシや VPN を使用している場合は、システムプロキシまたは TUN モードを有効にして再試行してください",
   "discovery_failed": "ログイン設定を読み込めませんでした（HTTP {status}）",
   "discovery_bad_endpoint": "ログイン設定の {key} が無効です",
   "discovery_issuer_mismatch": "ログイン設定の発行者が一致しません",

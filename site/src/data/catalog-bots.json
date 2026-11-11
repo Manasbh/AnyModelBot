@@ -2,7 +2,7 @@
   {
     "id": "company-research",
     "minAppVersion": "0.1.20",
-    "avatar": "data",
+    "avatar": "dossier",
     "name": {
       "zh-CN": "尽调助手",
       "en": "Company Research",
@@ -75,7 +75,7 @@
   {
     "id": "ppt-master",
     "minAppVersion": "0.1.20",
-    "avatar": "design",
+    "avatar": "slides",
     "name": {
       "zh-CN": "PPT 大师",
       "en": "PPT Master",
@@ -148,7 +148,7 @@
   {
     "id": "printfilm",
     "minAppVersion": "0.1.23",
-    "avatar": "design",
+    "avatar": "film",
     "name": {
       "zh-CN": "影视创作室",
       "en": "Film Studio",
@@ -221,7 +221,7 @@
   {
     "id": "us-stock-research",
     "minAppVersion": "0.1.20",
-    "avatar": "finance",
+    "avatar": "ticker",
     "name": {
       "zh-CN": "美股研报",
       "en": "US Stock Research",

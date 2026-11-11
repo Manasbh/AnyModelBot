@@ -47,6 +47,13 @@ export const RELEASE = {
   days: 30,
   /** 各版本的一句话亮点（可选），没有就显示"AnyModelBot {version} 已发布" */
   highlights: {
+    "0.1.31": {
+      zh: "连接应用：内置 10 个应用连接器，支持自定义 MCP",
+      en: "Connect apps: built-in connectors and custom MCP",
+      ja: "アプリを接続：内蔵コネクタとカスタム MCP",
+      ko: "앱 연결: 기본 제공 커넥터와 커스텀 MCP",
+      ru: "Подключение приложений: встроенные коннекторы и собственные MCP",
+    },
     "0.1.30": {
       zh: "Bot 额度、更新说明和官方 Bot 工作台",
       en: "Bot credits, What's new and official bot workspaces",

@@ -4,7 +4,7 @@ import type { Catalog } from "../types.js";
 export const zh = {
   // client.ts
   revoked: "Modelflare 授权已失效，请重新登录",
-  unreachable: "连不上 Modelflare（{reason}）",
+  unreachable: "连不上 Modelflare（{reason}）。请检查网络；如果在用代理或 VPN，请开启系统代理或 TUN 模式后重试",
   // manager.ts
   already_signed_in: "已经登录了 Modelflare 账户",
   no_new_key: "Modelflare 没有返回新 Key",
@@ -18,7 +18,7 @@ export const zh = {
   routing_invalid: "不认识的性价比选项",
   routing_unsupported: "Modelflare 暂不支持为应用签发的 Key 设置性价比",
   // oauth.ts
-  host_unreachable: "连不上 {host}（{reason}）",
+  host_unreachable: "连不上 {host}（{reason}）。请检查网络；如果在用代理或 VPN，请开启系统代理或 TUN 模式后重试",
   discovery_failed: "读取登录配置失败（HTTP {status}）",
   discovery_bad_endpoint: "登录配置里的 {key} 无效",
   discovery_issuer_mismatch: "登录配置的发行方不匹配",
@@ -53,7 +53,7 @@ export const zh = {
 
 export const en: Catalog<typeof zh> = {
   revoked: "Your Modelflare authorization has expired. Please sign in again",
-  unreachable: "Can't reach Modelflare ({reason})",
+  unreachable: "Can't reach Modelflare ({reason}). Check your network. If you use a proxy or VPN, turn on its system proxy or TUN mode and try again",
   already_signed_in: "Already signed in to a Modelflare account",
   no_new_key: "Modelflare didn't return a new key",
   login_incomplete: "Sign-in didn't complete: {reason}",
@@ -65,7 +65,7 @@ export const en: Catalog<typeof zh> = {
   bot_key_reissued: "The budget key for bot \"{name}\" was deleted, so a new one was issued with the ${limit} budget (spending starts from zero)",
   routing_invalid: "Unknown value option",
   routing_unsupported: "Modelflare doesn't support this setting for app keys yet",
-  host_unreachable: "Can't reach {host} ({reason})",
+  host_unreachable: "Can't reach {host} ({reason}). Check your network. If you use a proxy or VPN, turn on its system proxy or TUN mode and try again",
   discovery_failed: "Couldn't read the sign-in configuration (HTTP {status})",
   discovery_bad_endpoint: "Invalid {key} in the sign-in configuration",
   discovery_issuer_mismatch: "The sign-in configuration's issuer doesn't match",

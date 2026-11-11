@@ -1,6 +1,6 @@
 {
   "id": "printfilm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "0.1.23",
   "name": {
     "zh-CN": "影视创作室",
@@ -43,7 +43,7 @@
       "Редактирование кадров, версии, общая библиотека и продолжение работы"
     ]
   },
-  "avatar": "design",
+  "avatar": "film",
   "permissions": [
     "workspace-write",
     "network"
